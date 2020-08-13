@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "target": "es2018",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": false,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noEmitOnError": true,
+    "lib": [
+      "es2017",
+      "es2018.promise",
+      "dom"
+    ]
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

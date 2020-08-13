@@ -1,0 +1,5 @@
+.idea/
+reports/
+dist/
+node_modules/
+*.log

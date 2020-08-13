@@ -1,0 +1,15 @@
+.idea/
+reports/
+scripts/
+static/
+node_modules/
+.eslintrc.js
+.gitignore
+.npmignore
+.npmrc
+.yarnrc
+tsconfig*.json
+*.log
+*.config.js
+*config.yaml
+**/*.spec.ts
