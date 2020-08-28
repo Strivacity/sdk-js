@@ -5,10 +5,30 @@ Strivacity SDK for JavaScript based Applications with TypeScript support.
 ## Table of Contents
 
 - [Getting Started](#getting-started)
-- [Frequently Asked Questions](#frequently-asked-questions)
 - [License](#license)
 
 ## Getting Started
+
+### Overview
+
+This SDK is built as an [npm module](https://docs.npmjs.com/creating-node-js-modules).
+
+You can also build this module directly. The build requires the [yarn](https://yarnpkg.com/) tool.
+
+### Install dependencies
+
+```sh
+cd <project-root-directory>
+yarn install
+```
+
+### Build the module
+
+```sh
+yarn build
+```
+
+Output of the build will be placed in the "dist" folder.
 
 ### Creating the client
 
