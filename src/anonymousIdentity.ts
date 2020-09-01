@@ -1,9 +1,6 @@
 import { request } from './functions';
 import { StrivacityClientOptions, Identity, Attribute } from './types';
-import {
-	BASE_URL,
-	DEFAULT_TIMEOUT,
-} from './constants';
+import { BASE_URL, DEFAULT_TIMEOUT } from './constants';
 import AnonymousIdentityConsent from './anonymousIdentityConsent';
 
 export default class AnonymousIdentity {

@@ -1,9 +1,6 @@
 import { request } from './functions';
 import { StrivacityClientOptions, Consent } from './types';
-import {
-	BASE_URL,
-	DEFAULT_TIMEOUT,
-} from './constants';
+import { BASE_URL, DEFAULT_TIMEOUT } from './constants';
 
 export default class AnonymousIdentityConsent {
 	private readonly timeout: number = DEFAULT_TIMEOUT;
