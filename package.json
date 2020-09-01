@@ -5,14 +5,15 @@
   "license": "MIT",
   "author": "strivacity<info@strivacity.com>",
   "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
+  "module": "./dist/index.js",
   "unpkg": "./dist/index.umd.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "prepublishOnly": "yarn run build",
     "prebuild": "node ./scripts/rm.js ./dist",
-    "build": "rollup -c",
-    "build:watch": "tsc --watch",
+    "build": "yarn run build:native && yarn run build:bundle",
+    "build:native": "tsc",
+    "build:bundle": "rollup -c",
     "lint": "yarn run eslint --format codeframe --ignore-path .gitignore .",
     "lint:ci": "yarn run eslint --format checkstyle --ignore-path .gitignore .",
     "test": "yarn run jest"

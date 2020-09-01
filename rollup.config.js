@@ -3,54 +3,56 @@ import { terser } from 'rollup-plugin-terser';
 
 const footer = `('StrivacityClient' in this) && this.console && this.console.warn && this.console.warn('StrivacityClient already declared on the global namespace');
 this && this.createStrivacityClient && (this.StrivacityClient = this.StrivacityClient || this.createStrivacityClient.StrivacityClient);`;
+const typescriptPlugin = (tsconfig) => typescript({
+	tsconfig: tsconfig,
+});
+const terserPlugin = () => terser({
+	output: { comments: false },
+});
 
-/** @type {import('rollup').RollupOptions[]} */
-let bundles = [
-	{
-		input: 'src/index.ts',
-		output: {
-			file: 'dist/index.esm.js',
-			format: 'esm',
-			exports: 'named',
-		},
-		plugins: [
-			typescript({
-				declarationDir: 'dist',
-				tsconfigOverride: {
-					compilerOptions: {
-						outDir: 'dist',
-						declaration: true,
-					},
-				},
-			}),
-			terser(),
-		],
+const esmBuild = {
+	input: 'src/index.ts',
+	output: {
+		file: 'dist/index.esm.js',
+		format: 'esm',
+		exports: 'named',
+		sourcemap: true,
 	},
-	{
-		input: 'src/index.cjs.ts',
-		output: {
-			file: 'dist/index.cjs.js',
-			format: 'cjs',
-			exports: 'named',
-		},
-		plugins: [
-			typescript(),
-			terser(),
-		],
+	plugins: [
+		typescriptPlugin('tsconfig.base.json'),
+		terserPlugin(),
+	],
+};
+const commonjsBuild = {
+	input: 'src/index.cjs.ts',
+	output: {
+		file: 'dist/index.cjs.js',
+		format: 'cjs',
+		exports: 'named',
+		sourcemap: true,
 	},
-	{
-		input: 'src/index.cjs.ts',
-		output: {
-			name: 'createStrivacityClient',
-			file: 'dist/index.umd.js',
-			footer,
-			format: 'umd',
-		},
-		plugins: [
-			typescript(),
-			terser(),
-		],
+	plugins: [
+		typescriptPlugin('tsconfig.base.json'),
+		terserPlugin(),
+	],
+};
+const umdBuild = {
+	input: 'src/index.cjs.ts',
+	output: {
+		name: 'createStrivacityClient',
+		file: 'dist/index.umd.js',
+		format: 'umd',
+		sourcemap: true,
+		footer,
 	},
+	plugins: [
+		typescriptPlugin('tsconfig.base.json'),
+		terserPlugin(),
+	],
+};
+
+export default [
+	esmBuild,
+	commonjsBuild,
+	umdBuild,
 ];
-
-export default bundles;
