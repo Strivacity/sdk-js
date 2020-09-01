@@ -6,7 +6,7 @@ const footer = `('StrivacityClient' in this) && this.console && this.console.war
 const esmBuild = {
 	input: 'src/index.ts',
 	output: {
-		file: 'dist/index.esm.js',
+		file: 'dist/strivacity-sdk.esm.js',
 		format: 'esm',
 		exports: 'named',
 		sourcemap: true,
@@ -23,7 +23,7 @@ const esmBuild = {
 const commonjsBuild = {
 	input: 'src/index.cjs.ts',
 	output: {
-		file: 'dist/index.cjs.js',
+		file: 'dist/strivacity-sdk.cjs.js',
 		format: 'cjs',
 		exports: 'named',
 		sourcemap: true,
@@ -41,7 +41,7 @@ const umdBuild = {
 	input: 'src/index.cjs.ts',
 	output: {
 		name: 'createStrivacityClient',
-		file: 'dist/index.umd.js',
+		file: 'dist/strivacity-sdk.umd.js',
 		format: 'umd',
 		sourcemap: true,
 		footer,
@@ -59,7 +59,7 @@ const legacyBuild = {
 	input: 'src/index.cjs.ts',
 	output: {
 		name: 'createStrivacityClient',
-		file: 'dist/index.legacy.js',
+		file: 'dist/strivacity-sdk.legacy.js',
 		format: 'umd',
 		sourcemap: true,
 		footer,

@@ -4,9 +4,9 @@
   "description": "Strivacity JavaScript SDK",
   "license": "MIT",
   "author": "strivacity<info@strivacity.com>",
-  "main": "./dist/index.cjs.js",
+  "main": "./dist/strivacity-sdk.cjs.js",
+  "unpkg": "./dist/strivacity-sdk.umd.js",
   "module": "./dist/index.js",
-  "unpkg": "./dist/index.umd.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "prepublishOnly": "yarn run build",
