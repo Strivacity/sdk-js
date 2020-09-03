@@ -19,7 +19,6 @@
     "test": "yarn run jest"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^14.0.0",
     "@typescript-eslint/eslint-plugin": "^3.7.1",
     "@typescript-eslint/parser": "^3.7.1",
     "eslint": "^7.5.0",
@@ -32,8 +31,6 @@
     "jest": "^26.3.0",
     "jest-fetch-mock": "^3.0.3",
     "jest-junit": "^11.1.0",
-    "path": "^0.12.7",
-    "process": "^0.11.10",
     "rollup": "^2.23.1",
     "rollup-plugin-terser": "^7.0.0",
     "rollup-plugin-typescript2": "^0.27.2",
