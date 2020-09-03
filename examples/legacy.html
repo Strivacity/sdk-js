@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Test project</title>
+	<script src="https://unpkg.com/promise-polyfill@8.1.3/dist/polyfill.min.js"></script>
+	<script src="https://unpkg.com/whatwg-fetch@3.4.0/dist/fetch.umd.js"></script>
+	<script src="https://unpkg.com/abort-controller@3.0.0/dist/abort-controller.umd.js"></script>
+	<script src="../dist/strivacity-sdk.legacy.js"></script>
+	<style>
+		.card {
+			border: 1px solid black;
+			border-radius: 4px;
+			padding: 2rem;
+			display: inline-flex;
+		}
+
+		input[type=button] {
+			padding: 5px 10px;
+			background: #f7efa8;
+			border: 1px solid yellow;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+
+<div class="card" style="background: #2a7e43; color: white; position: relative; top: 4px;">
+	<input type="button" value="Create random identity" onclick="createIdentity()">
+</div>
+
+<div class="card" style="background: #265b6a; color: white">
+	<form>
+		<label for="identityId">Identity ID:</label><br>
+		<input type="text" id="identityId" name="identityId" placeholder="Identity ID"><br>
+		<br>
+		<input type="button" value="Get identity" onclick="getIdentity()"><br>
+		<br>
+		<input type="button" value="Exist identity" onclick="existIdentity()"><br>
+		<br>
+		<input type="button" value="Delete identity" onclick="removeIdentity()"><br>
+		<br>
+		<hr>
+		<br>
+		<input type="button" value="All Consent" onclick="getAllConsent()"><br>
+		<br>
+		<input type="button" value="Create random consent" onclick="createConsent()"><br>
+	</form>
+</div>
+
+<div class="card" style="background: #303d74; color: white">
+	<form>
+		<label for="consentId">Consent ID:</label><br>
+		<input type="text" id="consentId" name="consentId" placeholder="Consent ID"><br>
+		<br>
+		<input type="button" value="Get consent" onclick="getConsent()"><br>
+		<br>
+		<input type="button" value="Exist consent" onclick="existConsent()"><br>
+		<br>
+		<input type="button" value="Delete consent" onclick="removeConsent()">
+	</form>
+</div>
+
+<div class="card" style="background: #0c1a21; color: white">
+	<form>
+		<label for="cookie">Cookie:</label><br>
+		<input type="text" id="cookie" name="cookie" placeholder="Cookie">
+	</form>
+</div>
+
+<p>Result: <strong id="result"></strong></p>
+
+<script>
+	const client = new StrivacityClient({
+		timeout: 50000,
+		url: 'http://localhost:8080',
+	});
+
+	const identityId = document.getElementById('identityId');
+	const identityIdDisplay = document.getElementById('identityIdDisplay');
+	const cookie = document.getElementById('cookie');
+	const consentId = document.getElementById('consentId');
+
+	// Helper
+	const setResult = function (text, error) {
+		const result = document.getElementById('result');
+		result.innerHTML = '<pre>' + JSON.stringify(text, null, 4) + '</pre>';
+		result.style.color = 'black';
+
+		if (error) {
+			result.style.color = 'red';
+		}
+	}
+
+	const setIdentityId = function (id) {
+		identityId.value = id;
+	}
+
+	const setConsentId = function (id) {
+		consentId.value = id;
+	}
+
+	// Identities
+	const getIdentity = function () {
+		client.anonymousIdentity.getIdentityById(identityId.value, cookie.value).then(function (result) {
+			setResult(result);
+			setIdentityId(result.id);
+		}).catch(function (e) {
+			setResult('We couldn\'t FETCH the identity ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const removeIdentity = function () {
+		client.anonymousIdentity.deleteIdentityById(identityId.value).then(function () {
+			setResult('Ok, identity has been deleted');
+		}).catch(function (e) {
+			setResult('We couldn\'t REMOVE the identity ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const existIdentity = function () {
+		client.anonymousIdentity.checkIdentityById(identityId.value).then(function () {
+			setResult('Ok, the identity exists');
+		}).catch(function (e) {
+			setResult('We couldn\'t CHECK (HEAD) the identity ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const createIdentity = function () {
+		const fNames = ['John', 'George', 'Mike', 'Michael'];
+		const gNames = ['Snow', 'King', 'Queen', 'Lord'];
+		const body = {
+			attributes: {
+				familyName: fNames[Math.floor(Math.random() * fNames.length)],
+				givenName: gNames[Math.floor(Math.random() * gNames.length)],
+				email: 'test@test.com',
+			}
+		}
+
+		client.anonymousIdentity.createIdentity(body).then(function (result) {
+			setResult(result);
+			setIdentityId(result.id);
+		}).catch(function (e) {
+			setResult('We couldn\'t CREATE the identity ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	// Consents
+	const getAllConsent = function () {
+		client.anonymousIdentity.consent.getConsents(identityId.value, cookie.value).then(function (result) {
+			setResult(result);
+		}).catch(function (e) {
+			setResult('We couldn\'t FETCH all consents ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const createConsent = function () {
+		const body = {
+			format: 'iab',
+			iab: {
+				receipt: 'BOEFEAyOEFEAyAHABDENAI4AAAB9vABAASA'
+			},
+		}
+
+		client.anonymousIdentity.consent.createConsent(identityId.value, body).then(function (result) {
+			setResult(result);
+			setConsentId(result.id);
+		}).catch(function (e) {
+			setResult('We couldn\'t CREATE the consent ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const getConsent = function () {
+		client.anonymousIdentity.consent.getConsentById(identityId.value, consentId.value, cookie.value).then(function (result) {
+			setResult(result);
+		}).catch(function (e) {
+			setResult('We couldn\'t FETCH the consent ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const existConsent = function () {
+		client.anonymousIdentity.consent.checkConsentById(identityId.value, consentId.value).then(function () {
+			setResult('ok, the consent exists');
+		}).catch(function (e) {
+			setResult('We couldn\'t CHECK (HEAD) the consent ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	const removeConsent = function () {
+		client.anonymousIdentity.consent.deleteConsentById(identityId.value, consentId.value).then(function () {
+			setResult('Ok, consent has been deleted');
+		}).catch(function (e) {
+			setResult('We couldn\'t REMOVE the consent ===> ' + JSON.stringify(e) + ' ' + e, true);
+		});
+	}
+
+	// Export the functions to able to reach them in HTML
+	window.setResult = setResult;
+
+	window.getIdentity = getIdentity;
+	window.existIdentity = existIdentity;
+	window.createIdentity = createIdentity;
+	window.removeIdentity = removeIdentity;
+
+	window.getAllConsent = getAllConsent;
+	window.getConsent = getConsent;
+	window.createConsent = createConsent;
+	window.existConsent = existConsent;
+	window.removeConsent = removeConsent;
+</script>
+</body>
+</html>

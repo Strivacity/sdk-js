@@ -23,7 +23,7 @@
 <body>
 
 <script type="module">
-	import { StrivacityClient } from '../dist/index.esm.js';
+	import { StrivacityClient } from '../dist/strivacity-sdk.esm.js';
 
 	const client = new StrivacityClient({
 		timeout: 50000,
@@ -107,7 +107,8 @@
 	// Consents
 	const getAllConsent = async () => {
 		try {
-			setResult(await client.anonymousIdentity.consent.getConsents(identityId.value, cookie.value));
+			const result = await client.anonymousIdentity.consent.getConsents(identityId.value, cookie.value);
+			setResult(result);
 		} catch (e) {
 			setResult('We couldn\'t FETCH all consents ===> ' + JSON.stringify(e) + ' ' + e, true);
 		}
@@ -132,7 +133,8 @@
 
 	const getConsent = async () => {
 		try {
-			setResult(await client.anonymousIdentity.consent.getConsentById(identityId.value, consentId.value, cookie.value));
+			const result = await client.anonymousIdentity.consent.getConsentById(identityId.value, consentId.value, cookie.value)
+			setResult(result);
 		} catch (e) {
 			setResult('We couldn\'t FETCH the consent ===> ' + JSON.stringify(e) + ' ' + e, true);
 		}
