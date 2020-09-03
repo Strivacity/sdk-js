@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Strivacity JavaScript SDK",
   "license": "MIT",
   "author": "strivacity<info@strivacity.com>",
