@@ -1,0 +1,12 @@
+.cache/
+.github/
+.nx/
+.pnpm-store/
+coverage/
+dist/
+downloads/
+node_modules/
+reports/
+screenshots/
+videos/
+pnpm-lock.yaml

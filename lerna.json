@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "npmClient": "pnpm",
+  "conventionalCommits": true,
+  "changelogPreset": "conventionalcommits",
+  "command": {
+    "publish": {
+      "message": "chore(release): publish"
+    }
+  }
+}

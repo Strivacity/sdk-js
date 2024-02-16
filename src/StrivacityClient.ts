@@ -1,7 +1,7 @@
 import { StrivacityClientOptions } from './types';
 import AnonymousIdentity from './anonymousIdentity';
 
-export default class StrivacityClient {
+export class StrivacityClient {
 	public anonymousIdentity: AnonymousIdentity;
 
 	constructor(options: StrivacityClientOptions) {

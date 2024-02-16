@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import fetchMock, { enableFetchMocks } from 'jest-fetch-mock';
+import 'vitest-fetch-mock';
 import AnonymousIdentity from './anonymousIdentity';
-
-enableFetchMocks();
 
 describe('anonymousIdentity', () => {
 	afterEach(() => {
@@ -46,17 +43,14 @@ describe('anonymousIdentity', () => {
 
 					const response = await anonymousIdentity.createIdentity(attributes);
 
-					expect(request).toHaveBeenCalledWith(
-						'https://test.com/api/v1/identities',
-						{
-							body: JSON.stringify(attributes),
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							method: 'POST',
-							signal: expect.anything(),
+					expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities', {
+						body: JSON.stringify(attributes),
+						headers: {
+							'Content-Type': 'application/json',
 						},
-					);
+						method: 'POST',
+						signal: expect.anything(),
+					});
 					expect(response.id).toEqual(mockResponse.id);
 				});
 
@@ -66,18 +60,15 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.createIdentity(attributes);
 
-						expect(request).toHaveBeenCalledWith(
-							'https://test.com/api/v1/identities',
-							{
-								body: JSON.stringify(attributes),
-								headers: {
-									'Content-Type': 'application/json',
-								},
-								method: 'POST',
-								signal: expect.anything(),
+						expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities', {
+							body: JSON.stringify(attributes),
+							headers: {
+								'Content-Type': 'application/json',
 							},
-						);
-					} catch (e) {
+							method: 'POST',
+							signal: expect.anything(),
+						});
+					} catch (e: any) {
 						expect(e.code).toBe(400);
 						expect(e.message).toBe('Bad Request');
 						return;
@@ -90,11 +81,11 @@ describe('anonymousIdentity', () => {
 					it('should return in time', async () => {
 						fetchMock.mockResponseOnce(JSON.stringify(mockResponse));
 
-						jest.useFakeTimers();
+						vi.useFakeTimers();
 
 						const promise = anonymousIdentity.createIdentity(attributes);
 
-						jest.advanceTimersByTime(24999);
+						vi.advanceTimersByTime(24999);
 
 						const response = await promise;
 
@@ -104,15 +95,15 @@ describe('anonymousIdentity', () => {
 					it('should return timeout error', async () => {
 						fetchMock.mockResponseOnce(JSON.stringify(mockResponse));
 
-						jest.useFakeTimers();
+						vi.useFakeTimers();
 
 						try {
 							const promise = anonymousIdentity.createIdentity(attributes);
 
-							jest.advanceTimersByTime(25000);
+							vi.advanceTimersByTime(25000);
 
 							await promise;
-						} catch (e) {
+						} catch (e: any) {
 							expect(e.toString()).toBe(`Error: Timeout (25000ms) when executing 'fetch'`);
 							return;
 						}
@@ -129,16 +120,13 @@ describe('anonymousIdentity', () => {
 
 					await anonymousIdentity.checkIdentityById('testId');
 
-					expect(request).toHaveBeenCalledWith(
-						'https://test.com/api/v1/identities/testId',
-						{
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							method: 'HEAD',
-							signal: expect.anything(),
+					expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities/testId', {
+						headers: {
+							'Content-Type': 'application/json',
 						},
-					);
+						method: 'HEAD',
+						signal: expect.anything(),
+					});
 				});
 
 				it('should return 404', async () => {
@@ -147,17 +135,14 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.checkIdentityById('testId');
 
-						expect(request).toHaveBeenCalledWith(
-							'https://test.com/api/v1/identities/testId',
-							{
-								headers: {
-									'Content-Type': 'application/json',
-								},
-								method: 'HEAD',
-								signal: expect.anything(),
+						expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities/testId', {
+							headers: {
+								'Content-Type': 'application/json',
 							},
-						);
-					} catch (e) {
+							method: 'HEAD',
+							signal: expect.anything(),
+						});
+					} catch (e: any) {
 						expect(e.code).toBe(404);
 						expect(e.message).toBe('Not Found');
 						return;
@@ -172,7 +157,7 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.checkIdentityById('');
 						expect('Should throw forward').toBe(false);
-					} catch (e) {
+					} catch (e: any) {
 						expect(request).not.toHaveBeenCalled();
 						expect(e.toString()).toEqual('Error: checkIdentityById :: id must be provided');
 					}
@@ -185,17 +170,14 @@ describe('anonymousIdentity', () => {
 
 					const response = await anonymousIdentity.getIdentityById('testId', 'sessionCookie');
 
-					expect(request).toHaveBeenCalledWith(
-						'https://test.com/api/v1/identities/testId',
-						{
-							headers: {
-								'Content-Type': 'application/json',
-								'X-SESSION': 'sessionCookie',
-							},
-							method: 'GET',
-							signal: expect.anything(),
+					expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities/testId', {
+						headers: {
+							'Content-Type': 'application/json',
+							'X-SESSION': 'sessionCookie',
 						},
-					);
+						method: 'GET',
+						signal: expect.anything(),
+					});
 					expect(response.id).toEqual(mockResponse.id);
 				});
 
@@ -205,18 +187,15 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.getIdentityById('testId', 'sessionCookie');
 
-						expect(request).toHaveBeenCalledWith(
-							'https://test.com/api/v1/identities/testId',
-							{
-								headers: {
-									'Content-Type': 'application/json',
-									'X-SESSION': 'sessionCookie',
-								},
-								method: 'GET',
-								signal: expect.anything(),
+						expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities/testId', {
+							headers: {
+								'Content-Type': 'application/json',
+								'X-SESSION': 'sessionCookie',
 							},
-						);
-					} catch (e) {
+							method: 'GET',
+							signal: expect.anything(),
+						});
+					} catch (e: any) {
 						expect(e.code).toBe(404);
 						expect(e.message).toBe('Not Found');
 						return;
@@ -231,7 +210,7 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.getIdentityById('', 'sessionId');
 						expect('Should throw forward').toBe(false);
-					} catch (e) {
+					} catch (e: any) {
 						expect(request).not.toHaveBeenCalled();
 						expect(e.toString()).toEqual('Error: getIdentityById :: id must be provided');
 					}
@@ -243,7 +222,7 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.getIdentityById('testId', '');
 						expect('Should throw forward').toBe(false);
-					} catch (e) {
+					} catch (e: any) {
 						expect(request).not.toHaveBeenCalled();
 						expect(e.toString()).toEqual('Error: getIdentityById :: session must be provided');
 					}
@@ -256,16 +235,13 @@ describe('anonymousIdentity', () => {
 
 					await anonymousIdentity.deleteIdentityById('testId');
 
-					expect(request).toHaveBeenCalledWith(
-						'https://test.com/api/v1/identities/testId',
-						{
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							method: 'DELETE',
-							signal: expect.anything(),
+					expect(request).toHaveBeenCalledWith('https://test.com/api/v1/identities/testId', {
+						headers: {
+							'Content-Type': 'application/json',
 						},
-					);
+						method: 'DELETE',
+						signal: expect.anything(),
+					});
 				});
 
 				it('should not call DELETE request - missing id', async () => {
@@ -274,13 +250,12 @@ describe('anonymousIdentity', () => {
 					try {
 						await anonymousIdentity.deleteIdentityById('');
 						expect('Should throw forward').toBe(false);
-					} catch (e) {
+					} catch (e: any) {
 						expect(request).not.toHaveBeenCalled();
 						expect(e.toString()).toEqual('Error: deleteIdentityById :: id must be provided');
 					}
 				});
 			});
 		});
-
 	});
 });
