@@ -1,7 +1,5 @@
-import fetchMock, { enableFetchMocks } from 'jest-fetch-mock';
+import 'vitest-fetch-mock';
 import { request as requestFunction } from './functions';
-
-enableFetchMocks();
 
 describe('request', () => {
 	afterEach(() => {
@@ -13,7 +11,7 @@ describe('request', () => {
 
 		try {
 			await requestFunction('HEAD', 'https://test.com');
-		} catch (e) {
+		} catch (e: any) {
 			// src/functions.ts:68
 			expect(e.toString()).toEqual('Error: error');
 		}
@@ -34,7 +32,7 @@ describe('request', () => {
 		const response = await requestFunction('HEAD', 'https://test.com');
 
 		// src/functions.ts:63
-		expect(response).toEqual({ test : 'ok' });
+		expect(response).toEqual({ test: 'ok' });
 	});
 
 	it('should 3', async () => {
@@ -43,7 +41,7 @@ describe('request', () => {
 		try {
 			await requestFunction('HEAD', 'https://test.com');
 			expect(1).toEqual(2);
-		} catch (e) {
+		} catch (e: any) {
 			// src/functions.ts:50
 			expect(e).toEqual({ code: 404, message: 'Error' });
 		}
@@ -55,7 +53,7 @@ describe('request', () => {
 		try {
 			await requestFunction('GET', 'https://test.com');
 			expect(1).toEqual(2);
-		} catch (e) {
+		} catch (e: any) {
 			// src/functions.ts:48
 			expect(e).toEqual({ code: 404, message: 'Status Error', error: { error: 'Error' } });
 		}
@@ -67,7 +65,7 @@ describe('request', () => {
 		try {
 			await requestFunction('GET', 'https://test.com');
 			expect(1).toEqual(2);
-		} catch (e) {
+		} catch (e: any) {
 			// src/functions.ts:67
 			expect(e.toString()).toContain('invalid json');
 		}

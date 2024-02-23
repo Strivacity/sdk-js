@@ -9,7 +9,7 @@ export interface Consent {
 	format: string;
 	iab: {
 		receipt: string;
-	}
+	};
 }
 
 export interface Attribute {

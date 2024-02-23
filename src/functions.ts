@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DEFAULT_TIMEOUT } from './constants';
 
-export const request = async <Response = any, Data = any>(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD', url: RequestInfo, body?: Data, options: RequestInit = {}, timeout: number = DEFAULT_TIMEOUT): Promise<Response> => {
+export const request = async <Response = any, Data = any>(
+	method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD',
+	url: RequestInfo,
+	body?: Data,
+	options: RequestInit = {},
+	timeout: number = DEFAULT_TIMEOUT,
+): Promise<Response> => {
 	const controller = new AbortController();
 	const signal = controller.signal;
 
@@ -22,7 +28,12 @@ export const request = async <Response = any, Data = any>(method: 'GET' | 'POST'
 	});
 };
 
-export const requestWithOutTimeout = async <Response = any, Data = any>(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD', url: RequestInfo, body?: Data, options: RequestInit = {}): Promise<Response> => {
+export const requestWithOutTimeout = async <Response = any, Data = any>(
+	method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD',
+	url: RequestInfo,
+	body?: Data,
+	options: RequestInit = {},
+): Promise<Response> => {
 	const init: any = {
 		...options,
 		method: method,
@@ -46,9 +57,7 @@ export const requestWithOutTimeout = async <Response = any, Data = any>(method: 
 
 			try {
 				error = await fetchResult.json();
-
-			} catch {
-			}
+			} catch {}
 
 			throw { message: fetchResult.statusText, code: fetchResult.status, error: error };
 		}
