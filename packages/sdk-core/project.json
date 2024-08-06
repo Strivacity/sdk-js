@@ -1,0 +1,62 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "sdk-core",
+  "projectType": "library",
+  "sourceRoot": "packages/sdk-core/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project packages/sdk-core/tsconfig.json"
+      }
+    },
+    "compile": {
+      "executor": "@nx/vite:build",
+      "dependsOn": ["type-check"],
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "development",
+      "options": {
+        "outputPath": "packages/sdk-core/dist",
+        "generatePackageJson": false
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "watch": true
+        },
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["compile"],
+      "options": {
+        "commands": [
+          {
+            "command": "rm -f ./packages/sdk-core/dist/package.json",
+            "forwardAllArgs": false
+          }
+        ]
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development"
+        },
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "test": {
+      "dependsOn": ["build"]
+    }
+  }
+}
