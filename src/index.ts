@@ -1,1 +1,0 @@
-export { StrivacityClient } from './StrivacityClient';

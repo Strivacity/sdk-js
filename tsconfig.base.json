@@ -1,0 +1,29 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "sourceMap": true,
+    "declaration": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "importHelpers": false,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "incremental": false,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "skipDefaultLibCheck": true,
+    "noEmit": true,
+    "strict": true,
+    "useUnknownInCatchVariables": false
+  },
+  "exclude": ["node_modules", "tmp", "**/*.spec.ts"]
+}

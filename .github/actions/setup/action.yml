@@ -1,0 +1,24 @@
+name: Setup
+description: Install node tools and project packages
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: "pnpm"
+        cache-dependency-path: "./pnpm-lock.yaml"
+
+    - name: Install
+      run: pnpm install --frozen-lockfile
+      shell: bash
+      working-directory: "."
+      env:
+        CYPRESS_INSTALL_BINARY: 0

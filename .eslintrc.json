@@ -1,0 +1,95 @@
+{
+  "root": true,
+  "ignorePatterns": ["**/*"],
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "rules": {
+    "no-console": "error",
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-eq-null": "error",
+    "no-unused-vars": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "overrides": [
+    {
+      "files": ["*.ts", "*.js", "*.tsx", "*.jsx"],
+      "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+      "plugins": ["@typescript-eslint"],
+      "parser": "@typescript-eslint/parser",
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+      }
+    },
+    {
+      "files": ["*.tsx", "*.jsx"],
+      "extends": ["plugin:react/recommended", "plugin:react/jsx-runtime", "plugin:react-hooks/recommended"],
+      "plugins": ["@typescript-eslint", "react"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaFeatures": {
+          "jsx": true
+        }
+      },
+      "rules": {
+        "react-hooks/exhaustive-deps": "off"
+      }
+    },
+    {
+      "files": ["*.vue"],
+      "extends": ["@vue/typescript/recommended", "plugin:vue/vue3-recommended"],
+      "parser": "vue-eslint-parser",
+      "parserOptions": {
+        "parser": "@typescript-eslint/parser"
+      },
+      "rules": {
+        "vue/html-indent": ["error", "tab"],
+        "vue/attribute-hyphenation": "off",
+        "vue/multi-word-component-names": "off",
+        "vue/singleline-html-element-content-newline": "off",
+        "vue/multiline-html-element-content-newline": "off",
+        "vue/max-attributes-per-line": [
+          "error",
+          {
+            "singleline": { "max": 10 },
+            "multiline": { "max": 1 }
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/sdk-angular/**/*.ts", "apps/sdk-angular-app/**/*.ts"],
+      "extends": ["plugin:@nx/angular", "plugin:@angular-eslint/template/process-inline-templates"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "type": "attribute",
+            "prefix": "app",
+            "style": "camelCase"
+          }
+        ],
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "type": "element",
+            "prefix": "app",
+            "style": "kebab-case"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/sdk-angular/**/*.html"],
+      "extends": ["plugin:@nx/angular-template"]
+    }
+  ]
+}

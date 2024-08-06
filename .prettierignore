@@ -1,12 +1,12 @@
+.angular/
 .cache/
 .github/
 .nx/
 .pnpm-store/
 coverage/
 dist/
-downloads/
 node_modules/
 reports/
-screenshots/
-videos/
+packages/**/CHANGELOG.md
 pnpm-lock.yaml
+pnpm-workspace.yaml
