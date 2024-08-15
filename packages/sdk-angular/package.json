@@ -1,0 +1,25 @@
+{
+  "name": "@strivacity/sdk-angular",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "strivacity <info@strivacity.com>",
+  "description": "Strivacity Angular SDK client",
+  "dependencies": {
+    "@strivacity/sdk-core": "0.0.0"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=14"
+  },
+  "main": "./dist/esm2022/strivacity-sdk-angular.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm2022/strivacity-sdk-angular.mjs",
+      "esm": "./dist/esm2022/strivacity-sdk-angular.mjs",
+      "esm2022": "./dist/esm2022/strivacity-sdk-angular.mjs",
+      "default": "./dist/fesm2022/strivacity-sdk-angular.mjs"
+    }
+  }
+}

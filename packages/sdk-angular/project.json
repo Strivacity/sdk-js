@@ -1,0 +1,40 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "sdk-angular",
+  "projectType": "library",
+  "sourceRoot": "packages/sdk-angular/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-core:build"],
+      "options": {
+        "commands": [
+          {
+            "command": "ng-packagr -p packages/sdk-angular/ng-package.json",
+            "forwardAllArgs": false
+          },
+          {
+            "command": "rm -f ./packages/sdk-angular/dist/package.json ./packages/sdk-angular/dist/.npmignore",
+            "forwardAllArgs": false
+          }
+        ],
+        "parallel": false
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development"
+        },
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "executor": "@analogjs/vitest-angular:test"
+    }
+  }
+}
