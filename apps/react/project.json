@@ -1,0 +1,52 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-react",
+  "projectType": "application",
+  "sourceRoot": "apps/react/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-react:build"],
+      "options": {
+        "command": "tsc --noEmit --moduleResolution node --project apps/react/tsconfig.json"
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "dependsOn": ["type-check"],
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "development",
+      "options": {
+        "outputPath": "apps/react/dist",
+        "generatePackageJson": false,
+        "skipTypeCheck": true,
+        "emptyOutDir": true
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "app-react:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "app-react:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "app-react:build:production",
+          "hmr": false
+        }
+      }
+    }
+  }
+}

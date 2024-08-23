@@ -1,0 +1,52 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-remix",
+  "projectType": "application",
+  "sourceRoot": "apps/remix/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-remix:build"],
+      "options": {
+        "command": "tsc --noEmit --moduleResolution node --project apps/remix/tsconfig.json"
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "dependsOn": ["type-check"],
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "development",
+      "options": {
+        "outputPath": "apps/remix/dist",
+        "generatePackageJson": false,
+        "skipTypeCheck": true,
+        "emptyOutDir": true
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "app-remix:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "app-remix:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "app-remix:build:production",
+          "hmr": false
+        }
+      }
+    }
+  }
+}

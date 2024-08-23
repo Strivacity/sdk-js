@@ -1,0 +1,52 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-vue",
+  "projectType": "application",
+  "sourceRoot": "apps/vue/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-vue:build"],
+      "options": {
+        "command": "vue-tsc --noEmit --moduleResolution node --project apps/vue/tsconfig.json"
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "dependsOn": ["type-check"],
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "development",
+      "options": {
+        "outputPath": "apps/vue/dist",
+        "generatePackageJson": false,
+        "skipTypeCheck": true,
+        "emptyOutDir": true
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "app-vue:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "app-vue:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "app-vue:build:production",
+          "hmr": false
+        }
+      }
+    }
+  }
+}

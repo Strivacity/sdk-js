@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "name": "@strivacity/app-react",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "strivacity <info@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-react": "*"
+  }
+}

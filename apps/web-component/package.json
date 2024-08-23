@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "name": "@strivacity/app-web-component",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "strivacity<info@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  }
+}

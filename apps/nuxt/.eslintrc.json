@@ -1,0 +1,4 @@
+{
+  "extends": ["../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*", "**/dist/*", "**/.nuxt/*", "**/.output/*", "**/node_modules/*"]
+}
