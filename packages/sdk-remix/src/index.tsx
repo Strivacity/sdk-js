@@ -13,6 +13,15 @@ const StrivacitySdk = createContext<PopupContext | RedirectContext>(null!);
 
 let sdk: RedirectFlow | PopupFlow;
 
+/**
+ * Hook to access the Strivacity SDK context
+ *
+ * @template T Extends either PopupContext or RedirectContext.
+ *
+ * @returns {T} The current Strivacity SDK context.
+ *
+ * @throws {Error} If the context is not provided by an AuthProvider.
+ */
 export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	const context = useContext(StrivacitySdk);
 
@@ -23,6 +32,14 @@ export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	return context as T;
 };
 
+/**
+ * Strivacity authentication provider component
+ *
+ * @param {SDKOptions} options - The SDK configuration options.
+ * @param {Children} [children] - The child components wrapped by the provider.
+ *
+ * @returns {JSX.Element} A provider that passes the Strivacity SDK context to its children.
+ */
 export const AuthProvider: FC<{ options: SDKOptions; children?: Children }> = ({
 	options,
 	children = undefined,

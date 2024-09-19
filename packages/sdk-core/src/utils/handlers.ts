@@ -2,6 +2,14 @@ import type { RedirectParams, ResponseMode, PopupWindowParams, PopupWindowFeatur
 
 let popupWindow: WindowProxy | null = null;
 
+/**
+ * Handles URL redirection to a target window using a specified location method.
+ *
+ * @param {URL} url The URL to redirect to.
+ * @param {RedirectParams} [options] Optional parameters for the redirection, including the target window and location method.
+ * @param {boolean} [shouldWait=true] Whether to wait for the previous action (default is true).
+ * @returns {Promise<void>} A promise that resolves when the redirection occurs.
+ */
 async function redirectUrlHandler(url: URL, options?: RedirectParams, shouldWait = true): Promise<void> {
 	const targetWindow = options?.targetWindow === 'top' ? window.top : window.self;
 	const method = options?.locationMethod || 'assign';
@@ -16,12 +24,27 @@ async function redirectUrlHandler(url: URL, options?: RedirectParams, shouldWait
 	}
 }
 
+/**
+ * Handles the callback after a redirect and parses the response from the URL.
+ *
+ * @param {string} [url=globalThis.window?.location.href] The URL to parse, defaults to the current window location.
+ * @param {ResponseMode} responseMode The response mode, either 'query' or 'fragment'.
+ * @returns {Record<string, string>} A key-value map of the parsed URL parameters.
+ */
 function redirectCallbackHandler(url: string = globalThis.window?.location.href, responseMode: ResponseMode): Record<string, string> {
 	const data = new URL(url)[responseMode === 'query' ? 'search' : 'hash'].slice(1);
 
 	return Object.fromEntries(new URLSearchParams(data));
 }
 
+/**
+ * Opens a popup window to handle URL redirection and resolves with the data received from the popup.
+ *
+ * @param {URL} url The URL to redirect to in the popup.
+ * @param {PopupWindowParams} [options] Optional parameters for the popup, including window features and target.
+ * @returns {Promise<Record<string, string>>} A promise that resolves to the data received from the popup window.
+ * @throws {Error} If the popup window is blocked or closed by the user.
+ */
 async function popupUrlHandler(url: URL, options?: PopupWindowParams): Promise<Record<string, string>> {
 	const disposables = new Set<() => void>();
 	const closeWindow = (): void => {
@@ -101,6 +124,11 @@ async function popupUrlHandler(url: URL, options?: PopupWindowParams): Promise<R
 	return data;
 }
 
+/**
+ * Handles the callback from a popup window, parsing the response parameters from the URL and posting them to the opener window.
+ *
+ * @param {ResponseMode} responseMode The response mode, either 'query' or 'fragment'.
+ */
 function popupCallbackHandler(responseMode: ResponseMode): void {
 	const args: Record<string, string> = {};
 

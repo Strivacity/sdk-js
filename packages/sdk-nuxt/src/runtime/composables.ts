@@ -27,6 +27,15 @@ const updateSession = async () => {
 	}
 };
 
+/**
+ * Retrieves the Strivacity SDK context for Popup or Redirect flows.
+ *
+ * @template T The type of context, either PopupContext or RedirectContext.
+ *
+ * @throws {Error} If the Strivacity SDK context is not found.
+ *
+ * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext.
+ */
 export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	if (!sdk) {
 		sdk = initFlow({ ...useRuntimeConfig().public.strivacity, storage: StorageClass });

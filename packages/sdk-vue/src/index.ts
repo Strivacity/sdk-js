@@ -11,8 +11,22 @@ export { LocalStorage, SessionStorage };
 
 const STRIVACITY_SDK = Symbol('sty');
 
+/**
+ * Checks if the user is authenticated.
+ *
+ * @returns {Promise<boolean>} A promise that resolves to `true` if the user is authenticated, otherwise `false`.
+ */
 export let isAuthenticated: () => Promise<boolean> = () => Promise.resolve(false);
 
+/**
+ * Retrieves the Strivacity SDK context for Popup or Redirect flows.
+ *
+ * @template T The type of context, either PopupContext or RedirectContext.
+ *
+ * @throws {Error} If the Strivacity SDK context is not found.
+ *
+ * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext.
+ */
 export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	const context = inject(STRIVACITY_SDK);
 
@@ -23,6 +37,13 @@ export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	return context as T;
 };
 
+/**
+ * Creates a Strivacity SDK plugin for Vue.
+ *
+ * @param {SDKOptions} options - The options used to configure the SDK.
+ *
+ * @returns {Plugin} A Vue plugin that can be installed in the application.
+ */
 export const createStrivacitySDK = (options: SDKOptions) => {
 	const sdk = initFlow(options);
 

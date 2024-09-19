@@ -6,14 +6,39 @@ import { type SDKOptions, initFlow } from '@strivacity/sdk-core';
 import type { Session } from '../utils/types';
 import { STRIVACITY_SDK } from '../utils/helpers';
 
+/**
+ * Service that manages Strivacity authentication flows.
+ * Supports either PopupFlow or RedirectFlow types.
+ *
+ * @template Flow Type of authentication flow (PopupFlow or RedirectFlow).
+ * @template Options Type of SDK options (defaults to SDKOptions).
+ */
 @Injectable({
 	providedIn: 'root',
 })
 export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = PopupFlow | RedirectFlow, Options extends SDKOptions = SDKOptions> {
+	/**
+	 * Instance of the authentication flow (PopupFlow or RedirectFlow).
+	 * @protected
+	 */
 	protected sdk: Flow;
+	/**
+	 * BehaviorSubject that holds the current session state.
+	 * @protected
+	 * @readonly
+	 */
 	private readonly sessionSubject: BehaviorSubject<Session>;
+	/**
+	 * Observable that emits the session state changes.
+	 * @readonly
+	 */
 	readonly session$: Observable<Session>;
 
+	/**
+	 * Creates an instance of StrivacityAuthService.
+	 *
+	 * @param {Options} options SDK configuration options injected via STRIVACITY_SDK.
+	 */
 	constructor(@Inject(STRIVACITY_SDK) public options: Options) {
 		this.sdk = initFlow(options) as Flow;
 		this.sessionSubject = new BehaviorSubject<Session>({
@@ -49,30 +74,69 @@ export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = Popup
 		this.sdk.subscribeToEvent('tokenRevokeFailed', updateSession);
 	}
 
+	/**
+	 * Checks if the user is authenticated.
+	 *
+	 * @returns {Observable<boolean>} An observable that emits the authentication status.
+	 */
 	isAuthenticated() {
 		return from(this.sdk.isAuthenticated);
 	}
 
+	/**
+	 * Logs the user in using the specified options.
+	 *
+	 * @param {Parameters<Flow['login']>[0]} [options] Options to customize the login behavior.
+	 * @returns {Observable<void>} An observable that completes when the login process is done.
+	 */
 	login(options?: Parameters<Flow['login']>[0]) {
 		return from(this.sdk.login(options));
 	}
 
+	/**
+	 * Registers a new user using the specified options.
+	 *
+	 * @param {Parameters<Flow['register']>[0]} [options] Options to customize the registration behavior.
+	 * @returns {Observable<void>} An observable that completes when the registration process is done.
+	 */
 	register(options?: Parameters<Flow['register']>[0]) {
 		return from(this.sdk.register(options));
 	}
 
+	/**
+	 * Refreshes the current authentication session.
+	 *
+	 * @returns {Observable<void>} An observable that completes when the session is refreshed.
+	 */
 	refresh() {
 		return from(this.sdk.refresh());
 	}
 
+	/**
+	 * Revokes the current session tokens.
+	 *
+	 * @returns {Observable<void>} An observable that completes when the tokens are revoked.
+	 */
 	revoke() {
 		return from(this.sdk.revoke());
 	}
 
+	/**
+	 * Logs the user out using the specified options.
+	 *
+	 * @param {Parameters<Flow['logout']>[0]} [options] Options to customize the logout behavior.
+	 * @returns {Observable<void>} An observable that completes when the logout process is done.
+	 */
 	logout(options?: Parameters<Flow['logout']>[0]) {
 		return from(this.sdk.logout(options));
 	}
 
+	/**
+	 * Handles the authentication callback (e.g., after a redirect or popup flow).
+	 *
+	 * @param {Parameters<Flow['handleCallback']>[0]} [url] The URL to handle for the callback.
+	 * @returns {Observable<void>} An observable that completes when the callback is handled.
+	 */
 	handleCallback(url?: Parameters<Flow['handleCallback']>[0]) {
 		return from(this.sdk.handleCallback(url));
 	}
