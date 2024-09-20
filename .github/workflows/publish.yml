@@ -19,9 +19,19 @@ jobs:
       - name: Install
         uses: ./.github/actions/setup
 
-      - name: Publish packages
+      - name: Build
+        run: pnpm build --configuration=production
+
+      - name: Configure
+        run: |
+          git config --global user.email "info@strivacity.com"
+          git config --global user.name "strivacity"
+          npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
         run: pnpm nx release publish
-        shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
