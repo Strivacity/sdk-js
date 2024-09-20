@@ -5,7 +5,6 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "pnpm exec simple-git-hooks",
-    "prepublishOnly": "nx run-many --target=build --projects=$(nx show projects | grep '^sdk-' | tr '\n' ',' | sed 's/,$//') --configuration=production",
     "build:all": "nx run-many --target=build",
     "build": "nx run-many --target=build --projects=$(nx show projects | grep '^sdk-' | tr '\n' ',' | sed 's/,$//')",
     "test": "nx run-many --target=test",
