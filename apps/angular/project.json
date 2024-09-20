@@ -1,0 +1,54 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-angular",
+  "projectType": "application",
+  "sourceRoot": "apps/angular/src",
+  "targets": {
+    "build": {
+      "builder": "",
+      "executor": "@angular-builders/custom-webpack:browser",
+      "dependsOn": ["sdk-angular:build"],
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "apps/angular/dist",
+        "deleteOutputPath": false,
+        "index": "apps/angular/src/index.html",
+        "main": "apps/angular/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/angular/tsconfig.json",
+        "customWebpackConfig": {
+          "path": "apps/angular/webpack.config.cjs"
+        }
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve": {
+      "executor": "@angular-builders/custom-webpack:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "app-angular:build:production"
+        },
+        "development": {
+          "buildTarget": "app-angular:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve-static": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "app-angular:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/angular/browser",
+        "spa": true
+      }
+    }
+  }
+}

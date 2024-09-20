@@ -1,0 +1,75 @@
+name: Test
+description: Test runner
+
+inputs:
+  target:
+    description: Test target script name
+    default: test
+  reporter:
+    description: Test reporter type
+    default: java-junit
+  test-report:
+    description: Test report glob
+    required: false
+  test-artifacts:
+    description: Test artifacts globs (multiline)
+    required: false
+  working-directory:
+    description: path to project directory
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Setup fonts
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.2
+      with:
+        packages: fonts-liberation fonts-roboto
+        version: 1.0
+
+    - name: Get target name
+      id: target
+      shell: bash
+      run: |
+        TARGET="${{ inputs.target }}"
+        TARGET_NAME="${TARGET//:/ }"
+        echo "target_name=$TARGET_NAME" >> $GITHUB_OUTPUT
+
+    - name: Run tests
+      id: test
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pnpm run ${{ inputs.target }} --configuration=ci
+
+    - name: Git check
+      uses: ./.github/actions/git-check
+
+    - name: Code Coverage Summary Report
+      uses: romeovs/lcov-reporter-action@v0.3.1
+      with:
+        lcov-file: ./coverages/sdk-core/lcov.info
+        delete-old-comments: true
+
+    - name: Test report
+      uses: dorny/test-reporter@v1.9.1
+      if: inputs.test-report && (success() || contains(fromJson('["success", "failure"]'), steps.test.outcome))
+      with:
+        name: Test report (${{ steps.target.outputs.target_name }})
+        path: ${{ inputs.working-directory }}/${{ inputs.test-report }}
+        reporter: ${{ inputs.reporter }}
+
+    - shell: bash
+      id: prefixed-test-artifacts
+      if: inputs.test-artifacts && (success() || failure())
+      run: |
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "test-artifacts<<$EOF" >> $GITHUB_OUTPUT
+        echo "${{ inputs.test-artifacts }}" | tr -s \\n | sed 's|^|${{ inputs.working-directory }}/|' >> $GITHUB_OUTPUT
+        echo "$EOF" >> $GITHUB_OUTPUT
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: inputs.test-artifacts && (success() || failure())
+      with:
+        name: Test results (${{ steps.target.outputs.target_name }})
+        path: ${{ steps.prefixed-test-artifacts.outputs.test-artifacts }}

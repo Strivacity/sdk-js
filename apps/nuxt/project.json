@@ -1,0 +1,6 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-nuxt",
+  "projectType": "application",
+  "sourceRoot": "apps/nuxt/src"
+}

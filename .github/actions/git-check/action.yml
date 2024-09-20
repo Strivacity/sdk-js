@@ -1,0 +1,15 @@
+name: Git check
+description: Git empty status check
+
+runs:
+  using: composite
+  steps:
+    - name: check for changes
+      id: change-check
+      run: test $(git status --porcelain | wc -c) -eq 0
+      shell: bash
+
+    - name: changes
+      if: failure() && steps.change-check.outcome == 'failure'
+      run: echo "Git empty status failed. Did you forget to generate something locally?"; git status --porcelain
+      shell: bash

@@ -1,0 +1,49 @@
+{
+  "name": "@strivacity/sdk-core",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Strivacity JavaScript SDK client",
+  "author": "strivacity <info@strivacity.com>",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./flows/*": {
+      "types": "./dist/flows/*.d.ts",
+      "import": "./dist/flows/*.mjs",
+      "require": "./dist/flows/*.cjs",
+      "default": "./dist/flows/*.mjs"
+    },
+    "./storages/*": {
+      "types": "./dist/storages/*.d.ts",
+      "import": "./dist/storages/*.mjs",
+      "require": "./dist/storages/*.cjs",
+      "default": "./dist/storages/*.mjs"
+    },
+    "./utils/*": {
+      "types": "./dist/utils/*.d.ts",
+      "import": "./dist/utils/*.mjs",
+      "require": "./dist/utils/*.cjs",
+      "default": "./dist/utils/*.mjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "flows/*": [
+        "./dist/flows/*"
+      ],
+      "storages/*": [
+        "./dist/storages/*"
+      ],
+      "utils/*": [
+        "./dist/utils/*"
+      ]
+    }
+  }
+}

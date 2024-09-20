@@ -1,0 +1,24 @@
+{
+  "name": "@strivacity/sdk-next",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Strivacity Next.js SDK client",
+  "author": "strivacity <info@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-core": "1.0.0"
+  },
+  "peerDependencies": {
+    "next": ">=13"
+  },
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
+  }
+}

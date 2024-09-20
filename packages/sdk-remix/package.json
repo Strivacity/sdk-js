@@ -1,0 +1,17 @@
+{
+  "name": "@strivacity/sdk-remix",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Strivacity Remix SDK client",
+  "author": "strivacity <info@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-core": "1.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts"
+}
