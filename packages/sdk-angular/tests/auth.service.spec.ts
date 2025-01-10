@@ -46,7 +46,7 @@ function spyOnObservable<T>(observable$: Observable<T>) {
 	const latestEmission = (): T => {
 		try {
 			return next.mock.calls.at(-1)![0] as T;
-		} catch (e) {
+		} catch {
 			throw new Error('expected next to have been called');
 		}
 	};

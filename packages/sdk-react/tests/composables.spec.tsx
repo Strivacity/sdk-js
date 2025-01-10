@@ -16,7 +16,6 @@ const options: SDKOptions = {
 	responseMode: 'query',
 };
 
-// eslint-disable-next-line react/display-name
 const AuthProviderWrapper = ({ children }: { children?: ReactNode }) => <AuthProvider options={options}>{children}</AuthProvider>;
 
 const flow = new RedirectFlow(options, new LocalStorage());
