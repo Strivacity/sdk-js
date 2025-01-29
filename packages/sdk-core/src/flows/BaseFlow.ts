@@ -104,7 +104,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 	 * @type {boolean}
 	 */
 	get accessTokenExpired(): boolean {
-		return !this.session?.expires_at || this.session.expires_at <= timestamp();
+		return !this.session?.access_token || !this.session?.expires_at || this.session.expires_at <= timestamp();
 	}
 
 	/**
@@ -135,7 +135,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 			} catch {}
 
 			setTimeout(() => {
-				resolve(!!this.session?.access_token || !!this.session?.refresh_token);
+				resolve(!this.accessTokenExpired);
 				this.isAuthPromise = null;
 			});
 		});
