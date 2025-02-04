@@ -21,12 +21,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Setup fonts
-      uses: awalsh128/cache-apt-pkgs-action@v1.4.2
-      with:
-        packages: fonts-liberation fonts-roboto
-        version: 1.0
-
     - name: Get target name
       id: target
       shell: bash
