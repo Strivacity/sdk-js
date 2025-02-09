@@ -1,6 +1,5 @@
 import { resolve } from 'node:path';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { vitePlugin as remixPlugin } from '@remix-run/dev';
 
 export default defineConfig({
@@ -8,6 +7,7 @@ export default defineConfig({
 	root: __dirname,
 	build: {
 		reportCompressedSize: true,
+		emptyOutDir: true,
 		commonjsOptions: {
 			transformMixedEsModules: true,
 		},
@@ -17,7 +17,7 @@ export default defineConfig({
 			'top-level-await': true,
 		},
 	},
-	plugins: [remixPlugin({ appDirectory: 'src' }), nxViteTsPaths()],
+	plugins: [remixPlugin({ appDirectory: 'src' })],
 	server: {
 		port: 4200,
 		host: 'localhost',

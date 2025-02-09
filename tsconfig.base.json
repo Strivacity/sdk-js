@@ -1,5 +1,4 @@
 {
-  "compileOnSave": false,
   "compilerOptions": {
     "rootDir": ".",
     "baseUrl": ".",
@@ -24,6 +23,5 @@
     "noEmit": true,
     "strict": true,
     "useUnknownInCatchVariables": false
-  },
-  "exclude": ["node_modules", "tmp", "**/*.spec.ts"]
+  }
 }

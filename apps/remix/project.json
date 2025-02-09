@@ -8,44 +8,40 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-remix:build"],
       "options": {
-        "command": "tsc --noEmit --moduleResolution node --project apps/remix/tsconfig.json"
+        "command": "tsc --noEmit --project apps/remix/tsconfig.app.json"
       }
     },
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-commands",
       "dependsOn": ["type-check"],
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{workspaceRoot}/apps/remix/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "outputPath": "apps/remix/dist",
-        "generatePackageJson": false,
-        "skipTypeCheck": true,
-        "emptyOutDir": true
+        "cwd": "apps/remix"
       },
       "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build"
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "command": "vite build"
         }
       }
     },
     "serve": {
-      "executor": "@nx/vite:dev-server",
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/remix/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "app-remix:build"
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "app-remix:build:development",
-          "hmr": true
-        },
-        "production": {
-          "buildTarget": "app-remix:build:production",
-          "hmr": false
-        }
+        "cwd": "apps/remix",
+        "command": "vite serve"
       }
     }
   }

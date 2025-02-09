@@ -1,6 +1,5 @@
 import { resolve } from 'node:path';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import vuePlugin from '@vitejs/plugin-vue';
 
 export default defineConfig({
@@ -8,6 +7,7 @@ export default defineConfig({
 	root: __dirname,
 	build: {
 		reportCompressedSize: true,
+		emptyOutDir: true,
 		commonjsOptions: {
 			transformMixedEsModules: true,
 		},
@@ -17,7 +17,7 @@ export default defineConfig({
 			'top-level-await': true,
 		},
 	},
-	plugins: [vuePlugin(), nxViteTsPaths()],
+	plugins: [vuePlugin()],
 	server: {
 		port: 4200,
 		host: 'localhost',
