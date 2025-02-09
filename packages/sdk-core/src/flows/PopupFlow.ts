@@ -56,9 +56,8 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupWindowParams> {
 
 	/**
 	 * Handles the callback after login or registration via a popup window.
-	 * @returns {Promise<void>} A promise that resolves when the callback is handled.
 	 */
-	async handleCallback(): Promise<void> {
+	handleCallback(): void {
 		popupCallbackHandler(this.options.responseMode || 'fragment');
 	}
 

@@ -22,7 +22,7 @@ export class CallbackPage {
 		this.subscription.add(
 			this.strivacityAuthService.handleCallback().subscribe({
 				next: () => {
-					this.router.navigateByUrl('/profile');
+					void this.router.navigateByUrl('/profile');
 				},
 			}),
 		);

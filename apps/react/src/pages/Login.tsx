@@ -7,6 +7,7 @@ export const Login = () => {
 	const { login } = useStrivacity();
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			await login();
 			navigate('/profile');

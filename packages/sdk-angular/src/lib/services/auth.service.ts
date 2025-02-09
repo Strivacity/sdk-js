@@ -138,6 +138,7 @@ export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = Popup
 	 * @returns {Observable<void>} An observable that completes when the callback is handled.
 	 */
 	handleCallback(url?: Parameters<Flow['handleCallback']>[0]) {
-		return from(this.sdk.handleCallback(url));
+		const result = this.sdk.handleCallback(url);
+		return from(result ? result : Promise.resolve());
 	}
 }

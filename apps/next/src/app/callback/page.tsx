@@ -10,6 +10,7 @@ export default function Callback() {
 	const { handleCallback } = useStrivacity();
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			await handleCallback();
 			router.push('/profile');

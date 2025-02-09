@@ -3,7 +3,7 @@ import { Session } from '../src/Session';
 import { timestamp } from '../src/utils/date';
 
 describe('Session', () => {
-	it('load', async () => {
+	it('load', () => {
 		const serializedSession: Session = {
 			state: 'state',
 			code: 'code',

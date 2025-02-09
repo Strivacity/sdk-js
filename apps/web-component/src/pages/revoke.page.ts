@@ -3,9 +3,13 @@ import { customElement } from 'lit/decorators.js';
 
 @customElement('page-revoke')
 export class RevokePage extends LitElement {
-	async connectedCallback(): Promise<void> {
+	connectedCallback() {
 		super.connectedCallback();
 
+		void this.init();
+	}
+
+	async init() {
 		try {
 			await globalThis.sdk.revoke();
 		} catch {

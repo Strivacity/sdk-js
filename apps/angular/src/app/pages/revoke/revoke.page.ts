@@ -19,7 +19,7 @@ export class RevokePage {
 	ngOnInit(): void {
 		this.strivacityAuthService.revoke().subscribe({
 			next: () => {
-				this.router.navigateByUrl('/');
+				void this.router.navigateByUrl('/');
 			},
 		});
 	}

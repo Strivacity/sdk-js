@@ -138,8 +138,8 @@ describe('PopupFlow', () => {
 		describe('isAuthenticated', () => {
 			it('should send back the same promise', async () => {
 				const { flow } = spyInitFlow(options);
-				const promise1 = flow.isAuthenticated;
-				const promise2 = flow.isAuthenticated;
+				const promise1 = await flow.isAuthenticated;
+				const promise2 = await flow.isAuthenticated;
 
 				expect(promise1).toEqual(promise2);
 			});

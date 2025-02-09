@@ -7,6 +7,7 @@ export const Revoke = () => {
 	const { revoke } = useStrivacity();
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
 				await revoke();

@@ -155,15 +155,15 @@ describe('useStrivacity', () => {
 		};
 
 		mount(
-			defineComponent(() => {
+			defineComponent(async () => {
 				const { login, register, refresh, revoke, logout, handleCallback } = useStrivacity();
 
-				login({ loginHint: 'login' });
-				register({ loginHint: 'register' });
-				refresh();
-				revoke();
-				logout({ postLogoutRedirectUri: 'uri' });
-				handleCallback();
+				await login({ loginHint: 'login' });
+				await register({ loginHint: 'register' });
+				await refresh();
+				await revoke();
+				await logout({ postLogoutRedirectUri: 'uri' });
+				await handleCallback();
 
 				expect(spies.login).toHaveBeenCalledWith({ loginHint: 'login' });
 				expect(spies.register).toHaveBeenCalledWith({ loginHint: 'register' });

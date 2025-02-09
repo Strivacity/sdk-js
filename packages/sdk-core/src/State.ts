@@ -49,7 +49,7 @@ export class State {
 		instance.codeChallenge = await Crypto.generateCodeChallenge(instance.codeVerifier);
 		instance.nonce = Crypto.generateNonce();
 
-		return instance as State;
+		return instance;
 	}
 
 	/**

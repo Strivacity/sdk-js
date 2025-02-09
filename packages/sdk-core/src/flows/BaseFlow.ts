@@ -126,7 +126,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 			return this.isAuthPromise;
 		}
 
-		// eslint-disable-next-line no-async-promise-executor
+		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/require-await, @typescript-eslint/no-misused-promises
 		this.isAuthPromise = new Promise(async (resolve) => {
 			try {
 				if (this.refreshToken && this.accessTokenExpired) {
@@ -179,7 +179,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 		}
 
 		this.httpClient = fetch.create({ retry: 0 });
-		this.options = options as Options;
+		this.options = options;
 		this.storage = storage;
 		this.metadata = new Metadata(`${options.issuer}/.well-known/openid-configuration`);
 		this.session = Session.load(this.storage.get(this.options.storageTokenName as string));
@@ -316,9 +316,9 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 			this.storage.delete(this.options.storageTokenName as string);
 
 			if (session?.refresh_token) {
-				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.refresh_token as string, tokenTypeHint: 'refresh_token' }]);
+				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.refresh_token, tokenTypeHint: 'refresh_token' }]);
 			} else if (session?.access_token) {
-				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.access_token as string, tokenTypeHint: 'access_token' }]);
+				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.access_token, tokenTypeHint: 'access_token' }]);
 			}
 		}
 	}

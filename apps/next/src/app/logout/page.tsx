@@ -9,6 +9,7 @@ export default function Logout() {
 	const { isAuthenticated, logout } = useStrivacity();
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (isAuthenticated) {
 				await logout();

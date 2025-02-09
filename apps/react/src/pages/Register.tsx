@@ -7,6 +7,7 @@ export const Register = () => {
 	const { register } = useStrivacity();
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			await register();
 			navigate('/profile');
