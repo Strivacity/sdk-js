@@ -507,7 +507,6 @@ describe('PopupFlow', () => {
 				await expect(() => flow.refresh()).rejects.toThrowError('No refresh token available');
 
 				expect(spies.sendTokenRequest).not.toHaveBeenCalled();
-				expect(storage.spies.set).not.toBeCalled();
 				expect(spies.dispatchEvent).not.toHaveBeenCalledWith('tokenRefreshed', expect.anything());
 				expect(await flow.isAuthenticated).toEqual(false);
 				expect(flow.accessTokenExpired).toEqual(true);

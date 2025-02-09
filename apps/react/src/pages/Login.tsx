@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-react';
 
 export const Login = () => {
@@ -10,7 +10,7 @@ export const Login = () => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			await login();
-			navigate('/profile');
+			await navigate('/profile');
 		})();
 	}, []);
 

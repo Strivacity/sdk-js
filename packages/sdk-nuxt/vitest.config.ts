@@ -13,9 +13,9 @@ export default defineVitestConfig({
 		},
 		reporters: ['verbose', 'junit'],
 		coverage: {
+			enabled: true,
 			provider: 'istanbul',
 			reporter: ['text', 'html', 'lcov'],
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
 			exclude: [...configDefaults.coverage.exclude!],
 			reportsDirectory: '../../coverages/sdk-nuxt',
 		},

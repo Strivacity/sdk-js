@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from '@remix-run/react';
+import { useNavigate } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Logout() {
@@ -12,7 +12,7 @@ export default function Logout() {
 			if (isAuthenticated) {
 				await logout();
 			} else {
-				navigate('/');
+				await navigate('/');
 			}
 		})();
 	}, []);

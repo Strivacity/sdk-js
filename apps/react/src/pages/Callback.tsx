@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-react';
 
 export const Callback = () => {
@@ -11,7 +11,7 @@ export const Callback = () => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			await handleCallback();
-			navigate('/profile');
+			await navigate('/profile');
 		})();
 	}, []);
 

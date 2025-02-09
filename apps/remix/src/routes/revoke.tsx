@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Revoke() {
@@ -13,7 +13,7 @@ export default function Revoke() {
 				await revoke();
 			} catch {
 			} finally {
-				navigate('/');
+				await navigate('/');
 			}
 		})();
 	}, []);
