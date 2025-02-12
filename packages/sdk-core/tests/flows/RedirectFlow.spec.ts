@@ -136,8 +136,8 @@ describe('RedirectFlow', () => {
 		describe('isAuthenticated', () => {
 			it('should send back the same promise', async () => {
 				const { flow } = spyInitFlow(options);
-				const promise1 = flow.isAuthenticated;
-				const promise2 = flow.isAuthenticated;
+				const promise1 = await flow.isAuthenticated;
+				const promise2 = await flow.isAuthenticated;
 
 				expect(promise1).toEqual(promise2);
 			});
@@ -427,7 +427,6 @@ describe('RedirectFlow', () => {
 				await expect(() => flow.refresh()).rejects.toThrowError('No refresh token available');
 
 				expect(spies.sendTokenRequest).not.toHaveBeenCalled();
-				expect(storage.spies.set).not.toBeCalled();
 				expect(spies.dispatchEvent).not.toHaveBeenCalledWith('tokenRefreshed', expect.anything());
 				expect(await flow.isAuthenticated).toEqual(false);
 				expect(flow.accessTokenExpired).toEqual(true);

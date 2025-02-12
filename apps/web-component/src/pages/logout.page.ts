@@ -3,9 +3,13 @@ import { customElement } from 'lit/decorators.js';
 
 @customElement('page-logout')
 export class LogoutPage extends LitElement {
-	async connectedCallback(): Promise<void> {
+	connectedCallback() {
 		super.connectedCallback();
 
+		void this.init();
+	}
+
+	async init() {
 		if (await globalThis.sdk.isAuthenticated) {
 			await globalThis.sdk.logout();
 		} else {

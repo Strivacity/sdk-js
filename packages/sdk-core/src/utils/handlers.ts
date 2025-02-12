@@ -101,7 +101,7 @@ async function popupUrlHandler(url: URL, options?: PopupWindowParams): Promise<R
 	popupWindow.location.replace(url);
 
 	const data = await new Promise<Record<string, string>>((resolve, reject) => {
-		const listener = async (event: MessageEvent<Record<string, string>>) => {
+		const listener = (event: MessageEvent<Record<string, string>>) => {
 			if (event.origin === window.location.origin && event.source === popupWindow && event.data) {
 				resolve(event.data);
 			}

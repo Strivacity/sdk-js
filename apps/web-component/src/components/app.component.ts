@@ -96,7 +96,7 @@ export class AppComponent extends LitElement {
 				this.isAuthenticated = await globalThis.sdk.isAuthenticated;
 
 				if (!this.isAuthenticated) {
-					this.router.goto('/login');
+					void this.router.goto('/login');
 				}
 
 				return this.isAuthenticated;
@@ -119,9 +119,13 @@ export class AppComponent extends LitElement {
 		},
 	]);
 
-	async connectedCallback(): Promise<void> {
+	connectedCallback() {
 		super.connectedCallback();
 
+		void this.init();
+	}
+
+	async init() {
 		this.isAuthenticated = await globalThis.sdk.isAuthenticated;
 
 		if (this.isAuthenticated) {

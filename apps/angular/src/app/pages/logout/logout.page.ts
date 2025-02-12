@@ -19,7 +19,7 @@ export class LogoutPage {
 	ngOnInit(): void {
 		this.strivacityAuthService.logout().subscribe({
 			next: () => {
-				this.router.navigateByUrl('/');
+				void this.router.navigateByUrl('/');
 			},
 		});
 	}

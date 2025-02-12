@@ -8,44 +8,40 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-core:build"],
       "options": {
-        "command": "tsc --noEmit --moduleResolution node --project apps/web-component/tsconfig.json"
+        "command": "tsc --noEmit --project apps/web-component/tsconfig.app.json"
       }
     },
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-commands",
       "dependsOn": ["type-check"],
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{workspaceRoot}/apps/web-component/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "outputPath": "apps/web-component/dist",
-        "generatePackageJson": false,
-        "skipTypeCheck": true,
-        "emptyOutDir": true
+        "cwd": "apps/web-component"
       },
       "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build"
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "command": "vite build"
         }
       }
     },
     "serve": {
-      "executor": "@nx/vite:dev-server",
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/web-component/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "app-web-component:build"
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "app-web-component:build:development",
-          "hmr": true
-        },
-        "production": {
-          "buildTarget": "app-web-component:build:production",
-          "hmr": false
-        }
+        "cwd": "apps/web-component",
+        "command": "vite serve"
       }
     }
   }

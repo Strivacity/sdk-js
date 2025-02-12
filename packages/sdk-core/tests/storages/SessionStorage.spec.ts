@@ -19,17 +19,17 @@ describe('SessionStorage', () => {
 		expect(expectedImports).toHaveProperty('SessionStorage');
 	});
 
-	it('getItem', async () => {
+	it('getItem', () => {
 		storage.get('test');
 		expect(getItemSpy).toHaveBeenCalledWith('test');
 	});
 
-	it('setItem', async () => {
+	it('setItem', () => {
 		storage.set('test', 'value');
 		expect(setItemSpy).toHaveBeenCalledWith('test', 'value');
 	});
 
-	it('setItem', async () => {
+	it('setItem', () => {
 		storage.delete('test');
 		expect(removeItemSpy).toHaveBeenCalledWith('test');
 	});

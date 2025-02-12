@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { type SDKOptions, AuthProvider, useStrivacity } from '@strivacity/sdk-react';
 import { App } from './components/App';
 import { Callback } from './pages/Callback';

@@ -26,11 +26,11 @@ describe('redirectUrlHandler', () => {
 });
 
 describe('redirectCallbackHandler', () => {
-	it('responseMode: query', async () => {
+	it('responseMode: query', () => {
 		expect(redirectCallbackHandler('https://brandtegrity.io?test=value#unused=fragment', 'query')).toEqual({ test: 'value' });
 	});
 
-	it('responseMode: fragment', async () => {
+	it('responseMode: fragment', () => {
 		expect(redirectCallbackHandler('https://brandtegrity.io?unused=query#test=value', 'fragment')).toEqual({ test: 'value' });
 	});
 });

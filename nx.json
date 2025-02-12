@@ -4,49 +4,32 @@
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
-      "!{projectRoot}/.eslintrc.json",
-      "!{projectRoot}/.stylelintrc.json",
+      "!{projectRoot}/.stylelintrc.js",
+      "!{projectRoot}/eslint.config.js",
+      "!{projectRoot}/prettier.config.js",
       "!{projectRoot}/**/*.spec.ts",
-      "!{projectRoot}/dist/**/*",
-      "!{projectRoot}/reports/**/*",
-      "!{projectRoot}/tsconfig.spec.json"
+      "!{projectRoot}/packages/*/dist/**/*",
+      "!{projectRoot}/packages/*/reports/**/*"
     ],
     "sharedGlobals": []
   },
   "targetDefaults": {
+    "compile": {
+      "cache": true
+    },
     "build": {
       "cache": true
+    },
+    "@nx/eslint:eslint": {
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/eslint.config.js"]
+    },
+    "stylelint": {
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/.stylelintrc.js"]
     }
   },
   "plugins": [
-    {
-      "plugin": "@nx/vite/plugin",
-      "options": {
-        "buildTargetName": "build",
-        "testTargetName": "test",
-        "serveTargetName": "serve",
-        "previewTargetName": "preview",
-        "serveStaticTargetName": "serve-static"
-      }
-    },
-    {
-      "plugin": "@nx/next/plugin",
-      "options": {
-        "buildTargetName": "build",
-        "startTargetName": "start",
-        "devTargetName": "serve",
-        "serveStaticTargetName": "serve-static"
-      }
-    },
-    {
-      "plugin": "@nx/nuxt/plugin",
-      "options": {
-        "buildTargetName": "build-ssr",
-        "serveTargetName": "serve",
-        "buildStaticTargetName": "build",
-        "serveStaticTargetName": "serve-static"
-      }
-    },
     {
       "plugin": "@nx/eslint/plugin",
       "options": {
@@ -65,7 +48,15 @@
     "projects": ["*", "!app-*", "!vitest"],
     "projectsRelationship": "independent",
     "version": {
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "generatorOptions": {
+        "fallbackCurrentVersionResolver": "disk"
+      },
+      "git": {
+        "tag": true,
+        "commit": true,
+        "push": true
+      }
     },
     "changelog": {
       "workspaceChangelog": false,
@@ -73,11 +64,12 @@
         "renderOptions": {
           "authors": false
         }
+      },
+      "git": {
+        "tag": true,
+        "commit": true,
+        "push": true
       }
-    },
-    "git": {
-      "commit": true,
-      "tag": true
     }
   }
 }

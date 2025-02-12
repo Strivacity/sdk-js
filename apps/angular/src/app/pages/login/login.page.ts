@@ -19,7 +19,7 @@ export class LoginPage {
 	ngOnInit(): void {
 		this.strivacityAuthService.login().subscribe({
 			next: () => {
-				this.router.navigateByUrl('/profile');
+				void this.router.navigateByUrl('/profile');
 			},
 		});
 	}

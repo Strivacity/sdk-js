@@ -16,7 +16,6 @@ const options: SDKOptions = {
 	responseMode: 'query',
 };
 
-// eslint-disable-next-line react/display-name
 const AuthProviderWrapper = ({ children }: { children?: ReactNode }) => <AuthProvider options={options}>{children}</AuthProvider>;
 
 const flow = new RedirectFlow(options, new LocalStorage());
@@ -97,8 +96,8 @@ describe('useStrivacity', () => {
 		const accessTokenExpirationDate = timestamp() + 3600;
 		const { result } = renderHook(useStrivacity, { wrapper: AuthProviderWrapper });
 
-		// expect(result.current.loading).toBeTruthy();
-		await waitFor(() => !flow.isAuthenticated);
+		expect(result.current.loading).toBeTruthy();
+		await waitFor(async () => !(await flow.isAuthenticated));
 		expect(result.current.idTokenClaims).toBeNull();
 		expect(result.current.accessToken).toBeNull();
 		expect(result.current.refreshToken).toBeNull();
@@ -135,14 +134,14 @@ describe('useStrivacity', () => {
 		};
 		const { result } = renderHook(useStrivacity, { wrapper: AuthProviderWrapper });
 
-		await waitFor(() => !flow.isAuthenticated);
+		await waitFor(async () => !(await flow.isAuthenticated));
 
-		result.current.login({ loginHint: 'login' });
-		result.current.register({ loginHint: 'register' });
-		result.current.refresh();
-		result.current.revoke();
-		result.current.logout({ postLogoutRedirectUri: 'uri' });
-		result.current.handleCallback();
+		await result.current.login({ loginHint: 'login' });
+		await result.current.register({ loginHint: 'register' });
+		await result.current.refresh();
+		await result.current.revoke();
+		await result.current.logout({ postLogoutRedirectUri: 'uri' });
+		await result.current.handleCallback();
 
 		expect(spies.login).toHaveBeenCalledWith({ loginHint: 'login' });
 		expect(spies.register).toHaveBeenCalledWith({ loginHint: 'register' });

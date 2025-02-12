@@ -16,7 +16,7 @@ function decode<R = JwtClaims>(token: string): R {
 		throw Error('Invalid JWT');
 	}
 
-	return JSON.parse(Base64Url.decodeUnicode(sections[1]));
+	return JSON.parse(Base64Url.decodeUnicode(sections[1])) as R;
 }
 
 /**

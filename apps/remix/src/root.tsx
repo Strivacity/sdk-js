@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter } from 'react-router';
 import { Link } from '@remix-run/react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { type SDKOptions, AuthProvider, useStrivacity } from '@strivacity/sdk-remix';
@@ -69,11 +70,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<div id="app">
 					<ClientOnly>
 						{() => (
-							<AuthProvider options={options}>
-								<AppHeader></AppHeader>
-								{children}
-								<ScrollRestoration />
-							</AuthProvider>
+							<BrowserRouter>
+								<AuthProvider options={options}>
+									<AppHeader></AppHeader>
+									{children}
+									<ScrollRestoration />
+								</AuthProvider>
+							</BrowserRouter>
 						)}
 					</ClientOnly>
 				</div>

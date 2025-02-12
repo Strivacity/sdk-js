@@ -1,8 +1,7 @@
 src/
 tests/
-.eslintrc.json
 .npmignore
-.stylelintrc.json
+.stylelintrc.js
 *.config.*js
 *.config.*ts
 project.json

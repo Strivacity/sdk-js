@@ -34,7 +34,7 @@ Object.defineProperty(flow, 'accessTokenExpirationDate', { get: accessTokenExpir
 vi.mock('@strivacity/sdk-core', () => ({ initFlow: vi.fn() }));
 vi.mocked(initFlow).mockReturnValue(flow);
 
-describe('useStrivacity', async () => {
+describe('useStrivacity', () => {
 	afterEach(() => {
 		subscribeToEventSpy.mockClear();
 		isAuthenticatedMock.mockClear();
@@ -45,7 +45,7 @@ describe('useStrivacity', async () => {
 		accessTokenExpirationDateMock.mockClear();
 	});
 
-	it('should create and provide sdk instance correctly', async () => {
+	it('should create and provide sdk instance correctly', () => {
 		const context = useStrivacity();
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { storage, storageTokenName, ...callOptions } = options;
@@ -112,7 +112,7 @@ describe('useStrivacity', async () => {
 		expect(context.accessTokenExpirationDate.value).toEqual(accessTokenExpirationDate);
 	});
 
-	it('should call sdk functions correctly', () => {
+	it('should call sdk functions correctly', async () => {
 		const spies = {
 			login: vi.spyOn(flow, 'login').mockReturnValue(Promise.resolve()),
 			register: vi.spyOn(flow, 'register').mockReturnValue(Promise.resolve()),
@@ -123,12 +123,12 @@ describe('useStrivacity', async () => {
 		};
 		const { login, register, refresh, revoke, logout, handleCallback } = useStrivacity();
 
-		login({ loginHint: 'login' });
-		register({ loginHint: 'register' });
-		refresh();
-		revoke();
-		logout({ postLogoutRedirectUri: 'uri' });
-		handleCallback();
+		await login({ loginHint: 'login' });
+		await register({ loginHint: 'register' });
+		await refresh();
+		await revoke();
+		await logout({ postLogoutRedirectUri: 'uri' });
+		await handleCallback();
 
 		expect(spies.login).toHaveBeenCalledWith({ loginHint: 'login' });
 		expect(spies.register).toHaveBeenCalledWith({ loginHint: 'register' });

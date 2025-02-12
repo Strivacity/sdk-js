@@ -7,56 +7,39 @@
     "type-check": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit --project packages/sdk-core/tsconfig.json"
-      }
-    },
-    "compile": {
-      "executor": "@nx/vite:build",
-      "dependsOn": ["type-check"],
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "development",
-      "options": {
-        "outputPath": "packages/sdk-core/dist",
-        "generatePackageJson": false
-      },
-      "configurations": {
-        "serve": {
-          "mode": "development",
-          "watch": true
-        },
-        "development": {
-          "mode": "development"
-        },
-        "production": {
-          "mode": "production"
-        }
+        "command": "tsc --noEmit --project packages/sdk-core/tsconfig.app.json"
       }
     },
     "build": {
       "executor": "nx:run-commands",
-      "dependsOn": ["compile"],
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/packages/sdk-core/dist"],
+      "defaultConfiguration": "development",
       "options": {
-        "commands": [
-          {
-            "command": "rm -f ./packages/sdk-core/dist/package.json",
-            "forwardAllArgs": false
-          }
-        ]
+        "cwd": "packages/sdk-core"
       },
       "configurations": {
         "serve": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build --watch"
         },
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build"
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "command": "vite build"
         }
       }
     },
     "test": {
-      "dependsOn": ["build"]
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "packages/sdk-core",
+        "command": "vitest"
+      }
     }
   }
 }

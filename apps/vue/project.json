@@ -8,44 +8,40 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-vue:build"],
       "options": {
-        "command": "vue-tsc --noEmit --moduleResolution node --project apps/vue/tsconfig.json"
+        "command": "vue-tsc --noEmit --project apps/vue/tsconfig.app.json"
       }
     },
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-commands",
       "dependsOn": ["type-check"],
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{workspaceRoot}/apps/vue/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "outputPath": "apps/vue/dist",
-        "generatePackageJson": false,
-        "skipTypeCheck": true,
-        "emptyOutDir": true
+        "cwd": "apps/vue"
       },
       "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build"
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "command": "vite build"
         }
       }
     },
     "serve": {
-      "executor": "@nx/vite:dev-server",
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/vue/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "app-vue:build"
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "app-vue:build:development",
-          "hmr": true
-        },
-        "production": {
-          "buildTarget": "app-vue:build:production",
-          "hmr": false
-        }
+        "cwd": "apps/vue",
+        "command": "vite serve"
       }
     }
   }

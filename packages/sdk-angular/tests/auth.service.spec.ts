@@ -1,6 +1,7 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, Observable } from 'rxjs';
-import { vi, describe, beforeEach, afterEach, it, expect, Mock } from 'vitest';
+import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import { initFlow } from '@strivacity/sdk-core';
 import { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
 import { timestamp } from '@strivacity/sdk-core/utils/date';
@@ -46,7 +47,7 @@ function spyOnObservable<T>(observable$: Observable<T>) {
 	const latestEmission = (): T => {
 		try {
 			return next.mock.calls.at(-1)![0] as T;
-		} catch (e) {
+		} catch {
 			throw new Error('expected next to have been called');
 		}
 	};
@@ -93,7 +94,7 @@ describe('StrivacityAuthService', () => {
 		});
 	});
 
-	it('should create and provide sdk instance correctly', async () => {
+	it('should create and provide sdk instance correctly', () => {
 		expect(initFlow).toHaveBeenCalledWith(options);
 
 		const { latestEmission } = spyOnObservable(service.session$);

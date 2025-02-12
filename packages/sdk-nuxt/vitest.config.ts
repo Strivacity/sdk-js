@@ -13,6 +13,7 @@ export default defineVitestConfig({
 		},
 		reporters: ['verbose', 'junit'],
 		coverage: {
+			enabled: true,
 			provider: 'istanbul',
 			reporter: ['text', 'html', 'lcov'],
 			exclude: [...configDefaults.coverage.exclude!],

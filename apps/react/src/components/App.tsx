@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-react';
 import './App.css';
 

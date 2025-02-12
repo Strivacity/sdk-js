@@ -6,9 +6,13 @@ import { state } from 'lit/decorators/state.js';
 export class CallbackPage extends LitElement {
 	@state() query = Object.fromEntries(new URLSearchParams(globalThis.window.location.search));
 
-	async connectedCallback(): Promise<void> {
+	connectedCallback() {
 		super.connectedCallback();
 
+		void this.init();
+	}
+
+	async init() {
 		try {
 			await globalThis.sdk.handleCallback();
 			location.href = '/profile';

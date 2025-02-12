@@ -8,44 +8,40 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-react:build"],
       "options": {
-        "command": "tsc --noEmit --moduleResolution node --project apps/react/tsconfig.json"
+        "command": "tsc --noEmit --project apps/react/tsconfig.app.json"
       }
     },
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "nx:run-commands",
       "dependsOn": ["type-check"],
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{workspaceRoot}/apps/react/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "outputPath": "apps/react/dist",
-        "generatePackageJson": false,
-        "skipTypeCheck": true,
-        "emptyOutDir": true
+        "cwd": "apps/react"
       },
       "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "command": "vite build"
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "command": "vite build"
         }
       }
     },
     "serve": {
-      "executor": "@nx/vite:dev-server",
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/react/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "app-react:build"
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "app-react:build:development",
-          "hmr": true
-        },
-        "production": {
-          "buildTarget": "app-react:build:production",
-          "hmr": false
-        }
+        "cwd": "apps/react",
+        "command": "vite serve"
       }
     }
   }
