@@ -7,6 +7,7 @@
 .nx/
 .output/
 .pnpm-store/
+apps/remix/build/
 out/
 out-tsc/
 coverages/

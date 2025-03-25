@@ -126,7 +126,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerOptions ext
 			return this.isAuthPromise;
 		}
 
-		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/require-await, @typescript-eslint/no-misused-promises
+		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
 		this.isAuthPromise = new Promise(async (resolve) => {
 			try {
 				if (this.refreshToken && this.accessTokenExpired) {
