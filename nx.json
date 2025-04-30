@@ -17,9 +17,6 @@
     "compile": {
       "cache": true
     },
-    "build": {
-      "cache": true
-    },
     "@nx/eslint:eslint": {
       "cache": true,
       "inputs": ["default", "{workspaceRoot}/eslint.config.js"]
@@ -47,15 +44,11 @@
   "release": {
     "projects": ["*", "!app-*", "!vitest"],
     "projectsRelationship": "independent",
+    "releaseTagPattern": "@strivacity/{projectName}@{version}",
     "version": {
       "conventionalCommits": true,
       "generatorOptions": {
         "fallbackCurrentVersionResolver": "disk"
-      },
-      "git": {
-        "tag": true,
-        "commit": true,
-        "push": true
       }
     },
     "changelog": {
@@ -64,12 +57,12 @@
         "renderOptions": {
           "authors": false
         }
-      },
-      "git": {
-        "tag": true,
-        "commit": true,
-        "push": true
       }
+    },
+    "git": {
+      "tag": true,
+      "commit": true,
+      "push": true
     }
   }
 }
