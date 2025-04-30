@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed } from 'vue';
 import { useStrivacity } from '@strivacity/sdk-vue';
 
 const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-const name = computed(() => `${idTokenClaims.value?.given_name} ${idTokenClaims.value?.family_name}`);
+const name = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`);
 </script>
 
 <template>
@@ -20,8 +20,8 @@ const name = computed(() => `${idTokenClaims.value?.given_name} ${idTokenClaims.
 				<router-link to="/logout" data-button="logout">Logout</router-link>
 			</template>
 			<template v-else>
-				<router-link to="/login" data-button="login">Login</router-link>
-				<router-link to="/register" data-button="register">Register</router-link>
+				<a href="/login" data-button="login">Login</a>
+				<a href="/register" data-button="register">Register</a>
 			</template>
 		</div>
 	</header>

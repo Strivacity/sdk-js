@@ -12,7 +12,7 @@ export default function Logout() {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (isAuthenticated) {
-				await logout();
+				await logout({ postLogoutRedirectUri: location.origin });
 			} else {
 				router.push('/');
 			}

@@ -1,12 +1,16 @@
 import { type App, inject, ref } from 'vue';
-import { initFlow, type SDKOptions, type SDKStorage, type IdTokenClaims } from '@strivacity/sdk-core';
+import { initFlow, type IdTokenClaims, type SDKOptions } from '@strivacity/sdk-core';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
+import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 import { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 import { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
-import type { Session, PopupContext, PopupSDK, RedirectContext, RedirectSDK } from './types';
+import LoginRendererComponent from './components/login-renderer.vue';
+import type { PopupContext, RedirectContext, NativeContext } from './types';
 
-export type { SDKOptions, SDKStorage, Session, IdTokenClaims, PopupFlow, RedirectFlow, PopupContext, RedirectContext, PopupSDK, RedirectSDK };
+export * from '@strivacity/sdk-core';
+export type * from './types';
+export type { PopupFlow, RedirectFlow, NativeFlow };
 export { LocalStorage, SessionStorage };
 
 const STRIVACITY_SDK = Symbol('sty');
@@ -21,17 +25,17 @@ export let isAuthenticated: () => Promise<boolean> = () => Promise.resolve(false
 /**
  * Retrieves the Strivacity SDK context for Popup or Redirect flows.
  *
- * @template T The type of context, either PopupContext or RedirectContext.
+ * @template T The type of context, either PopupContext, RedirectContext or NativeContext.
  *
  * @throws {Error} If the Strivacity SDK context is not found.
  *
- * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext.
+ * @returns {T} The Strivacity SDK context, typed as either PopupContext, RedirectContext or NativeContext.
  */
-export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
+export const useStrivacity = <T extends PopupContext | RedirectContext | NativeContext>() => {
 	const context = inject(STRIVACITY_SDK);
 
 	if (!context) {
-		throw Error('Missing Strivacity SDK context');
+		throw new Error('Missing Strivacity SDK context');
 	}
 
 	return context as T;
@@ -50,6 +54,7 @@ export const createStrivacitySDK = (options: SDKOptions) => {
 	const plugin = {
 		install: (app: App) => {
 			const loadingRef = ref<boolean>(true);
+			const optionsRef = ref<SDKOptions>(sdk.options);
 			const isAuthenticatedRef = ref<boolean>(false);
 			const idTokenClaimsRef = ref<IdTokenClaims | null>(null);
 			const accessTokenRef = ref<string | null>(null);
@@ -81,8 +86,11 @@ export const createStrivacitySDK = (options: SDKOptions) => {
 			sdk.subscribeToEvent('tokenRevoked', updateSession);
 			sdk.subscribeToEvent('tokenRevokeFailed', updateSession);
 
+			app.component('StyLoginRenderer', LoginRendererComponent);
 			app.provide(STRIVACITY_SDK, {
+				sdk: sdk,
 				loading: loadingRef,
+				options: optionsRef,
 				isAuthenticated: isAuthenticatedRef,
 				idTokenClaims: idTokenClaimsRef,
 				accessToken: accessTokenRef,
@@ -90,12 +98,22 @@ export const createStrivacitySDK = (options: SDKOptions) => {
 				accessTokenExpired: accessTokenExpiredRef,
 				accessTokenExpirationDate: accessTokenExpirationDateRef,
 
-				login: async (options?: Parameters<PopupFlow['login'] | RedirectFlow['login']>[0]) => {
+				login: async (options?: Parameters<PopupFlow['login'] | RedirectFlow['login'] | NativeFlow['login']>[0]) => {
+					if (sdk.options.mode === 'native') {
+						return sdk.login(options);
+					}
+
 					await sdk.login(options);
+
 					await updateSession();
 				},
-				register: async (options?: Parameters<PopupFlow['register'] | RedirectFlow['register']>[0]) => {
+				register: async (options?: Parameters<PopupFlow['register'] | RedirectFlow['register'] | NativeFlow['register']>[0]) => {
+					if (sdk.options.mode === 'native') {
+						return sdk.register(options);
+					}
+
 					await sdk.register(options);
+
 					await updateSession();
 				},
 				refresh: async () => {
@@ -110,7 +128,7 @@ export const createStrivacitySDK = (options: SDKOptions) => {
 					await sdk.logout(options);
 					await updateSession();
 				},
-				handleCallback: async (url?: Parameters<PopupFlow['handleCallback'] | RedirectFlow['handleCallback']>[0]) => {
+				handleCallback: async (url?: Parameters<PopupFlow['handleCallback'] | RedirectFlow['handleCallback'] | NativeFlow['handleCallback']>[0]) => {
 					await sdk.handleCallback(url);
 					await updateSession();
 				},

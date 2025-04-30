@@ -1,3 +1,5 @@
+import 'urlpattern-polyfill';
+
 import './components/app.component';
 import './pages/callback.page';
 import './pages/index.page';

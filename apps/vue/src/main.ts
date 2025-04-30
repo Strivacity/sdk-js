@@ -5,7 +5,7 @@ import AppComponent from './components/app.component.vue';
 
 const app = createApp(AppComponent);
 const sdk = createStrivacitySDK({
-	mode: 'redirect',
+	mode: 'native',
 	issuer: import.meta.env.VITE_ISSUER,
 	scopes: import.meta.env.VITE_SCOPES.split(' '),
 	clientId: import.meta.env.VITE_CLIENT_ID,

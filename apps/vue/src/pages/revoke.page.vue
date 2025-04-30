@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStrivacity } from '@strivacity/sdk-vue';

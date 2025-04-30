@@ -925,4 +925,205 @@ export type PopupParams = ExtraRequestArgs & {
 	popupWindowTarget?: string;
 };
 
+/**
+ * Parameters for native authentication flow.
+ */
+export type NativeParams = RedirectParams;
+
+export declare const WidgetTypeList: readonly [
+	'layout',
+	'submit',
+	'static',
+	'input',
+	'checkbox',
+	'password',
+	'select',
+	'multiSelect',
+	'passcode',
+	'date',
+	'phone',
+	'loading',
+];
+export type WidgetType = (typeof WidgetTypeList)[number];
+export declare const SelectOptionTypeList: readonly ['item', 'group'];
+export type SelectOptionType = (typeof SelectOptionTypeList)[number];
+export type BrandingData = {
+	logoUrl: string | null;
+	brandName: string | null;
+	copyright: string | null;
+	privacyPolicyUrl: string | null;
+	siteTermsUrl: string | null;
+};
+export type CheckboxWidget = {
+	id: string;
+	type: 'checkbox';
+	label?: string;
+	readonly?: boolean;
+	value?: boolean;
+	render: {
+		type: 'checkBoxHidden' | 'checkBoxShown';
+	};
+	validator?: {
+		required?: boolean;
+	};
+};
+export type DateWidget = {
+	id: string;
+	type: 'date';
+	label?: string;
+	placeholder?: string;
+	readonly?: boolean;
+	value?: string;
+	render: {
+		type: 'native' | 'fieldSet';
+	};
+	validator?: {
+		notBefore?: string;
+		notAfter?: string;
+		required?: boolean;
+	};
+};
+export type InputWidget = {
+	id: string;
+	type: 'input';
+	label?: string;
+	value?: string;
+	placeholder?: string;
+	readonly?: boolean;
+	autocomplete?: string;
+	inputmode: any;
+	validator?: {
+		required?: boolean;
+		minLength?: number;
+		maxLength?: number;
+		regex?: string;
+	};
+};
+export type PasscodeWidget = {
+	id: string;
+	type: 'passcode';
+	label?: string;
+	validator?: {
+		length?: number;
+	};
+};
+export type PasswordWidget = {
+	id: string;
+	type: 'password';
+	label?: string;
+	qualityIndicator?: boolean;
+	validator?: {
+		minLength?: number;
+		maxLength?: number;
+		maxNumericCharacterSequences?: number;
+		maxRepeatedCharacters?: number;
+		mustContain?: Array<'UPPERCASE' | 'LOWERCASE' | 'NUMERIC' | 'SPECIAL'>;
+		restrictedCharacters?: string;
+	};
+};
+export type PhoneWidget = {
+	id: string;
+	type: 'phone';
+	label?: string;
+	readonly?: boolean;
+	value?: string;
+	validator?: {
+		required?: boolean;
+	};
+};
+export type SelectWidgetOption = {
+	type: 'item';
+	label?: string;
+	value: string;
+};
+export type SelectWidgetOptionGroup = {
+	type: 'group';
+	label?: string;
+	options: Array<SelectWidgetOption>;
+};
+export type SelectWidget = {
+	id: string;
+	type: 'select';
+	label?: string;
+	readonly?: boolean;
+	values?: Array<string>;
+	placeholder?: string;
+	render: {
+		type: 'dropdown' | 'radio';
+	};
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		required?: boolean;
+	};
+};
+export type MultiSelectWidget = {
+	id: string;
+	type: 'multiSelect';
+	label?: string;
+	readonly?: boolean;
+	values?: Array<string>;
+	placeholder?: string;
+	render: {
+		type: 'dropdown' | 'checkbox';
+	};
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		minSelectable?: number;
+		maxSelectable?: number;
+	};
+};
+export type StaticWidget = {
+	id: string;
+	type: 'static';
+	value: string;
+	render: {
+		type: 'html' | 'text';
+	};
+};
+export type SubmitWidget = {
+	id: string;
+	type: 'submit';
+	label?: string;
+	render: {
+		type: 'button' | 'link';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
+export type FormWidget = {
+	id: string;
+	type: 'form';
+	widgets: Array<
+		CheckboxWidget | DateWidget | InputWidget | PasscodeWidget | PasswordWidget | PhoneWidget | SelectWidget | MultiSelectWidget | StaticWidget | SubmitWidget
+	>;
+};
+export type Widget = {
+	type: 'widget';
+	formId: string;
+	widgetId: string;
+};
+export type LayoutWidget = {
+	type: 'vertical' | 'horizontal';
+	items: Array<Widget | LayoutWidget>;
+};
+export type LoginFlowMessage = {
+	type: string;
+	text: string;
+};
+export type LoginFlowState = {
+	hostedUrl?: string;
+	finalizeUrl?: string;
+	screen?: string;
+	branding?: BrandingData;
+	forms?: Array<FormWidget>;
+	layout?: LayoutWidget;
+	messages?: Record<string, Record<string, LoginFlowMessage>> & {
+		global?: LoginFlowMessage;
+	};
+};
+
 // endregion

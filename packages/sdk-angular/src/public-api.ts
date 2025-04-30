@@ -1,6 +1,7 @@
 export type { SDKOptions, SDKStorage, IdTokenClaims } from '@strivacity/sdk-core';
 export type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 export type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
+export type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 export type { Session } from './lib/utils/types';
 
 export { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
