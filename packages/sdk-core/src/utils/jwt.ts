@@ -13,7 +13,7 @@ function decode<R = JwtClaims>(token: string): R {
 	const sections = token.split('.');
 
 	if (sections.length !== 3) {
-		throw Error('Invalid JWT');
+		throw new Error('Invalid JWT');
 	}
 
 	return JSON.parse(Base64Url.decodeUnicode(sections[1])) as R;

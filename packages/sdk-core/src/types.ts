@@ -512,7 +512,7 @@ export type SDKOptions = {
 	 * @type {'popup' | 'redirect'}
 	 * @default 'redirect'
 	 */
-	mode?: 'popup' | 'redirect';
+	mode?: 'popup' | 'redirect' | 'native';
 
 	/**
 	 * The issuer of the tokens, typically the URL of the authorization server.
@@ -766,9 +766,9 @@ export type ExtraRequestArgs = {
 };
 
 /**
- * Options for configuring logout behavior.
+ * Params for configuring logout behavior.
  */
-export type LogoutOptions = {
+export type LogoutParams = {
 	/**
 	 * The URI to redirect to after a successful logout.
 	 *
@@ -779,26 +779,6 @@ export type LogoutOptions = {
 	 * @example 'https://example.com/home'
 	 */
 	postLogoutRedirectUri?: string;
-};
-
-/**
- * List of select option types.
- */
-export const SelectOptionTypeList = ['item', 'group'] as const;
-/**
- * Type representing valid select option types.
- */
-export type SelectOptionType = (typeof SelectOptionTypeList)[number];
-
-/**
- * Data for branding purposes, such as logo and brand name.
- */
-export type BrandingData = {
-	logoUrl: string | null;
-	brandName: string | null;
-	copyright: string | null;
-	privacyPolicyUrl: string | null;
-	siteTermsUrl: string | null;
 };
 
 /**
@@ -928,7 +908,7 @@ export type PopupWindowFeatures = {
 /**
  * Parameters for popup authentication flow.
  */
-export type PopupWindowParams = ExtraRequestArgs & {
+export type PopupParams = ExtraRequestArgs & {
 	/**
 	 * Configuration options for the popup window, including size, position, and other features.
 	 *

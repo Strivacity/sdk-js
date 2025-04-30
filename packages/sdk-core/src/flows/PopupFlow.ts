@@ -1,4 +1,4 @@
-import type { SDKOptions, PopupWindowParams } from '../types';
+import type { SDKOptions, PopupParams } from '../types';
 import { popupCallbackHandler, popupUrlHandler } from '../utils/handlers';
 import { isBrowser } from '../utils/constants';
 import { State } from '../State';
@@ -7,19 +7,19 @@ import { BaseFlow } from './BaseFlow';
 /**
  * Implements the Popup flow for authentication using a popup window.
  */
-export class PopupFlow extends BaseFlow<SDKOptions, PopupWindowParams> {
+export class PopupFlow extends BaseFlow<SDKOptions, PopupParams> {
 	/**
 	 * Initiates the login process via a popup window.
-	 * @param {PopupWindowParams} [options={}] Optional parameters for popup window configuration.
+	 * @param {PopupParams} [params={}] Optional parameters for popup window configuration.
 	 * @returns {Promise<void>} A promise that resolves when the login process completes.
 	 */
-	async login(options: PopupWindowParams = {}): Promise<void> {
+	async login(params: PopupParams = {}): Promise<void> {
 		if (!isBrowser) {
 			return;
 		}
 
 		const state = await State.create();
-		const url = await this.getAuthorizationUrl(options);
+		const url = await this.getAuthorizationUrl(params);
 
 		url.searchParams.append('state', state.id);
 		url.searchParams.append('code_challenge', state.codeChallenge);
@@ -30,28 +30,20 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupWindowParams> {
 
 		this.dispatchEvent('loginInitiated', []);
 
-		const data = await this.urlHandler(url, options);
+		const data = await this.urlHandler(url, params);
 
-		await this.exchangeCodeForTokens(data);
-
-		if (this.accessToken && this.idTokenClaims) {
-			this.dispatchEvent('loggedIn', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
-		}
+		await this.tokenExchange(data);
 	}
 
 	/**
 	 * Initiates the registration process via a popup window.
-	 * @param {PopupWindowParams} [options={}] Optional parameters for popup window configuration.
+	 * @param {PopupParams} [params={}] Optional parameters for popup window configuration.
 	 * @returns {Promise<void>} A promise that resolves when the registration process completes.
 	 */
-	async register(options: PopupWindowParams = {}): Promise<void> {
-		if (!isBrowser) {
-			return;
-		}
+	async register(params: PopupParams = {}): Promise<void> {
+		params.prompt = 'create';
 
-		options.prompt = 'create';
-
-		await this.login(options);
+		await this.login(params);
 	}
 
 	/**
@@ -64,10 +56,10 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupWindowParams> {
 	/**
 	 * Handles the URL redirection to a popup window.
 	 * @param {URL} url The URL to handle.
-	 * @param {PopupWindowParams} [options] Optional parameters for popup window configuration.
+	 * @param {PopupParams} [params] Optional parameters for popup window configuration.
 	 * @returns {Promise<Record<string, string>>} A promise that resolves to the data returned from the popup window.
 	 */
-	async urlHandler(url: URL, options?: PopupWindowParams): Promise<Record<string, string>> {
-		return popupUrlHandler(url, options);
+	async urlHandler(url: URL, params?: PopupParams): Promise<Record<string, string>> {
+		return popupUrlHandler(url, params);
 	}
 }

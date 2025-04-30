@@ -79,7 +79,7 @@ export class Metadata {
 	 *
 	 * @param {string} metadataUrl The URL to fetch metadata from.
 	 */
-	constructor(protected metadataUrl: string) {}
+	constructor(protected metadataUrl: URL) {}
 
 	/**
 	 * Fetches and updates the metadata from the specified URL.
