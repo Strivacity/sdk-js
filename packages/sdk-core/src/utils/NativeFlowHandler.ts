@@ -1,9 +1,9 @@
-import type { SDKOptions, NativeParams, LoginFlowState } from './types';
-import type { BaseFlow } from './flows/BaseFlow';
+import type { SDKOptions, NativeParams, LoginFlowState } from '../types';
+import type { BaseFlow } from '../flows/BaseFlow';
 import { HTTPError } from 'ky';
 import { State } from './State';
-import { FallbackError } from './utils/errors';
-import { redirectCallbackHandler } from './utils/handlers';
+import { FallbackError } from './errors';
+import { redirectCallbackHandler } from './handlers';
 
 export class NativeFlowHandler {
 	/**
@@ -47,7 +47,7 @@ export class NativeFlowHandler {
 		authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
 		authorizationUrl.searchParams.append('nonce', state.nonce);
 
-		this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
+		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		const { url } = await this.sdk.httpClient.get(authorizationUrl, { credentials: 'include' });
 		const redirectUri = new URL(url);

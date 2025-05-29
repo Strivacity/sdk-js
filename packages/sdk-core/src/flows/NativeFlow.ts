@@ -1,7 +1,6 @@
 import type { SDKOptions, NativeParams } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
-import { isBrowser } from '../utils/constants';
-import { NativeFlowHandler } from '../NativeFlowHandler';
+import { NativeFlowHandler } from '../utils/NativeFlowHandler';
 import { BaseFlow } from './BaseFlow';
 
 export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
@@ -11,10 +10,6 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 	 * @returns {NativeFlowHandler} Returns with a native login handler.
 	 */
 	login(params: NativeParams = {}): NativeFlowHandler {
-		if (!isBrowser) {
-			throw new Error('Not supported in this environment');
-		}
-
 		this.dispatchEvent('loginInitiated', []);
 
 		return new NativeFlowHandler(this, params);

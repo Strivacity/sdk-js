@@ -1,0 +1,46 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "sdk-capacitor",
+  "projectType": "library",
+  "sourceRoot": "packages/sdk-capacitor/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-core:build"],
+      "options": {
+        "command": "tsc --noEmit --project packages/sdk-capacitor/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/packages/sdk-capacitor/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "packages/sdk-capacitor"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "packages/sdk-capacitor",
+        "command": "vitest"
+      }
+    }
+  }
+}

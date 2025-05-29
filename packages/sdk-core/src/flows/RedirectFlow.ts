@@ -1,7 +1,6 @@
 import type { SDKOptions, RedirectParams } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
-import { isBrowser } from '../utils/constants';
-import { State } from '../State';
+import { State } from '../utils/State';
 import { BaseFlow } from './BaseFlow';
 
 /**
@@ -14,10 +13,6 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 	 * @returns {Promise<void>} A promise that resolves when the login process completes.
 	 */
 	async login(params: RedirectParams = {}): Promise<void> {
-		if (!isBrowser) {
-			return;
-		}
-
 		const state = await State.create();
 		const url = await this.getAuthorizationUrl(params);
 
@@ -25,7 +20,7 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 		url.searchParams.append('code_challenge', state.codeChallenge);
 		url.searchParams.append('nonce', state.nonce);
 
-		this.storage.set(`sty.${state.id}`, JSON.stringify(state));
+		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		this.dispatchEvent('loginInitiated', []);
 

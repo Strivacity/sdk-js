@@ -591,14 +591,14 @@ export abstract class SDKStorage {
 	 * @param {string} key - The key of the item to retrieve.
 	 * @returns {string | null} The value associated with the key, or `null` if not found.
 	 */
-	abstract get(key: string): string | null;
+	abstract get(key: string): string | null | Promise<string | null>;
 
 	/**
 	 * Deletes an item from the storage by key.
 	 *
 	 * @param {string} key - The key of the item to delete.
 	 */
-	abstract delete(key: string): void;
+	abstract delete(key: string): void | Promise<void>;
 
 	/**
 	 * Sets an item in the storage with the specified key and value.
@@ -606,7 +606,7 @@ export abstract class SDKStorage {
 	 * @param {string} key - The key to associate with the value.
 	 * @param {string} value - The value to store.
 	 */
-	abstract set(key: string, value: string): void;
+	abstract set(key: string, value: string): void | Promise<void>;
 }
 
 /**

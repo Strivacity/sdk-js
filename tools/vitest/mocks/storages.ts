@@ -1,6 +1,6 @@
 import { vi, beforeEach, afterEach, type MockInstance } from 'vitest';
-import { State } from '../../../packages/sdk-core/src/State';
-import { Session } from '../../../packages/sdk-core/src/Session';
+import { State } from '../../../packages/sdk-core/src/utils/State';
+import { Session } from '../../../packages/sdk-core/src/utils/Session';
 import { jwt } from '../../../packages/sdk-core/src/utils/jwt';
 import { timestamp } from '../../../packages/sdk-core/src/utils/date';
 

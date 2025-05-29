@@ -2,7 +2,7 @@ import { type MockInstance, vi, describe, beforeEach, afterEach, it, expect } fr
 import { mocks } from '@strivacity/vitest/msw';
 import { type Storage, mockLocalStorage, mockSessionStorage } from '@strivacity/vitest/mocks/storages';
 import { type SDKOptions, type ExtraRequestArgs, type RedirectParams, type IdTokenClaims, initFlow } from '../../src';
-import type { State } from '../../src/State';
+import type { State } from '../../src/utils/State';
 import { jwt } from '../../src/utils/jwt';
 import { SessionStorage } from '../../src/storages/SessionStorage';
 

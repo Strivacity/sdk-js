@@ -1,5 +1,5 @@
-import type { MetadataOptions } from './types';
-import { fetch } from './utils/fetch';
+import type { MetadataOptions } from '../types';
+import { fetch } from './fetch';
 
 /**
  * Class responsible for fetching and handling metadata for authentication endpoints.

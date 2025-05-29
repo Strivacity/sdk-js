@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Session } from '../src/Session';
+import { Session } from '../src/utils/Session';
 import { timestamp } from '../src/utils/date';
 
 describe('Session', () => {

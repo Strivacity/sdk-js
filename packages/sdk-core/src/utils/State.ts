@@ -1,5 +1,5 @@
-import { Crypto } from './utils/crypto';
-import { timestamp } from './utils/date';
+import { Crypto } from './crypto';
+import { timestamp } from './date';
 
 /**
  * Class representing an OAuth state, including code verifier and nonce for PKCE flows.

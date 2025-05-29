@@ -1,5 +1,5 @@
-import type { IdTokenClaims } from './types';
-import { timestamp } from './utils/date';
+import type { IdTokenClaims } from '../types';
+import { timestamp } from './date';
 
 /**
  * Class representing a user's authentication session, storing tokens and related information.

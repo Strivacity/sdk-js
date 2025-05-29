@@ -1,7 +1,6 @@
 import type { SDKOptions, PopupParams } from '../types';
 import { popupCallbackHandler, popupUrlHandler } from '../utils/handlers';
-import { isBrowser } from '../utils/constants';
-import { State } from '../State';
+import { State } from '../utils/State';
 import { BaseFlow } from './BaseFlow';
 
 /**
@@ -14,10 +13,6 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupParams> {
 	 * @returns {Promise<void>} A promise that resolves when the login process completes.
 	 */
 	async login(params: PopupParams = {}): Promise<void> {
-		if (!isBrowser) {
-			return;
-		}
-
 		const state = await State.create();
 		const url = await this.getAuthorizationUrl(params);
 
@@ -26,7 +21,7 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupParams> {
 		url.searchParams.append('nonce', state.nonce);
 		url.searchParams.append('display', 'popup');
 
-		this.storage.set(`sty.${state.id}`, JSON.stringify(state));
+		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		this.dispatchEvent('loginInitiated', []);
 

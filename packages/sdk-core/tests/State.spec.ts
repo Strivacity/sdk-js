@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { State } from '../src/State';
+import { State } from '../src/utils/State';
 
 describe('State', () => {
 	it('create', async () => {

@@ -1,7 +1,7 @@
 import { vi, describe, it, beforeEach, afterEach, expect } from 'vitest';
 import { mocks } from '@strivacity/vitest/msw';
 import openidConfiguration from '@strivacity/vitest/fixtures/openid-configuration.json';
-import { Metadata } from '../src/Metadata';
+import { Metadata } from '../src/utils/Metadata';
 
 describe('Metadata', () => {
 	const metadata = new Metadata('https://brandtegrity.io/.well-known/openid-configuration');

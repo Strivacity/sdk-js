@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-ionic",
+  "projectType": "application",
+  "sourceRoot": "apps/ionic/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-core:build"],
+      "options": {
+        "command": "tsc --noEmit --project apps/ionic/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/ionic"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/ionic",
+        "command": "vite serve"
+      }
+    }
+  }
+}

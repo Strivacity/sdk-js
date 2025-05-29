@@ -1,0 +1,14 @@
+{
+  "appId": "com.example.app",
+  "appName": "app-capacitor",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    }
+  },
+  "server": {
+    "iosScheme": "native",
+    "allowNavigation": ["*"]
+  }
+}

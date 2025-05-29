@@ -1,12 +1,11 @@
 import type { KyInstance } from 'ky';
 import type { IdTokenClaims, SDKOptions, SDKStorage, EventFunctions, ExtraRequestArgs, LogoutParams } from '../types';
-import { isBrowser } from '../utils/constants';
 import { jwt } from '../utils/jwt';
 import { fetch } from '../utils/fetch';
 import { timestamp } from '../utils/date';
-import { Metadata } from '../Metadata';
-import { Session } from '../Session';
-import { State } from '../State';
+import { Metadata } from '../utils/Metadata';
+import { Session } from '../utils/Session';
+import { State } from '../utils/State';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventCallbacks: Record<keyof EventFunctions, Set<(...args: Array<any>) => Promise<void> | void>> = {
@@ -124,7 +123,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 			return this.#isAuthenticatedPromise;
 		}
 
-		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/require-await, @typescript-eslint/no-misused-promises
+		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
 		this.#isAuthenticatedPromise = new Promise(async (resolve) => {
 			try {
 				if (this.refreshToken && this.accessTokenExpired) {
@@ -180,7 +179,11 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 		this.options = options;
 		this.storage = storage;
 		this.metadata = new Metadata(new URL(`${options.issuer}/.well-known/openid-configuration`));
-		this.session = Session.load(this.storage.get(this.options.storageTokenName!));
+		void this.#init();
+	}
+
+	async #init() {
+		this.session = Session.load(await this.storage.get(this.options.storageTokenName!));
 
 		setTimeout(() => {
 			this.dispatchEvent('init', []);
@@ -218,17 +221,13 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 	 * @returns {Promise<void>} - A promise that resolves when the logout process is complete.
 	 */
 	async logout(params?: URLHandlerParams & LogoutParams): Promise<void> {
-		if (!isBrowser) {
-			return;
-		}
-
 		const session = this.session;
 
 		if (!session?.id_token) {
 			return;
 		}
 
-		this.storage.delete(this.options.storageTokenName!);
+		await this.storage.delete(this.options.storageTokenName!);
 		this.session = null;
 
 		const url = new URL(await this.metadata.endSessionEndpoint);
@@ -273,14 +272,14 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 				this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
 			}
 
-			this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
+			await this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
 
 			if (this.accessToken && this.refreshToken && this.idTokenClaims) {
 				this.dispatchEvent('tokenRefreshed', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
 			}
 		} catch {
 			this.session = null;
-			this.storage.delete(this.options.storageTokenName!);
+			await this.storage.delete(this.options.storageTokenName!);
 
 			this.dispatchEvent('tokenRefreshFailed', [{ refreshToken: session.refresh_token! }]);
 		}
@@ -313,7 +312,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 			success = false;
 		} finally {
 			this.session = null;
-			this.storage.delete(this.options.storageTokenName!);
+			await this.storage.delete(this.options.storageTokenName!);
 
 			if (session?.refresh_token) {
 				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.refresh_token, tokenTypeHint: 'refresh_token' }]);
@@ -346,7 +345,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 		let state: State;
 
 		try {
-			const serializedState = this.storage.get(`sty.${this.session.state}`);
+			const serializedState = await this.storage.get(`sty.${this.session.state}`);
 
 			if (!serializedState) {
 				throw new Error();
@@ -354,7 +353,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 
 			state = State.fromSerializedData(serializedState);
 
-			this.storage.delete(`sty.${this.session.state}`);
+			await this.storage.delete(`sty.${this.session.state}`);
 		} catch {
 			throw new Error('Invalid or missing state');
 		}
@@ -386,7 +385,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 			throw new Error('Invalid aud');
 		}
 
-		this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
+		await this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
 
 		if (this.accessToken && this.idTokenClaims) {
 			this.dispatchEvent('loggedIn', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
