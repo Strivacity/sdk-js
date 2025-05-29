@@ -1,5 +1,6 @@
 import type { SDKOptions } from '@strivacity/sdk-core';
 import type { CapacitorParams } from '../types';
+import { Capacitor } from '@capacitor/core';
 import { State } from '@strivacity/sdk-core/utils/State';
 import { BaseFlow } from '@strivacity/sdk-core/flows/BaseFlow';
 import { urlHandler, callbackHandler } from '../utils/handlers';
@@ -25,12 +26,15 @@ export class RedirectFlow extends BaseFlow<SDKOptions, CapacitorParams> {
 
 		this.dispatchEvent('loginInitiated', []);
 
-		console.log(`Redirecting to URL: ${url.toString()}`);
-
 		await this.urlHandler(url, params);
-		console.log('Redirect initiated, waiting for callback...');
-		await this.tokenExchange(await callbackHandler(this.options.redirectUri, this.options.responseMode || 'fragment'));
-		console.log('Token exchange completed successfully.');
+
+		if (Capacitor.getPlatform() !== 'web') {
+			const queryParams = await callbackHandler(this.options.redirectUri, this.options.responseMode || 'fragment');
+
+			console.log('RedirectFlow: queryParams', queryParams);
+
+			await this.tokenExchange(queryParams);
+		}
 	}
 
 	/**
@@ -42,6 +46,23 @@ export class RedirectFlow extends BaseFlow<SDKOptions, CapacitorParams> {
 		params.prompt = 'create';
 
 		await this.login(params);
+	}
+
+	/**
+	 * Handles the callback after login or registration via a redirect.
+	 * @param {string} [url] The URL to handle the callback from. Defaults to the current window location.
+	 * @returns {Promise<void>} A promise that resolves when the callback is handled.
+	 */
+	async handleCallback(url?: string): Promise<void> {
+		if (Capacitor.getPlatform() === 'web') {
+			if (!url) {
+				url = globalThis.window?.location.href;
+			}
+
+			const data = new URL(url)[this.options.responseMode === 'query' ? 'search' : 'hash'].slice(1);
+
+			await this.tokenExchange(Object.fromEntries(new URLSearchParams(data)));
+		}
 	}
 
 	/**

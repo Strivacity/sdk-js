@@ -6,6 +6,9 @@
   "license": "MIT",
   "author": "strivacity<info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-capacitor": "*"
+    "@strivacity/sdk-capacitor": "*",
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/preferences": "^7.0.1",
+    "@capacitor/inappbrowser": "^2.1.0"
   }
 }

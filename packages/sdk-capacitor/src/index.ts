@@ -1,8 +1,10 @@
 import type { SDKOptions } from '@strivacity/sdk-core';
 import { RedirectFlow } from './flows/RedirectFlow';
 import { NativeFlow } from './flows/NativeFlow';
-import { CapacitorStorage } from './storages/CapacitorStorage';
 
+export { SDKStorage } from '@strivacity/sdk-core';
+export { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
+export { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
 export * from '@strivacity/sdk-core/utils/errors';
 export type * from '@strivacity/sdk-core';
 
@@ -16,7 +18,11 @@ export function initFlow(options: SDKOptions & { mode: 'redirect' }): RedirectFl
 export function initFlow(options: SDKOptions & { mode: 'native' }): NativeFlow;
 export function initFlow(options: SDKOptions & { mode?: 'redirect' | 'native' }): RedirectFlow | NativeFlow;
 export function initFlow(options: SDKOptions & { mode?: 'redirect' | 'native' }): RedirectFlow | NativeFlow {
-	const StorageClass = options.storage || CapacitorStorage;
+	if (!options.storage) {
+		throw new Error('Storage class is required');
+	}
+
+	const StorageClass = options.storage;
 
 	if (options.mode === 'native') {
 		return new NativeFlow(options, new StorageClass());

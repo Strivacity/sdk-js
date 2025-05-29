@@ -17,7 +17,7 @@ export default defineConfig({
 		sourcemap: true,
 		rollupOptions: {
 			preserveEntrySignatures: 'allow-extension',
-			external: [/@strivacity/],
+			external: [/@strivacity/, /@capacitor/],
 			input: Object.fromEntries(
 				glob
 					.sync('./src/**/*.ts', { ignore: ['**/*.d.ts'] })

@@ -11,7 +11,7 @@ export class LogoutPage extends LitElement {
 
 	async init() {
 		if (await globalThis.sdk.isAuthenticated) {
-			await globalThis.sdk.logout();
+			await globalThis.sdk.logout({ postLogoutRedirectUri: location.origin });
 		} else {
 			location.href = '/';
 		}

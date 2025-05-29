@@ -2,6 +2,7 @@ import type { ResponseMode } from '@strivacity/sdk-core';
 import type { PluginListenerHandle } from '@capacitor/core';
 import type { WebViewOptions } from '@capacitor/inappbrowser';
 import type { CapacitorParams } from '../types';
+import { Capacitor } from '@capacitor/core';
 import { InAppBrowser } from '@capacitor/inappbrowser';
 
 /**
@@ -12,8 +13,14 @@ import { InAppBrowser } from '@capacitor/inappbrowser';
  * @returns {Promise<void>} A promise that resolves when the redirection occurs.
  */
 export async function urlHandler(url: URL, params?: CapacitorParams): Promise<void> {
-	console.log(`openInWebView URL: ${url.toString()}`);
-	await InAppBrowser.openInWebView({ url: url.toString(), options: params as WebViewOptions });
+	if (Capacitor.getPlatform() === 'web') {
+		window.self.location.assign(url);
+
+		// NOTE: Wait for the previous action
+		return new Promise(() => undefined);
+	} else {
+		await InAppBrowser.openInWebView({ url: url.toString(), options: params as WebViewOptions });
+	}
 }
 
 /**
@@ -27,6 +34,7 @@ export async function callbackHandler(expectedRedirectUri: string, responseMode:
 	return new Promise(async (resolve, reject) => {
 		let navigationListener: PluginListenerHandle | null = null;
 		let finishListener: PluginListenerHandle | null = null;
+		let userCancelled = true;
 
 		const cleanupListeners = async () => {
 			if (navigationListener) {
@@ -50,22 +58,18 @@ export async function callbackHandler(expectedRedirectUri: string, responseMode:
 		try {
 			navigationListener = await InAppBrowser.addListener('browserPageNavigationCompleted', async (event) => {
 				const navigatedUrl = event.url;
-				console.log(`InAppBrowser - browserPageNavigationCompleted URL: ${navigatedUrl}`);
 
 				if (navigatedUrl && navigatedUrl.startsWith(expectedRedirectUri)) {
-					console.log(`Redirect URI matched: ${navigatedUrl}. Processing and closing browser.`);
 					try {
 						const urlInstance = new URL(navigatedUrl);
 						const dataString = responseMode === 'query' ? urlInstance.search : urlInstance.hash;
 						const params = Object.fromEntries(new URLSearchParams(dataString.slice(1)));
 
+						userCancelled = false;
 						await InAppBrowser.close();
-						await cleanupListeners();
 						resolve(params);
 					} catch (error) {
-						console.error('Error processing redirect URL or closing browser:', error);
 						await InAppBrowser.close();
-						await cleanupListeners();
 						reject(error);
 					}
 				}
@@ -73,10 +77,12 @@ export async function callbackHandler(expectedRedirectUri: string, responseMode:
 
 			finishListener = await InAppBrowser.addListener('browserClosed', async () => {
 				await cleanupListeners();
-				reject(new Error('InAppBrowser flow cancelled by user.'));
+
+				if (userCancelled) {
+					reject(new Error('InAppBrowser flow cancelled by user.'));
+				}
 			});
 		} catch (error) {
-			console.error('Failed to add InAppBrowser listeners:', error);
 			reject(error);
 		}
 	});

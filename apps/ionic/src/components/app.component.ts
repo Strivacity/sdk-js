@@ -2,16 +2,33 @@ import { LitElement, css, html, nothing } from 'lit';
 import { Router } from '@lit-labs/router';
 import { customElement } from 'lit/decorators.js';
 import { state } from 'lit/decorators/state.js';
-import { initFlow } from '@strivacity/sdk-core';
-import { App } from '@capacitor/app';
+import { initFlow, LocalStorage, SDKStorage } from '@strivacity/sdk-capacitor';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+
+class CapacitorStorage extends SDKStorage {
+	async get(key: string): Promise<string | null> {
+		const { value } = await Preferences.get({ key });
+		return value;
+	}
+
+	async set(key: string, value: string): Promise<void> {
+		await Preferences.set({ key, value });
+	}
+
+	async delete(key: string): Promise<void> {
+		await Preferences.remove({ key });
+	}
+}
 
 globalThis.sdk = initFlow({
 	mode: 'redirect',
 	issuer: import.meta.env.VITE_ISSUER,
 	scopes: import.meta.env.VITE_SCOPES.split(' '),
 	clientId: import.meta.env.VITE_CLIENT_ID,
-	redirectUri: 'native://app',
+	redirectUri: 'http://localhost:4200/callback',
 	storageTokenName: 'sty.session.ionic',
+	storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
 });
 
 @customElement('app-main')
@@ -45,7 +62,8 @@ export class AppComponent extends LitElement {
 			display: flex;
 			align-items: center;
 			padding: 1rem;
-			margin-block-start: 5rem;
+			margin-block-start: var(--ion-safe-area-top, 0);
+			margin-block-end: var(--ion-safe-area-bottom, 0);
 			border-block-end: 1px solid rgb(0 0 0 / 15%);
 
 			> div {
@@ -133,11 +151,6 @@ export class AppComponent extends LitElement {
 		if (this.isAuthenticated) {
 			this.name = `${globalThis.sdk.idTokenClaims?.given_name} ${globalThis.sdk.idTokenClaims?.family_name}`;
 		}
-
-		App.addListener('appUrlOpen', (event) => {
-			const url = event.url;
-			console.log('App opened with URL:', url);
-		});
 	}
 
 	render() {

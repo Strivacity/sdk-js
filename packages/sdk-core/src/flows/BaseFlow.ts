@@ -31,6 +31,11 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 	/**
 	 * @ignore
 	 */
+	#initialized = false;
+
+	/**
+	 * @ignore
+	 */
 	#isAuthenticatedPromise: Promise<boolean> | null = null;
 
 	/**
@@ -125,6 +130,10 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 
 		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
 		this.#isAuthenticatedPromise = new Promise(async (resolve) => {
+			while (!this.#initialized) {
+				await new Promise((r) => setTimeout(r, 10));
+			}
+
 			try {
 				if (this.refreshToken && this.accessTokenExpired) {
 					await this.refresh();
@@ -195,6 +204,7 @@ export abstract class BaseFlow<Options extends SDKOptions, URLHandlerParams exte
 			if (this.accessToken && this.accessTokenExpired) {
 				this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
 			}
+			this.#initialized = true;
 		});
 	}
 

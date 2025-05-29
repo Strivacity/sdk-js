@@ -4,6 +4,7 @@ import { PopupFlow } from './flows/PopupFlow';
 import { NativeFlow } from './flows/NativeFlow';
 import { LocalStorage } from './storages/LocalStorage';
 
+export { SDKStorage } from './types';
 export * from './utils/errors';
 export type * from './types';
 

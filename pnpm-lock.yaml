@@ -364,6 +364,15 @@ importers:
 
   apps/ionic:
     dependencies:
+      '@capacitor/app':
+        specifier: ^7.0.1
+        version: 7.0.1(@capacitor/core@7.2.0)
+      '@capacitor/inappbrowser':
+        specifier: ^2.1.0
+        version: 2.1.0(@capacitor/core@7.2.0)
+      '@capacitor/preferences':
+        specifier: ^7.0.1
+        version: 7.0.1(@capacitor/core@7.2.0)
       '@strivacity/sdk-capacitor':
         specifier: workspace:*
         version: link:../../packages/sdk-capacitor
@@ -412,15 +421,9 @@ importers:
 
   packages/sdk-capacitor:
     dependencies:
-      '@capacitor/inappbrowser':
-        specifier: ^2.1.0
-        version: 2.1.0(@capacitor/core@7.2.0)
-      '@capacitor/preferences':
+      '@capacitor/core':
         specifier: ^7.0.1
-        version: 7.0.1(@capacitor/core@7.2.0)
-      '@strivacity/sdk-core':
-        specifier: workspace:*
-        version: link:../sdk-core
+        version: 7.2.0
 
   packages/sdk-core: {}
 
