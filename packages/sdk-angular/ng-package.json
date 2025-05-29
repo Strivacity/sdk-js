@@ -4,5 +4,5 @@
   "lib": {
     "entryFile": "src/public-api.ts"
   },
-  "allowedNonPeerDependencies": ["@strivacity/sdk-core"]
+  "allowedNonPeerDependencies": ["@strivacity/sdk-core", "@strivacity/sdk-angular"]
 }
