@@ -369,9 +369,9 @@ importers:
 
   packages/sdk-angular:
     dependencies:
-      '@strivacity/sdk-core':
+      '@strivacity/sdk-angular':
         specifier: workspace:*
-        version: link:../sdk-core
+        version: 'link:'
 
   packages/sdk-core: {}
 
