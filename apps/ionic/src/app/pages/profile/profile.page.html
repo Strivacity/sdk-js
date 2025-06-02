@@ -1,0 +1,34 @@
+<section>
+  <dl>
+    <dt>
+      <strong>accessToken</strong>
+    </dt>
+    <dd>
+      <pre>{{ session.accessToken | json }}</pre>
+    </dd>
+    <dt>
+      <strong>refreshToken</strong>
+    </dt>
+    <dd>
+      <pre>{{ session.refreshToken | json }}</pre>
+    </dd>
+    <dt>
+      <strong>accessTokenExpired</strong>
+    </dt>
+    <dd>
+      <pre>{{ session.accessTokenExpired | json }}</pre>
+    </dd>
+    <dt>
+      <strong>accessTokenExpirationDate</strong>
+    </dt>
+    <dd>
+      <pre>{{ session.accessTokenExpirationDate | date: 'medium' }}</pre>
+    </dd>
+    <dt>
+      <strong>claims</strong>
+    </dt>
+    <dd>
+      <pre>{{ session.idTokenClaims | json }}</pre>
+    </dd>
+  </dl>
+</section>
