@@ -1,3 +1,7 @@
-ion-content {
+.main-content {
   padding-top: 2.5rem !important;
+}
+
+:host {
+  top: 2.5rem;
 }
