@@ -28,7 +28,7 @@ bootstrapApplication(AppComponent, {
       issuer: 'https://uat.strivacity.cloud',
       scopes: ['openid', 'profile', 'offline'],
       clientId: '2202c596c06e4774b42804a106c66df9',
-      redirectUri: 'http://localhost:4200/callback',
+      redirectUri: 'http://localhost:8101/callback',
       storageTokenName: 'sty.session.angular',
     }),
   ],

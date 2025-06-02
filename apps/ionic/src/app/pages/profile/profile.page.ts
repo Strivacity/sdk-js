@@ -7,6 +7,7 @@ import { Session, StrivacityAuthService } from '@strivacity/sdk-angular';
   standalone: true,
   selector: 'app-profile-page',
   templateUrl: './profile.page.html',
+  styleUrls: ['./profile.page.scss'],
   imports: [JsonPipe, DatePipe],
 })
 export class ProfilePage {

@@ -1,42 +1,30 @@
 <ion-app>
-  <ion-header [translucent]="true">
-    <ion-toolbar>
-      <ion-title>
-        @if (isAuthenticated) {
-          <strong>Welcome, {{ name }}!</strong>
-        } @else if (loading) {
-          <strong>Loading...</strong>
-        } @else {
-          Strivacity Demo
-        }
-      </ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">
-        @if (isAuthenticated) {
-          <strong>Welcome, {{ name }}! (Large)</strong>
-        } @else if (loading) {
-          <strong>Loading... (Large)</strong>
-        } @else {
-          Strivacity Demo Large
-        }
-      </ion-title>
-    </ion-toolbar>
-  </ion-header>
-
   <ion-content [fullscreen]="true" class="main-content">
-    <a routerLink="/" routerLinkActive="active" data-button="home">Home</a>
-    @if (isAuthenticated) {
-      <a routerLink="/profile" routerLinkActive="active" data-button="profile">Profile</a>
-      <a routerLink="/revoke" routerLinkActive="active" data-button="revoke">Revoke</a>
-      <a routerLink="/logout" routerLinkActive="active" data-button="logout">Logout</a>
-    } @else {
-      <a routerLink="/login" routerLinkActive="active" data-button="login">Login</a>
-      <a routerLink="/register" routerLinkActive="active" data-button="register">Register</a>
-    }
+    <ion-title>
+      @if (isAuthenticated) {
+        <strong>Welcome, {{ name }}!</strong>
+      } @else if (loading) {
+        <strong>Loading...</strong>
+      } @else {
+        Strivacity Ionic Demo
+      }
+    </ion-title>
+
+    <div>
+      <a [routerLink]="'/'" [class.active]="currentRoute === '/'">Home</a>
+
+      @if (isAuthenticated) {
+        <a [routerLink]="'/profile'" [class.active]="currentRoute === '/profile'">Profile</a>
+        <a [routerLink]="'/revoke'" [class.active]="currentRoute === '/revoke'">Revoke</a>
+        <a [routerLink]="'/logout'" [class.active]="currentRoute === '/logout'">Logout</a>
+      } @else {
+        <a [routerLink]="'/login'" [class.active]="currentRoute === '/login'">Login</a>
+        <a [routerLink]="'/register'" [class.active]="currentRoute === '/register'">Register</a>
+      }
+    </div>
+  </ion-content>
+
+  <ion-content>
     <ion-router-outlet></ion-router-outlet>
   </ion-content>
 </ion-app>
