@@ -1,3 +1,31 @@
-<ion-app>
-  <ion-router-outlet></ion-router-outlet>
-</ion-app>
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      @if (isAuthenticated) {
+        <strong>Welcome, {{ name }}!</strong>
+      } @else if (loading) {
+        <strong>Loading...</strong>
+      } @else {
+        TODO: delete
+      }
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">
+        @if (isAuthenticated) {
+          <strong>Welcome, {{ name }}!</strong>
+        } @else if (loading) {
+          <strong>Loading...</strong>
+        } @else {
+          TODO: delete
+        }
+      </ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-router-outlet />
+</ion-content>
