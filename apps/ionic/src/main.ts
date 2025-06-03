@@ -15,6 +15,19 @@ interface ImportMeta {
   };
 }
 
+function getRedirectUri() {
+  // Check if running in a Capacitor or Cordova environment
+  const isMobile = !!(window as any).cordova || !!(window as any).Capacitor;
+
+  if (isMobile) {
+    // Use custom scheme for mobile - update this to match your app's scheme
+    return 'ionicapp://callback';
+  } else {
+    // Use dynamic origin for web (includes protocol, hostname, and port)
+    return `${window.location.origin}/callback`;
+  }
+}
+
 bootstrapApplication(AppComponent, {
   providers: [
     {
@@ -28,7 +41,7 @@ bootstrapApplication(AppComponent, {
       issuer: 'https://uat.strivacity.cloud',
       scopes: ['openid', 'profile', 'offline'],
       clientId: '2202c596c06e4774b42804a106c66df9',
-      redirectUri: 'http://localhost:8101/callback',
+      redirectUri: getRedirectUri(),
       storageTokenName: 'sty.session.angular',
     }),
   ],
