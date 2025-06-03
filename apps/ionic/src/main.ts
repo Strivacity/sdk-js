@@ -16,16 +16,20 @@ interface ImportMeta {
 }
 
 function getRedirectUri() {
-  // Check if the app is loaded with capacitor:// schema
-  const isCapacitorApp = window.location.protocol === 'capacitor:';
+  // More reliable check for Capacitor environment
+  const isCapacitorNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform();
+  let redirectUri: string;
 
-  if (isCapacitorApp) {
-    // Use the URL scheme configured in Xcode
-    return 'strivacityionic.example://callback';
+  if (isCapacitorNative) {
+    // Configure in Xcode and in Android Studio (look at the README)
+    redirectUri = 'strivacityionic.example://callback';
   } else {
-    // Use dynamic origin for web (includes protocol, hostname, and port)
-    return `${window.location.origin}/callback`;
+    redirectUri = `${window.location.origin}/callback`;
   }
+
+  console.log('window.location.protocol:', window.location.protocol);
+  console.log('Redirect URI:', redirectUri);
+  return redirectUri;
 }
 
 bootstrapApplication(AppComponent, {
