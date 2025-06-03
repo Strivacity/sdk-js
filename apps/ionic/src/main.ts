@@ -7,14 +7,6 @@ import { provideStrivacity } from '@strivacity/sdk-angular';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 
-interface ImportMeta {
-  env: {
-    VITE_ISSUER: string;
-    VITE_SCOPES: string;
-    VITE_CLIENT_ID: string;
-  };
-}
-
 function getRedirectUri() {
   // More reliable check for Capacitor environment
   const isCapacitorNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform();
