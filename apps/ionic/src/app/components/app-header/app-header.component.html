@@ -1,0 +1,13 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      @if (isAuthenticated) {
+        <strong>Welcome, {{ name }}!</strong>
+      } @else if (loading) {
+        <strong>Loading...</strong>
+      } @else {
+        Strivacity Ionic Demo
+      }
+    </ion-title>
+  </ion-toolbar>
+</ion-header>

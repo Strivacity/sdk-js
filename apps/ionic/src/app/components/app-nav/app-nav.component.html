@@ -1,0 +1,12 @@
+<div class="navigation-menu">
+  <a [routerLink]="'/'" [class.active]="currentRoute === '/'">Home</a>
+
+  @if (isAuthenticated) {
+    <a [routerLink]="'/profile'" [class.active]="currentRoute === '/profile'">Profile</a>
+    <a [routerLink]="'/revoke'" [class.active]="currentRoute === '/revoke'">Revoke</a>
+    <a [routerLink]="'/logout'" [class.active]="currentRoute === '/logout'">Logout</a>
+  } @else {
+    <a [routerLink]="'/login'" [class.active]="currentRoute === '/login'">Login</a>
+    <a [routerLink]="'/register'" [class.active]="currentRoute === '/register'">Register</a>
+  }
+</div>

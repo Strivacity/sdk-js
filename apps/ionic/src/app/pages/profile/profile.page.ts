@@ -2,13 +2,16 @@ import { Component, SkipSelf } from '@angular/core';
 import { DatePipe, JsonPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { Session, StrivacityAuthService } from '@strivacity/sdk-angular';
+import { IonContent } from '@ionic/angular/standalone';
+import { AppHeaderComponent } from '../../components/app-header/app-header.component';
+import { AppNavComponent } from '../../components/app-nav/app-nav.component';
 
 @Component({
   standalone: true,
   selector: 'app-profile-page',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
-  imports: [JsonPipe, DatePipe],
+  imports: [JsonPipe, DatePipe, IonContent, AppHeaderComponent, AppNavComponent],
 })
 export class ProfilePage {
   readonly subscription = new Subscription();

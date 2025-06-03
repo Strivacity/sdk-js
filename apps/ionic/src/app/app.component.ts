@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
-import { IonApp, IonContent, IonRouterOutlet, IonTitle } from '@ionic/angular/standalone';
+import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 import { RouterLink, Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
-  styleUrl: 'app.component.scss',
-  imports: [IonApp, IonRouterOutlet, IonContent, IonTitle, RouterLink],
+  imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent {
   loading = true;
