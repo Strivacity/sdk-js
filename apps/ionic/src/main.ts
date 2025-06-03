@@ -16,12 +16,12 @@ interface ImportMeta {
 }
 
 function getRedirectUri() {
-  // Check if running in a Capacitor or Cordova environment
-  const isMobile = !!(window as any).cordova || !!(window as any).Capacitor;
+  // Check if the app is loaded with capacitor:// schema
+  const isCapacitorApp = window.location.protocol === 'capacitor:';
 
-  if (isMobile) {
-    // Use custom scheme for mobile - update this to match your app's scheme
-    return 'ionicapp://callback';
+  if (isCapacitorApp) {
+    // Use the URL scheme configured in Xcode
+    return 'strivacityionic.example://callback';
   } else {
     // Use dynamic origin for web (includes protocol, hostname, and port)
     return `${window.location.origin}/callback`;
