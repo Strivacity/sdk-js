@@ -49,8 +49,9 @@ export class NativeFlowHandler {
 
 		this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
-		const { url } = await this.sdk.httpClient.get(authorizationUrl, { credentials: 'include' });
-		const redirectUri = new URL(url);
+		const response = await this.sdk.httpClient.get(authorizationUrl, { credentials: 'include' });
+		const data = await response.text();
+		const redirectUri = new URL(data);
 
 		if (redirectUri.searchParams.has('error')) {
 			throw new Error(`${redirectUri.searchParams.get('error')}: ${redirectUri.searchParams.get('error_description')}`);
