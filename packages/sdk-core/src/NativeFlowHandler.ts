@@ -49,7 +49,7 @@ export class NativeFlowHandler {
 
 		this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
-		const response = await this.sdk.httpClient.get(authorizationUrl, { credentials: 'include' });
+		const response = await this.sdk.httpClient.get(authorizationUrl, { credentials: 'include', mode: 'cors' });
 		const data = await response.text();
 		const redirectUri = new URL(data);
 
@@ -80,7 +80,7 @@ export class NativeFlowHandler {
 	 * @param {string} finalizeUrl The URL to finalize the session.
 	 */
 	async finalizeSession(finalizeUrl: string): Promise<void> {
-		const { url } = await this.sdk.httpClient.get(finalizeUrl, { credentials: 'include' });
+		const { url } = await this.sdk.httpClient.get(finalizeUrl, { credentials: 'include', mode: 'cors' });
 		const redirectUri = new URL(url);
 
 		if (!redirectUri.toString().startsWith(this.sdk.options.redirectUri)) {
