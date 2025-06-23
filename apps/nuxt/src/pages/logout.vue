@@ -4,7 +4,7 @@ const router = useRouter();
 
 onMounted(async () => {
 	if (isAuthenticated.value) {
-		await logout();
+		await logout({ postLogoutRedirectUri: location.origin });
 	} else {
 		await router.push('/');
 	}
