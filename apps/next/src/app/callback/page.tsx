@@ -12,8 +12,20 @@ export default function Callback() {
 	useEffect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
-			await handleCallback();
-			router.push('/profile');
+			const url = new URL(location.href);
+			const sessionId = url.searchParams.get('session_id');
+
+			if (sessionId) {
+				router.push(`/login?session_id=${sessionId}`);
+			} else {
+				try {
+					await handleCallback();
+					router.push('/profile');
+				} catch (error) {
+					// eslint-disable-next-line no-console
+					console.error('Error during callback handling:', error);
+				}
+			}
 		})();
 	}, []);
 

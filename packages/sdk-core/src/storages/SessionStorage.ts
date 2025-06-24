@@ -9,16 +9,16 @@ export class SessionStorage implements SDKStorage {
 	 * @param {string} key The key to retrieve the value for.
 	 * @returns {string | null} The value associated with the key, or null if not found.
 	 */
-	get(key: string) {
-		return globalThis?.window?.sessionStorage?.getItem(key);
+	async get(key: string): Promise<string | null> {
+		return Promise.resolve(globalThis?.window?.sessionStorage?.getItem(key));
 	}
 
 	/**
 	 * Deletes a key-value pair from session storage.
 	 * @param {string} key The key to delete.
 	 */
-	delete(key: string) {
-		globalThis?.window?.sessionStorage.removeItem(key);
+	async delete(key: string): Promise<void> {
+		await Promise.resolve(globalThis?.window?.sessionStorage.removeItem(key));
 	}
 
 	/**
@@ -26,7 +26,7 @@ export class SessionStorage implements SDKStorage {
 	 * @param {string} key The key to set.
 	 * @param {string} value The value to associate with the key.
 	 */
-	set(key: string, value: string) {
-		globalThis?.window?.sessionStorage.setItem(key, value);
+	async set(key: string, value: string): Promise<void> {
+		await Promise.resolve(globalThis?.window?.sessionStorage.setItem(key, value));
 	}
 }

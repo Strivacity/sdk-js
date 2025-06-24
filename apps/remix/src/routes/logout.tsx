@@ -19,7 +19,7 @@ export default function Logout() {
 
 	return (
 		<section>
-			<h1>logout</h1>
+			<h1>Logging out...</h1>
 		</section>
 	);
 }

@@ -94,7 +94,7 @@
     "@remix-run/serve": "^2.16.8",
     "@schematics/angular": "~19.2.14",
     "@strivacity/sdk-core": "*",
-    "@strivacity/vitest": "*",
+    "@strivacity/testing": "*",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/vue": "^8.1.0",
@@ -114,7 +114,6 @@
     "glob": "^11.0.3",
     "globals": "^16.2.0",
     "happy-dom": "^17.4.4",
-    "ky": "^1.8.1",
     "lint-staged": "^15.5.0",
     "lit": "^3.2.1",
     "luxon": "^3.6.1",
@@ -161,7 +160,7 @@
       "@strivacity/sdk-react": "workspace:*",
       "@strivacity/sdk-remix": "workspace:*",
       "@strivacity/sdk-vue": "workspace:*",
-      "@strivacity/vitest": "workspace:*"
+      "@strivacity/testing": "workspace:*"
     },
     "ignoredBuiltDependencies": [
       "lmdb",

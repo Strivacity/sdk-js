@@ -19,7 +19,7 @@ export class AppComponent {
 		this.strivacityAuthService.session$.subscribe((session) => {
 			this.loading = session.loading;
 			this.isAuthenticated = session.isAuthenticated;
-			this.name = `${session.idTokenClaims?.given_name} ${session.idTokenClaims?.family_name}`;
+			this.name = `${session.idTokenClaims?.given_name ?? ''} ${session.idTokenClaims?.family_name ?? ''}`;
 		});
 	}
 }

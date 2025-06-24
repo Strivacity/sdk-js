@@ -5,9 +5,11 @@ import { routes } from './app.routes';
 
 interface ImportMeta {
 	env: {
+		VITE_MODE: 'redirect' | 'popup' | 'native';
 		VITE_ISSUER: string;
 		VITE_SCOPES: string;
 		VITE_CLIENT_ID: string;
+		VITE_REDIRECT_URI: string;
 	};
 }
 
@@ -16,11 +18,11 @@ export const appConfig: ApplicationConfig = {
 		provideZoneChangeDetection({ eventCoalescing: true }),
 		provideRouter(routes),
 		provideStrivacity({
-			mode: 'redirect',
+			mode: (import.meta as unknown as ImportMeta).env.VITE_MODE,
 			issuer: (import.meta as unknown as ImportMeta).env.VITE_ISSUER,
 			scopes: (import.meta as unknown as ImportMeta).env.VITE_SCOPES.split(' '),
 			clientId: (import.meta as unknown as ImportMeta).env.VITE_CLIENT_ID,
-			redirectUri: 'http://localhost:4200/callback',
+			redirectUri: (import.meta as unknown as ImportMeta).env.VITE_REDIRECT_URI,
 			storageTokenName: 'sty.session.angular',
 		}),
 	],

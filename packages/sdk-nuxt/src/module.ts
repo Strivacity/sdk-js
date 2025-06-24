@@ -1,10 +1,11 @@
-import type { SDKOptions, SDKStorage, IdTokenClaims } from '@strivacity/sdk-core';
-import { defineNuxtModule, createResolver, addTemplate, addTypeTemplate, addImports } from '@nuxt/kit';
+import type { SDKOptions } from '@strivacity/sdk-core';
+import { defineNuxtModule, createResolver, addTemplate, addTypeTemplate, addImports, addComponent } from '@nuxt/kit';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
+import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
+import { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
 import { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 import { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
-import type { Session, PopupContext, PopupSDK, RedirectContext, RedirectSDK } from './types';
 
 declare module '@nuxt/schema' {
 	interface PublicRuntimeConfig {
@@ -14,8 +15,10 @@ declare module '@nuxt/schema' {
 
 export type ModuleOptions = SDKOptions;
 
-export type { SDKOptions, SDKStorage, Session, IdTokenClaims, PopupFlow, RedirectFlow, PopupContext, RedirectContext, PopupSDK, RedirectSDK };
-export { LocalStorage, SessionStorage };
+export * from '@strivacity/sdk-core';
+export type * from './types';
+export type { PopupFlow, RedirectFlow, NativeFlow };
+export { HttpClient, LocalStorage, SessionStorage };
 
 export default defineNuxtModule<ModuleOptions>({
 	meta: {
@@ -38,12 +41,16 @@ export default defineNuxtModule<ModuleOptions>({
 import type { SDKStorage } from '@strivacity/sdk-core';
 
 declare class CustomStorage implements SDKStorage {
-	get(key: string): string | null;
-	delete(key: string): void;
-	set(key: string, value: string): void;
+	get(key: string): Promise<string | null>;
+	delete(key: string): Promise<void>;
+	set(key: string, value: string): Promise<void>;
 }
 
 export default CustomStorage`,
+		});
+		addComponent({
+			name: 'StyLoginRenderer',
+			filePath: resolver.resolve('./runtime/login-renderer.vue'),
 		});
 		addImports({ name: 'useStrivacity', as: 'useStrivacity', from: resolver.resolve('./runtime/composables') });
 	},

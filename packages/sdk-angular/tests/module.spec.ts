@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { type SDKOptions, STRIVACITY_SDK, StrivacityAuthModule } from '../src/public-api';
@@ -14,7 +14,7 @@ const options: SDKOptions = {
 
 describe('StrivacityAuthModule', () => {
 	describe('forRoot', () => {
-		it('should provide the SDKOptions correctly', () => {
+		test('should provide the SDKOptions correctly', () => {
 			TestBed.configureTestingModule({
 				schemas: [CUSTOM_ELEMENTS_SCHEMA],
 				imports: [StrivacityAuthModule.forRoot(options)],

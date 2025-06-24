@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 import { type Observable, BehaviorSubject, from } from 'rxjs';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
+import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 import { type SDKOptions, initFlow } from '@strivacity/sdk-core';
 import type { Session } from '../utils/types';
 import { STRIVACITY_SDK } from '../utils/helpers';
@@ -16,18 +17,22 @@ import { STRIVACITY_SDK } from '../utils/helpers';
 @Injectable({
 	providedIn: 'root',
 })
-export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = PopupFlow | RedirectFlow, Options extends SDKOptions = SDKOptions> {
+export class StrivacityAuthService<
+	Flow extends PopupFlow | RedirectFlow | NativeFlow = PopupFlow | RedirectFlow | NativeFlow,
+	Options extends SDKOptions = SDKOptions,
+> {
 	/**
 	 * Instance of the authentication flow (PopupFlow or RedirectFlow).
-	 * @protected
 	 */
-	protected sdk: Flow;
+	sdk: Flow;
+
 	/**
 	 * BehaviorSubject that holds the current session state.
 	 * @protected
 	 * @readonly
 	 */
 	private readonly sessionSubject: BehaviorSubject<Session>;
+
 	/**
 	 * Observable that emits the session state changes.
 	 * @readonly
@@ -90,7 +95,13 @@ export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = Popup
 	 * @returns {Observable<void>} An observable that completes when the login process is done.
 	 */
 	login(options?: Parameters<Flow['login']>[0]) {
-		return from(this.sdk.login(options));
+		const result = this.sdk.login(options);
+
+		if (result instanceof Promise) {
+			return from(result);
+		}
+
+		return result;
 	}
 
 	/**
@@ -100,7 +111,13 @@ export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = Popup
 	 * @returns {Observable<void>} An observable that completes when the registration process is done.
 	 */
 	register(options?: Parameters<Flow['register']>[0]) {
-		return from(this.sdk.register(options));
+		const result = this.sdk.register(options);
+
+		if (result instanceof Promise) {
+			return from(result);
+		}
+
+		return result;
 	}
 
 	/**
@@ -138,7 +155,6 @@ export class StrivacityAuthService<Flow extends PopupFlow | RedirectFlow = Popup
 	 * @returns {Observable<void>} An observable that completes when the callback is handled.
 	 */
 	handleCallback(url?: Parameters<Flow['handleCallback']>[0]) {
-		const result = this.sdk.handleCallback(url);
-		return from(result ? result : Promise.resolve());
+		return from(this.sdk.handleCallback(url));
 	}
 }

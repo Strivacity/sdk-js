@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "@strivacity/testing",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "UNLICENSED",
+  "author": "strivacity<info@strivacity.com>",
+  "exports": {
+    "./fixtures/*": "./fixtures/*",
+    "./mocks/*": "./mocks/*.ts",
+    "./vitest/*": "./vitest/*.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "fixtures/*": [
+        "./fixtures/*"
+      ],
+      "mocks/*": [
+        "./mocks/*.ts"
+      ],
+      "vitest/*": [
+        "./vitest/*.ts"
+      ]
+    }
+  }
+}

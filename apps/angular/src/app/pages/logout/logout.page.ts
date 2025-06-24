@@ -1,6 +1,6 @@
 import { Component, SkipSelf } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
@@ -16,12 +16,12 @@ export class LogoutPage {
 		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
 	) {}
 
-	ngOnInit(): void {
-		this.strivacityAuthService.logout().subscribe({
-			next: () => {
-				void this.router.navigateByUrl('/');
-			},
-		});
+	async ngOnInit(): Promise<void> {
+		if (this.strivacityAuthService.isAuthenticated()) {
+			await firstValueFrom(this.strivacityAuthService.logout({ postLogoutRedirectUri: window.location.origin }));
+		} else {
+			void this.router.navigateByUrl('/');
+		}
 	}
 
 	ngOnDestroy(): void {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStrivacity } from '@strivacity/sdk-vue';
@@ -7,10 +7,20 @@ const router = useRouter();
 const { handleCallback } = useStrivacity();
 
 onMounted(async () => {
-	try {
-		await handleCallback();
-		await router.push('/profile');
-	} catch {}
+	const url = new URL(location.href);
+	const sessionId = url.searchParams.get('session_id');
+
+	if (sessionId) {
+		await router.push(`/login?session_id=${sessionId}`);
+	} else {
+		try {
+			await handleCallback();
+			await router.push('/profile');
+		} catch (error) {
+			// eslint-disable-next-line no-console
+			console.error('Error during callback handling:', error);
+		}
+	}
 });
 </script>
 

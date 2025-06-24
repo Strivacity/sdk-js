@@ -1,3 +1,5 @@
+import angular from '@angular-eslint/eslint-plugin';
+import angularTemplate from '@angular-eslint/eslint-plugin-template';
 import { defineAngularConfig } from '../../eslint.config.base.js';
 
 export default defineAngularConfig(
@@ -6,7 +8,10 @@ export default defineAngularConfig(
 	},
 	{
 		files: ['./src/**/*.ts'],
-		extends: ['plugin:@nx/angular', 'plugin:@angular-eslint/template/process-inline-templates'],
+		plugins: {
+			'@angular-eslint': angular,
+			'@angular-eslint/template': angularTemplate,
+		},
 		rules: {
 			'@typescript-eslint/no-explicit-any': 'warn',
 			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
@@ -27,9 +32,5 @@ export default defineAngularConfig(
 				},
 			],
 		},
-	},
-	{
-		files: ['./src/**/*.html'],
-		extends: ['plugin:@nx/angular-template'],
 	},
 );

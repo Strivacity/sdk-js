@@ -512,7 +512,7 @@ export type SDKOptions = {
 	 * @type {'popup' | 'redirect'}
 	 * @default 'redirect'
 	 */
-	mode?: 'popup' | 'redirect';
+	mode?: 'popup' | 'redirect' | 'native';
 
 	/**
 	 * The issuer of the tokens, typically the URL of the authorization server.
@@ -579,6 +579,34 @@ export type SDKOptions = {
 	 * @default LocalStorage
 	 */
 	storage?: SDKStorageType;
+
+	/**
+	 * The HTTP client used for making requests to the authorization server.
+	 *
+	 * @type {SDKHttpClient}
+	 * @default HttpClient
+	 */
+	httpClient?: SDKHttpClientType;
+
+	/**
+	 * Handles the URL redirection to the specified target.
+	 * You can use this method to implement custom URL handling logic, such as opening a new window or navigating to a different page.
+	 *
+	 * @param {string} url - The URL to handle.
+	 * @param {Record<string, unknown>} params - Optional parameters for redirection.
+	 * @returns - A promise that resolves when the redirection is handled.
+	 */
+	urlHandler?: (url: string, params?: Record<string, unknown>) => Promise<unknown>;
+
+	/**
+	 * Handles the callback from the authorization server after a successful authentication or authorization.
+	 * You can use this method to implement custom logic for processing the response from the authorization server.
+	 *
+	 * @param url - The URL containing the response from the authorization server.
+	 * @param responseMode - The mode in which the response is returned (e.g., 'query', 'fragment').
+	 * @returns - A promise that resolves when the callback is handled.
+	 */
+	callbackHandler?: (url: string, responseMode?: ResponseMode) => Promise<unknown>;
 };
 
 /**
@@ -591,14 +619,14 @@ export abstract class SDKStorage {
 	 * @param {string} key - The key of the item to retrieve.
 	 * @returns {string | null} The value associated with the key, or `null` if not found.
 	 */
-	abstract get(key: string): string | null;
+	abstract get(key: string): Promise<string | null>;
 
 	/**
 	 * Deletes an item from the storage by key.
 	 *
 	 * @param {string} key - The key of the item to delete.
 	 */
-	abstract delete(key: string): void;
+	abstract delete(key: string): Promise<void>;
 
 	/**
 	 * Sets an item in the storage with the specified key and value.
@@ -606,7 +634,19 @@ export abstract class SDKStorage {
 	 * @param {string} key - The key to associate with the value.
 	 * @param {string} value - The value to store.
 	 */
-	abstract set(key: string, value: string): void;
+	abstract set(key: string, value: string): Promise<void>;
+}
+
+/**
+ * Abstract class for HTTP client used in the SDK.
+ */
+export abstract class SDKHttpClient {
+	/**
+	 * Makes an HTTP request to the specified URL with optional options.
+	 * @param {string} url - The URL to which the request is sent.
+	 * @param {RequestInit} options - Optional request options, such as method, headers, body, etc.
+	 */
+	abstract request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>>;
 }
 
 /**
@@ -614,6 +654,25 @@ export abstract class SDKStorage {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type SDKStorageType = new (...args: Array<any>) => SDKStorage;
+
+/**
+ * Type representing a constructor function for SDKHttpClient.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SDKHttpClientType = new (...args: Array<any>) => SDKHttpClient;
+
+/**
+ * Http client response type.
+ */
+export type HttpClientResponse<T> = {
+	readonly headers: Headers;
+	readonly ok: boolean;
+	readonly status: number;
+	readonly statusText: string;
+	readonly url: string;
+	json(): Promise<T>;
+	text(): Promise<string>;
+};
 
 /**
  * A collection of functions used to handle various events that occur within the SDK.
@@ -766,9 +825,9 @@ export type ExtraRequestArgs = {
 };
 
 /**
- * Options for configuring logout behavior.
+ * Params for configuring logout behavior.
  */
-export type LogoutOptions = {
+export type LogoutParams = {
 	/**
 	 * The URI to redirect to after a successful logout.
 	 *
@@ -779,26 +838,6 @@ export type LogoutOptions = {
 	 * @example 'https://example.com/home'
 	 */
 	postLogoutRedirectUri?: string;
-};
-
-/**
- * List of select option types.
- */
-export const SelectOptionTypeList = ['item', 'group'] as const;
-/**
- * Type representing valid select option types.
- */
-export type SelectOptionType = (typeof SelectOptionTypeList)[number];
-
-/**
- * Data for branding purposes, such as logo and brand name.
- */
-export type BrandingData = {
-	logoUrl: string | null;
-	brandName: string | null;
-	copyright: string | null;
-	privacyPolicyUrl: string | null;
-	siteTermsUrl: string | null;
 };
 
 /**
@@ -928,7 +967,7 @@ export type PopupWindowFeatures = {
 /**
  * Parameters for popup authentication flow.
  */
-export type PopupWindowParams = ExtraRequestArgs & {
+export type PopupParams = ExtraRequestArgs & {
 	/**
 	 * Configuration options for the popup window, including size, position, and other features.
 	 *
@@ -943,6 +982,209 @@ export type PopupWindowParams = ExtraRequestArgs & {
 	 * @example '_blank' | '_self' | '_parent' | '_top'
 	 */
 	popupWindowTarget?: string;
+};
+
+/**
+ * Parameters for native authentication flow.
+ */
+export type NativeParams = RedirectParams;
+
+export declare const WidgetTypeList: readonly [
+	'layout',
+	'submit',
+	'static',
+	'input',
+	'checkbox',
+	'password',
+	'select',
+	'multiSelect',
+	'passcode',
+	'date',
+	'phone',
+	'loading',
+];
+export type WidgetType = (typeof WidgetTypeList)[number];
+export declare const SelectOptionTypeList: readonly ['item', 'group'];
+export type SelectOptionType = (typeof SelectOptionTypeList)[number];
+export type BrandingData = {
+	logoUrl: string | null;
+	brandName: string | null;
+	copyright: string | null;
+	privacyPolicyUrl: string | null;
+	siteTermsUrl: string | null;
+};
+export type CheckboxWidget = {
+	id: string;
+	type: 'checkbox';
+	label?: string;
+	readonly?: boolean;
+	value?: boolean;
+	render: {
+		type: 'checkboxHidden' | 'checkboxShown';
+		labelType: 'text' | 'html';
+	};
+	validator?: {
+		required?: boolean;
+	};
+};
+export type DateWidget = {
+	id: string;
+	type: 'date';
+	label?: string;
+	placeholder?: string;
+	readonly?: boolean;
+	value?: string;
+	render: {
+		type: 'native' | 'fieldSet';
+	};
+	validator?: {
+		notBefore?: string;
+		notAfter?: string;
+		required?: boolean;
+	};
+};
+export type InputWidget = {
+	id: string;
+	type: 'input';
+	label?: string;
+	value?: string;
+	placeholder?: string;
+	readonly?: boolean;
+	autocomplete?: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	inputmode: any;
+	validator?: {
+		required?: boolean;
+		minLength?: number;
+		maxLength?: number;
+		regex?: string;
+	};
+};
+export type PasscodeWidget = {
+	id: string;
+	type: 'passcode';
+	label?: string;
+	validator?: {
+		length?: number;
+	};
+};
+export type PasswordWidget = {
+	id: string;
+	type: 'password';
+	label?: string;
+	qualityIndicator?: boolean;
+	validator?: {
+		minLength?: number;
+		maxLength?: number;
+		maxNumericCharacterSequences?: number;
+		maxRepeatedCharacters?: number;
+		mustContain?: Array<'UPPERCASE' | 'LOWERCASE' | 'NUMERIC' | 'SPECIAL'>;
+		restrictedCharacters?: string;
+	};
+};
+export type PhoneWidget = {
+	id: string;
+	type: 'phone';
+	label?: string;
+	readonly?: boolean;
+	value?: string;
+	validator?: {
+		required?: boolean;
+	};
+};
+export type SelectWidgetOption = {
+	type: 'item';
+	label?: string;
+	value: string;
+};
+export type SelectWidgetOptionGroup = {
+	type: 'group';
+	label?: string;
+	options: Array<SelectWidgetOption>;
+};
+export type SelectWidget = {
+	id: string;
+	type: 'select';
+	label?: string;
+	readonly?: boolean;
+	values?: Array<string>;
+	placeholder?: string;
+	render: {
+		type: 'dropdown' | 'radio';
+	};
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		required?: boolean;
+	};
+};
+export type MultiSelectWidget = {
+	id: string;
+	type: 'multiSelect';
+	label?: string;
+	readonly?: boolean;
+	values?: Array<string>;
+	placeholder?: string;
+	render: {
+		type: 'dropdown' | 'checkbox';
+	};
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		minSelectable?: number;
+		maxSelectable?: number;
+	};
+};
+export type StaticWidget = {
+	id: string;
+	type: 'static';
+	value: string;
+	render: {
+		type: 'html' | 'text';
+	};
+};
+export type SubmitWidget = {
+	id: string;
+	type: 'submit';
+	label?: string;
+	render: {
+		type: 'button' | 'link';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
+export type FormWidget = {
+	id: string;
+	type: 'form';
+	widgets: Array<
+		CheckboxWidget | DateWidget | InputWidget | PasscodeWidget | PasswordWidget | PhoneWidget | SelectWidget | MultiSelectWidget | StaticWidget | SubmitWidget
+	>;
+};
+export type Widget = {
+	type: 'widget';
+	formId: string;
+	widgetId: string;
+};
+export type LayoutWidget = {
+	type: 'vertical' | 'horizontal';
+	items: Array<Widget | LayoutWidget>;
+};
+export type LoginFlowMessage = {
+	type: string;
+	text: string;
+};
+export type LoginFlowState = {
+	hostedUrl?: string;
+	finalizeUrl?: string;
+	screen?: string;
+	branding?: BrandingData;
+	forms?: Array<FormWidget>;
+	layout?: LayoutWidget;
+	messages?: Record<string, Record<string, LoginFlowMessage>> & {
+		global?: LoginFlowMessage;
+	};
 };
 
 // endregion

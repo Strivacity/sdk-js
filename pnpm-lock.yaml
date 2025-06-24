@@ -12,7 +12,7 @@ overrides:
   '@strivacity/sdk-react': workspace:*
   '@strivacity/sdk-remix': workspace:*
   '@strivacity/sdk-vue': workspace:*
-  '@strivacity/vitest': workspace:*
+  '@strivacity/testing': workspace:*
 
 importers:
 
@@ -150,9 +150,9 @@ importers:
       '@strivacity/sdk-core':
         specifier: workspace:*
         version: link:packages/sdk-core
-      '@strivacity/vitest':
+      '@strivacity/testing':
         specifier: workspace:*
-        version: link:tools/vitest
+        version: link:tools/testing
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.0
@@ -210,9 +210,6 @@ importers:
       happy-dom:
         specifier: ^17.4.4
         version: 17.4.4
-      ky:
-        specifier: ^1.8.1
-        version: 1.8.1
       lint-staged:
         specifier: ^15.5.0
         version: 15.5.0
@@ -402,7 +399,7 @@ importers:
         specifier: workspace:*
         version: link:../sdk-core
 
-  tools/vitest: {}
+  tools/testing: {}
 
 packages:
 
@@ -7817,10 +7814,6 @@ packages:
 
   kuler@2.0.0:
     resolution: {integrity: sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==}
-
-  ky@1.8.1:
-    resolution: {integrity: sha512-7Bp3TpsE+L+TARSnnDpk3xg8Idi8RwSLdj6CMbNWoOARIrGrbuLGusV0dYwbZOm4bB3jHNxSw8Wk/ByDqJEnDw==}
-    engines: {node: '>=18'}
 
   lambda-local@2.2.0:
     resolution: {integrity: sha512-bPcgpIXbHnVGfI/omZIlgucDqlf4LrsunwoKue5JdZeGybt8L6KyJz2Zu19ffuZwIwLj2NAI2ZyaqNT6/cetcg==}
@@ -21460,8 +21453,6 @@ snapshots:
   kolorist@1.8.0: {}
 
   kuler@2.0.0: {}
-
-  ky@1.8.1: {}
 
   lambda-local@2.2.0:
     dependencies:

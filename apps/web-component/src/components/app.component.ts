@@ -5,11 +5,11 @@ import { state } from 'lit/decorators/state.js';
 import { initFlow } from '@strivacity/sdk-core';
 
 globalThis.sdk = initFlow({
-	mode: 'redirect',
+	mode: import.meta.env.VITE_MODE,
 	issuer: import.meta.env.VITE_ISSUER,
 	scopes: import.meta.env.VITE_SCOPES.split(' '),
 	clientId: import.meta.env.VITE_CLIENT_ID,
-	redirectUri: 'http://localhost:4200/callback',
+	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.web-component',
 });
 
@@ -129,7 +129,7 @@ export class AppComponent extends LitElement {
 		this.isAuthenticated = await globalThis.sdk.isAuthenticated;
 
 		if (this.isAuthenticated) {
-			this.name = `${globalThis.sdk.idTokenClaims?.given_name} ${globalThis.sdk.idTokenClaims?.family_name}`;
+			this.name = `${globalThis.sdk.idTokenClaims?.given_name ?? ''} ${globalThis.sdk.idTokenClaims?.family_name ?? ''}`;
 		}
 	}
 

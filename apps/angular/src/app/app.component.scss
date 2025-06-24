@@ -1,3 +1,5 @@
+// stylelint-disable selector-pseudo-element-no-unknown
+
 :host {
 	display: block;
 	font-family:
@@ -33,6 +35,14 @@ header {
 	}
 }
 
-section {
-	padding: 1rem;
+::ng-deep {
+	section {
+		padding: 1rem;
+	}
+
+	.login-renderer {
+		display: block;
+		margin: 0 auto;
+		width: 360px;
+	}
 }

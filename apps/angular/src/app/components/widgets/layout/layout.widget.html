@@ -1,0 +1,13 @@
+<ng-template #content>
+	<ng-content></ng-content>
+</ng-template>
+
+@if (tag === 'form') {
+<form [attr.data-form-id]="formId" [attr.data-type]="type" (submit)="onSubmit($event)">
+	<ng-container *ngTemplateOutlet="content"></ng-container>
+</form>
+} @else {
+<div [attr.data-form-id]="formId" [attr.data-type]="type">
+	<ng-container *ngTemplateOutlet="content"></ng-container>
+</div>
+}

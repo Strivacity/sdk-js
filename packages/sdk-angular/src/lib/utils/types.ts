@@ -5,45 +5,44 @@ import type { IdTokenClaims } from '@strivacity/sdk-core';
  */
 export type Session = {
 	/**
-	 * Indicates whether the session is in the process of initializing.
-	 * When `true`, the session information might not be fully available yet.
+	 * Reactive reference to the loading state of the session.
+	 * `true` when the session is initializing, otherwise `false`.
 	 */
 	loading: boolean;
 
 	/**
-	 * Indicates whether the user is currently authenticated.
+	 * Reactive reference to the user's authentication status.
 	 * `true` if the user is authenticated, otherwise `false`.
 	 */
 	isAuthenticated: boolean;
 
 	/**
-	 * The claims contained in the ID token if the user is authenticated.
-	 * This includes information such as the user's identity and authentication context.
-	 * If the user is not authenticated, this will be `null`.
+	 * Reactive reference to the claims contained in the ID token.
+	 * Contains user identity and other information, or `null` if not authenticated.
 	 */
 	idTokenClaims: IdTokenClaims | null;
 
 	/**
-	 * The current access token used for authorizing API requests.
-	 * This token is `null` if the user is not authenticated or if the token has not been set.
+	 * Reactive reference to the current access token for API authorization.
+	 * `null` if the user is not authenticated or the token is unavailable.
 	 */
 	accessToken: string | null;
 
 	/**
-	 * The current refresh token used to obtain a new access token when the current one expires.
-	 * This token is `null` if the user is not authenticated or if the token has not been set.
+	 * Reactive reference to the refresh token, used to refresh the access token.
+	 * `null` if the user is not authenticated or the refresh token is unavailable.
 	 */
 	refreshToken: string | null;
 
 	/**
-	 * Indicates whether the current access token has expired.
-	 * `true` if the token is expired, otherwise `false`.
+	 * Reactive reference indicating if the access token has expired.
+	 * `true` if expired, otherwise `false`.
 	 */
 	accessTokenExpired: boolean;
 
 	/**
-	 * The expiration date of the current access token in Unix time (milliseconds since epoch).
-	 * If the access token is not available or the session is not authenticated, this will be `null`.
+	 * Reactive reference to the expiration date of the access token in Unix time (milliseconds).
+	 * `null` if no token is available or the session is not authenticated.
 	 */
 	accessTokenExpirationDate: number | null;
 };

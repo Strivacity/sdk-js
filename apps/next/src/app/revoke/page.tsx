@@ -6,17 +6,16 @@ import { useStrivacity } from '@strivacity/sdk-next';
 
 export default function Revoke() {
 	const router = useRouter();
-	const { revoke } = useStrivacity();
+	const { isAuthenticated, revoke } = useStrivacity();
 
 	useEffect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
-			try {
+			if (isAuthenticated) {
 				await revoke();
-			} catch {
-			} finally {
-				router.push('/');
 			}
+
+			router.push('/');
 		})();
 	}, []);
 

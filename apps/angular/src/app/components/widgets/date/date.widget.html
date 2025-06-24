@@ -1,0 +1,33 @@
+@if (config.label) {
+<label [for]="config.id" class="label">{{ config.label }}</label>
+} @if (config.render?.type === 'fieldSet') {
+<div class="fieldset" [style.grid-template-columns]="fieldLengths.year + 'fr ' + fieldLengths.month + 'fr ' + fieldLengths.day + 'fr'">
+	@for (field of format; track field) {
+	<input
+		[name]="field"
+		[readonly]="disabled"
+		[required]="validator?.required"
+		[value]="getFieldValue(field)"
+		[placeholder]="placeholders[field]"
+		type="text"
+		size="1"
+		(input)="onFieldsetChange($event)"
+		(keydown.enter)="onKeyDown($event)"
+	/>
+	}
+</div>
+} @else {
+<input
+	[id]="config.id"
+	[name]="config.id"
+	[readonly]="disabled"
+	[required]="validator?.required"
+	[value]="value"
+	type="date"
+	size="1"
+	(change)="onChange($event)"
+	(keydown.enter)="onKeyDown($event)"
+/>
+} @if (errorMessage) {
+<small class="error">{{ errorMessage }}</small>
+}

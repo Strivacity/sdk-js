@@ -1,5 +1,5 @@
 import '@analogjs/vitest-angular/setup-zone';
-import '@strivacity/vitest/setup';
+import '@strivacity/testing/vitest/setup';
 
 import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import { getTestBed } from '@angular/core/testing';

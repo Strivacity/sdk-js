@@ -10,7 +10,8 @@ import { type RedirectFlow, StrivacityAuthService } from '@strivacity/sdk-angula
 })
 export class CallbackPage {
 	readonly subscription = new Subscription();
-	readonly query = Object.fromEntries(new URLSearchParams(globalThis.window.location.search));
+	error: string | null = null;
+	errorDescription: string | null = null;
 
 	constructor(
 		protected route: ActivatedRoute,
@@ -19,10 +20,24 @@ export class CallbackPage {
 	) {}
 
 	ngOnInit(): void {
+		const url = new URL(window.location.href);
+		const sessionId = url.searchParams.get('session_id');
+
+		if (sessionId) {
+			void this.router.navigate(['/login'], { queryParams: { session_id: sessionId } });
+			return;
+		}
+
 		this.subscription.add(
 			this.strivacityAuthService.handleCallback().subscribe({
 				next: () => {
 					void this.router.navigateByUrl('/profile');
+				},
+				error: (err) => {
+					this.error = this.route.snapshot.queryParamMap.get('error');
+					this.errorDescription = this.route.snapshot.queryParamMap.get('error_description');
+					// eslint-disable-next-line no-console
+					console.error('Error during callback handling:', err);
 				},
 			}),
 		);

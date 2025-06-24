@@ -19,11 +19,11 @@ export default defineNuxtConfig({
 	devServer: { host: 'localhost', port: 4200 },
 	modules: ['@strivacity/sdk-nuxt'],
 	strivacity: {
-		mode: 'redirect',
+		mode: process.env.VITE_MODE as 'redirect' | 'popup' | 'native',
 		issuer: process.env.VITE_ISSUER,
 		scopes: process.env.VITE_SCOPES?.split(' '),
 		clientId: process.env.VITE_CLIENT_ID,
-		redirectUri: 'http://localhost:4200/callback',
+		redirectUri: process.env.VITE_REDIRECT_URI,
 		storageTokenName: 'sty.session.nuxt',
 	},
 });

@@ -1,18 +1,17 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStrivacity } from '@strivacity/sdk-vue';
 
 const router = useRouter();
-const { revoke } = useStrivacity();
+const { isAuthenticated, revoke } = useStrivacity();
 
 onMounted(async () => {
-	try {
+	if (isAuthenticated.value) {
 		await revoke();
-	} catch {
-	} finally {
-		await router.push('/');
 	}
+
+	await router.push('/');
 });
 </script>
 

@@ -10,8 +10,20 @@ export const Callback = () => {
 	useEffect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
-			await handleCallback();
-			await navigate('/profile');
+			const url = new URL(location.href);
+			const sessionId = url.searchParams.get('session_id');
+
+			if (sessionId) {
+				await navigate(`/login?session_id=${sessionId}`);
+			} else {
+				try {
+					await handleCallback();
+					await navigate('/profile');
+				} catch (error) {
+					// eslint-disable-next-line no-console
+					console.error('Error during callback handling:', error);
+				}
+			}
 		})();
 	}, []);
 

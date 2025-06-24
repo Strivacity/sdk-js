@@ -1,12 +1,12 @@
-import { vi, describe, it, beforeEach, expect } from 'vitest';
+import { vi, describe, test, beforeEach, expect, type MockInstance } from 'vitest';
 import { SessionStorage } from '../../src/storages/SessionStorage';
 import * as expectedImports from '../../src/storages/SessionStorage';
 
 describe('SessionStorage', () => {
 	const storage = new SessionStorage();
-	let getItemSpy;
-	let setItemSpy;
-	let removeItemSpy;
+	let getItemSpy: MockInstance;
+	let setItemSpy: MockInstance;
+	let removeItemSpy: MockInstance;
 
 	beforeEach(() => {
 		getItemSpy = vi.spyOn(globalThis.window.sessionStorage, 'getItem');
@@ -14,23 +14,23 @@ describe('SessionStorage', () => {
 		removeItemSpy = vi.spyOn(globalThis.window.sessionStorage, 'removeItem');
 	});
 
-	it('should export the correct things', () => {
+	test('should export the correct things', () => {
 		expect(Object.keys(expectedImports)).toHaveLength(1);
 		expect(expectedImports).toHaveProperty('SessionStorage');
 	});
 
-	it('getItem', () => {
-		storage.get('test');
+	test('get', async () => {
+		await storage.get('test');
 		expect(getItemSpy).toHaveBeenCalledWith('test');
 	});
 
-	it('setItem', () => {
-		storage.set('test', 'value');
+	test('set', async () => {
+		await storage.set('test', 'value');
 		expect(setItemSpy).toHaveBeenCalledWith('test', 'value');
 	});
 
-	it('setItem', () => {
-		storage.delete('test');
+	test('delete', async () => {
+		await storage.delete('test');
 		expect(removeItemSpy).toHaveBeenCalledWith('test');
 	});
 });

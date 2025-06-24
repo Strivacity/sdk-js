@@ -1,5 +1,5 @@
 export const Home = () => (
 	<section>
-		<h1>Framework: react</h1>
+		<h1>Framework: React</h1>
 	</section>
 );

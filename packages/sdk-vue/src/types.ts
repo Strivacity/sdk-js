@@ -1,7 +1,8 @@
 import type { Ref } from 'vue';
-import type { IdTokenClaims } from '@strivacity/sdk-core';
+import type { IdTokenClaims, LoginFlowMessage, LoginFlowState, SDKOptions } from '@strivacity/sdk-core';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
+import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 
 /**
  * Represents the session state, including authentication details and token information.
@@ -12,6 +13,11 @@ export type Session = {
 	 * `true` when the session is initializing, otherwise `false`.
 	 */
 	loading: Ref<boolean>;
+
+	/**
+	 * The SDK options used to configure the session.
+	 */
+	options: Ref<SDKOptions>;
 
 	/**
 	 * Reactive reference to the user's authentication status.
@@ -55,32 +61,37 @@ export type Session = {
  */
 export type PopupSDK = {
 	/**
-	 * Initiates the login process using a popup window.
+	 * Represents the SDK instance.
+	 */
+	sdk: InstanceType<typeof PopupFlow>;
+
+	/**
+	 * Initiates the login process.
 	 */
 	login: InstanceType<typeof PopupFlow>['login'];
 
 	/**
-	 * Registers a new user using a popup flow.
+	 * Registers a new user.
 	 */
 	register: InstanceType<typeof PopupFlow>['register'];
 
 	/**
-	 * Refreshes the user's session using a popup.
+	 * Refreshes the user's session.
 	 */
 	refresh: InstanceType<typeof PopupFlow>['refresh'];
 
 	/**
-	 * Revokes the current session tokens using a popup flow.
+	 * Revokes the current session tokens.
 	 */
 	revoke: InstanceType<typeof PopupFlow>['revoke'];
 
 	/**
-	 * Logs out the user using a popup window.
+	 * Logs out the user.
 	 */
 	logout: InstanceType<typeof PopupFlow>['logout'];
 
 	/**
-	 * Handles the callback after a popup-based authentication or token exchange.
+	 * Handles the callback after authentication or token exchange.
 	 */
 	handleCallback: InstanceType<typeof PopupFlow>['handleCallback'];
 };
@@ -90,34 +101,79 @@ export type PopupSDK = {
  */
 export type RedirectSDK = {
 	/**
-	 * Initiates the login process by redirecting the user to the identity provider.
+	 * Represents the SDK instance.
+	 */
+	sdk: InstanceType<typeof RedirectFlow>;
+
+	/**
+	 * Initiates the login process.
 	 */
 	login: InstanceType<typeof RedirectFlow>['login'];
 
 	/**
-	 * Registers a new user using a redirect flow.
+	 * Registers a new user.
 	 */
 	register: InstanceType<typeof RedirectFlow>['register'];
 
 	/**
-	 * Refreshes the user's session using a redirect flow.
+	 * Refreshes the user's session.
 	 */
 	refresh: InstanceType<typeof RedirectFlow>['refresh'];
 
 	/**
-	 * Revokes the current session tokens using a redirect flow.
+	 * Revokes the current session tokens.
 	 */
 	revoke: InstanceType<typeof RedirectFlow>['revoke'];
 
 	/**
-	 * Logs out the user by redirecting to the logout page.
+	 * Logs out the user.
 	 */
 	logout: InstanceType<typeof RedirectFlow>['logout'];
 
 	/**
-	 * Handles the callback after a redirect-based authentication or token exchange.
+	 * Handles the callback after authentication or token exchange.
 	 */
 	handleCallback: InstanceType<typeof RedirectFlow>['handleCallback'];
+};
+
+/**
+ * Represents the available authentication flows and operations for Native-based interactions.
+ */
+export type NativeSDK = {
+	/**
+	 * Represents the SDK instance.
+	 */
+	sdk: InstanceType<typeof NativeFlow>;
+
+	/**
+	 * Initiates the login process.
+	 */
+	login: InstanceType<typeof NativeFlow>['login'];
+
+	/**
+	 * Registers a new user.
+	 */
+	register: InstanceType<typeof NativeFlow>['register'];
+
+	/**
+	 * Refreshes the user's session.
+	 */
+	refresh: InstanceType<typeof NativeFlow>['refresh'];
+
+	/**
+	 * Revokes the current session tokens.
+	 */
+	revoke: InstanceType<typeof NativeFlow>['revoke'];
+
+	/**
+	 * Logs out the user.
+	 */
+	logout: InstanceType<typeof NativeFlow>['logout'];
+
+	/**
+	 * Handles the callback after authentication or token exchange.
+	 */
+	handleCallback: InstanceType<typeof NativeFlow>['handleCallback'];
 };
 
 /**
@@ -129,3 +185,19 @@ export type PopupContext = PopupSDK & Session;
  * Represents a combined context for Redirect-based flows, containing both the Redirect SDK and the session state.
  */
 export type RedirectContext = RedirectSDK & Session;
+
+/**
+ * Represents a combined context for Redirect-based flows, containing both the Redirect SDK and the session state.
+ */
+export type NativeContext = NativeSDK & Session;
+
+export type NativeFlowContextValue = {
+	loading: Ref<boolean>;
+	forms: Ref<Record<string, Record<string, unknown>>>;
+	messages: Ref<Record<string, Record<string, LoginFlowMessage>>>;
+	state: Ref<Partial<LoginFlowState>>;
+	submitForm: (formId: string) => Promise<void>;
+	triggerFallback: (hostedUrl?: string) => void;
+	setFormValue: (formId: string, widgetId: string, value: unknown) => void;
+	setMessage: (formId: string, widgetId: string, value: LoginFlowMessage) => void;
+};
