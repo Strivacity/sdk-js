@@ -14,10 +14,10 @@
     "build": {
       "executor": "nx:run-commands",
       "dependsOn": ["type-check"],
-      "outputs": ["{workspaceRoot}/packages/sdk-vue/dist"],
+      "outputs": ["{workspaceRoot}/packages/sdk-react/dist"],
       "defaultConfiguration": "development",
       "options": {
-        "cwd": "packages/sdk-vue"
+        "cwd": "packages/sdk-react"
       },
       "configurations": {
         "serve": {
