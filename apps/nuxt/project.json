@@ -2,5 +2,38 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "app-nuxt",
   "projectType": "application",
-  "sourceRoot": "apps/nuxt/src"
+  "sourceRoot": "apps/nuxt/src",
+  "targets": {
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/nuxt",
+        "command": "nuxi prepare"
+      },
+      "dependsOn": ["sdk-nuxt:build"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/nuxt",
+        "command": "nuxt dev"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    }
+  }
 }

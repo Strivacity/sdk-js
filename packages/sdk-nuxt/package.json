@@ -8,13 +8,12 @@
   "dependencies": {
     "@strivacity/sdk-core": "1.0.1"
   },
-  "main": "./dist/module.cjs",
-  "types": "./dist/types.d.ts",
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/types.d.ts",
+      "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs",
-      "require": "./dist/module.cjs",
       "default": "./dist/module.mjs"
     }
   }

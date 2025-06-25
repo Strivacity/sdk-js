@@ -5,7 +5,8 @@ import { composePlugins, withNx } from '@nx/next';
  **/
 const nextConfig = {
 	output: 'export',
-	trailingSlash: true,
+	reactStrictMode: false,
+	trailingSlash: false,
 	distDir: './dist',
 	env: {
 		ISSUER: process.env.VITE_ISSUER,

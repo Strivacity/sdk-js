@@ -3,11 +3,12 @@ import { defineVitestConfig } from '@nuxt/test-utils/config';
 
 export default defineVitestConfig({
 	test: {
-		globals: true,
-		watch: false,
-		pool: 'threads',
 		setupFiles: ['@strivacity/vitest/setup.ts'],
 		environment: 'nuxt',
+		watch: false,
+		globals: true,
+		mockReset: true,
+		pool: 'threads',
 		sequence: {
 			hooks: 'list',
 		},

@@ -8,4 +8,8 @@ module.exports = {
 			'import.meta.env.VITE_SCOPES': JSON.stringify(process.env.VITE_SCOPES),
 		}),
 	],
+	devServer: {
+		port: 4200,
+		host: 'localhost',
+	},
 };

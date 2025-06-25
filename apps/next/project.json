@@ -2,5 +2,25 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "app-next",
   "projectType": "application",
-  "sourceRoot": "apps/next/src"
+  "sourceRoot": "apps/next/src",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/next",
+        "command": "next dev --port 4200"
+      },
+      "dependsOn": ["sdk-next:build"]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/next",
+        "command": "next build"
+      },
+      "dependsOn": ["sdk-next:build"]
+    }
+  }
 }

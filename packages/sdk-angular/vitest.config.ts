@@ -2,11 +2,12 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	test: {
-		globals: true,
-		watch: false,
-		pool: 'threads',
-		setupFiles: ['./tests/setup.ts'],
+		setupFiles: ['@strivacity/vitest/setup.ts'],
 		environment: 'happy-dom',
+		watch: false,
+		globals: true,
+		mockReset: true,
+		pool: 'threads',
 		sequence: {
 			hooks: 'list',
 		},
