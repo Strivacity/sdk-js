@@ -1,0 +1,16 @@
+{
+  "appId": "com.example.app",
+  "appName": "app-vue",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "server": {
+    "allowNavigation": ["*"]
+  }
+}

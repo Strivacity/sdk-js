@@ -2,6 +2,10 @@
 
 > **The SDK supports Next.js version 13 and above**
 
+## Example App
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/next)
+
 ## Install
 
 ```bash

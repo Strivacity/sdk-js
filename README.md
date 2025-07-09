@@ -7,12 +7,12 @@ See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hu
 # Client SDKs
 
 - **[Core](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-core)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
-- **[Angular](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-angular)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular)
+- **[Angular](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-angular)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-angular)
 - **[Next.js](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-next)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/next)
 - **[Nuxt](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-nuxt)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/nuxt)
 - **[Remix](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-remix)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/remix)
-- **[React](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-react)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react)
-- **[Vue.js](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-vue)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
+- **[React](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-react)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-react)
+- **[Vue.js](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-vue)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
 
 # Usage of Build and Serve Scripts
 
@@ -49,6 +49,9 @@ To start the development server for an example application, use one of the follo
 - `pnpm app:remix:serve` – Serve the Remix example app
 - `pnpm app:vue:serve` – Serve the Vue example app
 - `pnpm app:wc:serve` – Serve the Web Component example app
+- `pnpm app:ionic-angular:serve` – Serve the Ionic Angular example app
+- `pnpm app:ionic-react:serve` – Serve the Ionic React example app
+- `pnpm app:ionic-vue:serve` – Serve the Ionic Vue.js example app
 
 Replace `pnpm` with `npm run` or `yarn` if you use a different package manager.
 

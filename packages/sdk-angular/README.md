@@ -2,6 +2,11 @@
 
 > **The SDK supports Angular version 16 and above**
 
+## Example Apps
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular)
+- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-angular)
+
 ## Install
 
 ```bash

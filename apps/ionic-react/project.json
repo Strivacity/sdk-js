@@ -1,0 +1,64 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-ionic-react",
+  "projectType": "application",
+  "sourceRoot": "apps/ionic-react/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-react:build"],
+      "options": {
+        "command": "tsc --noEmit --project apps/ionic-react/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic-react/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/ionic-react"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic-react/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/ionic-react",
+        "command": "vite serve"
+      }
+    },
+    "android:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-react",
+        "command": "cap run android"
+      }
+    },
+    "ios:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-react",
+        "command": "cap run ios"
+      }
+    }
+  }
+}

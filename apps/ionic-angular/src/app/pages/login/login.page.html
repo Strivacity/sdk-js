@@ -1,0 +1,17 @@
+<section>
+	@if (options?.mode === 'redirect') {
+	<h1>Redirecting...</h1>
+	} @else if (options?.mode === 'popup') {
+	<h1>Loading...</h1>
+	} @else if (options?.mode === 'native') {
+	<sty-login-renderer
+		[widgets]="widgets"
+		[sessionId]="sessionId"
+		(fallback)="onFallback($event)"
+		(login)="onLogin()"
+		(error)="onError($event)"
+		(globalMessage)="onGlobalMessage($event)"
+		(blockReady)="onBlockReady($event)"
+	></sty-login-renderer>
+	}
+</section>

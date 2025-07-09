@@ -38,7 +38,7 @@ export const baseConfig = {
 };
 
 export const ignoreConfig = {
-	ignores: ['.stylelintrc.js', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts', '**/dist', '**/reports'],
+	ignores: ['.stylelintrc.js', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts', '**/dist', '**/reports', '**/android', '**/ios'],
 };
 
 export const defineTsConfig = (...configs) =>

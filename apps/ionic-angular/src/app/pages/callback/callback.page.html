@@ -1,0 +1,11 @@
+<section>
+	@if (error) {
+	<h1>Error in authentication</h1>
+	<div>
+		<h4>{{ error }}</h4>
+		<p>{{ error_description }}</p>
+	</div>
+	} @else {
+	<h1>Logging in...</h1>
+	}
+</section>

@@ -1,0 +1,63 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-ionic-vue",
+  "projectType": "application",
+  "sourceRoot": "apps/ionic-vue/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-vue:build"],
+      "options": {
+        "command": "vue-tsc --noEmit --project apps/ionic-vue/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic-vue/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/ionic-vue"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "android:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-vue",
+        "command": "cap run android"
+      }
+    },
+    "ios:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-vue",
+        "command": "cap run ios"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/ionic-vue/dist"],
+      "options": {
+        "cwd": "apps/ionic-vue",
+        "command": "vite serve"
+      }
+    }
+  }
+}

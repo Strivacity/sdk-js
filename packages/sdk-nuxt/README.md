@@ -2,6 +2,10 @@
 
 > **The SDK supports Nuxt version 3 and above**
 
+## Example App
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/nuxt)
+
 ### Install
 
 ```bash

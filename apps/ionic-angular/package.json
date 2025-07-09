@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "@strivacity/app-ionic-angular",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "strivacity <info@strivacity.com>",
+  "dependencies": {
+    "@capacitor/app": "^7.0.1",
+    "@capacitor/inappbrowser": "2.2.0",
+    "@capacitor/preferences": "^7.0.1",
+    "@strivacity/sdk-angular": "*"
+  }
+}

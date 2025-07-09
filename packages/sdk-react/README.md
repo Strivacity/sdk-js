@@ -2,6 +2,11 @@
 
 > **The SDK supports React version 18 and above**
 
+## Example Apps
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react)
+- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-react)
+
 ## Install
 
 ```bash

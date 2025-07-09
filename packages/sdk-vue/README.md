@@ -2,6 +2,11 @@
 
 > **The SDK supports Vue version 3 and above**
 
+## Example Apps
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
+- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
+
 ## Install
 
 ```bash
@@ -29,6 +34,11 @@ const sdk = createStrivacitySDK({
 app.use(sdk);
 app.mount('#app');
 ```
+
+## Example Apps
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
+- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
 
 ### How to use the SDK in your components
 

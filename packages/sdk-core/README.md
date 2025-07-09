@@ -1,5 +1,9 @@
 # @strivacity/sdk-core
 
+## Example App
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
+
 ### Install
 
 ```bash
@@ -50,7 +54,3 @@ The `initFlow` function initializes and returns an instance of either `PopupFlow
   - `popup`: Uses a popup window for authentication. Returns an instance of `PopupFlow`.
   - `redirect`: Uses a full-page redirect for authentication. Returns an instance of `RedirectFlow`.
   - `native`: Uses a native flow for authentication. Returns an instance of `NativeFlow`.
-
-### Links
-
-[Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
