@@ -1,11 +1,11 @@
 {
   "private": true,
   "name": "@strivacity/app-angular",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-angular": "*"
+    "@strivacity/sdk-angular": "2.0.0-beta"
   }
 }

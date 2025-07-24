@@ -1,3 +1,15 @@
+## 2.0.0-beta (2025-07-24)
+
+### 🚀 Features
+
+- ionic example app added ([494805a](https://github.com/strivacity/sdk-js/commit/494805a))
+- ⚠️  NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
+- @strivacity/sdk-angular package implemented ([ae5dd99](https://github.com/strivacity/sdk-js/commit/ae5dd99))
+
+### ⚠️  Breaking Changes
+
+- ⚠️  NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
+
 ## 1.0.1 (2025-02-03)
 
 
