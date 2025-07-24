@@ -1,5 +1,9 @@
 # @strivacity/sdk-core
 
+## Example App
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
+
 ### Install
 
 ```bash
@@ -12,6 +16,7 @@ npm install @strivacity/sdk-core
 import { initFlow } from '@strivacity/sdk-core';
 
 const sdk = initFlow({
+	mode: 'redirect', // or 'popup' or 'native'
 	issuer: 'https://<YOUR_DOMAIN>',
 	scopes: ['openid', 'profile'],
 	clientId: '<YOUR_CLIENT_ID>',
@@ -23,15 +28,15 @@ await sdk.login();
 
 ### API Documentation
 
-#### `initFlow(options: SDKOptions & { mode?: 'popup' | 'redirect' }): PopupFlow | RedirectFlow`
+#### `initFlow(options: SDKOptions & { mode?: 'popup' | 'redirect' | 'native' }): PopupFlow | RedirectFlow | NativeFlow`
 
-The `initFlow` function initializes and returns an instance of either `PopupFlow` or `RedirectFlow`, based on the specified `mode`.
+The `initFlow` function initializes and returns an instance of either `PopupFlow`, `RedirectFlow`, or `NativeFlow`, based on the specified `mode`.
 
 **Parameters:**
 
 - `options`: An object containing configuration options for the SDK.
 
-  **Type:** `SDKOptions & { mode?: 'popup' | 'redirect' }`
+  **Type:** `SDKOptions & { mode?: 'popup' | 'redirect' | 'native' }`
 
   **Properties:**
 
@@ -48,7 +53,4 @@ The `initFlow` function initializes and returns an instance of either `PopupFlow
 
   - `popup`: Uses a popup window for authentication. Returns an instance of `PopupFlow`.
   - `redirect`: Uses a full-page redirect for authentication. Returns an instance of `RedirectFlow`.
-
-### Links
-
-[Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
+  - `native`: Uses a native flow for authentication. Returns an instance of `NativeFlow`.

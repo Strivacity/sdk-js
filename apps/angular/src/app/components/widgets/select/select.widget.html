@@ -1,0 +1,43 @@
+<div>
+	@if (config.render.type === 'radio') { @for (option of config.options; track option.value) {
+	<div class="item">
+		@if (option.type === 'group') {
+		<p>{{ option.label }}</p>
+		@for (subOption of option.options; track subOption.value) {
+		<div class="item">
+			<input
+				[id]="subOption.value"
+				type="radio"
+				[name]="config.id"
+				[readonly]="disabled"
+				[value]="subOption.value"
+				[checked]="subOption.value === value"
+				(change)="onChange($event)"
+			/>
+			<label [for]="subOption.value">{{ subOption.label }}</label>
+		</div>
+		} } @else {
+		<input [id]="option.value" type="radio" [name]="config.id" [value]="option.value" [checked]="option.value === value" (change)="onChange($event)" />
+		<label [for]="option.value">{{ option.label }}</label>
+		}
+	</div>
+	} @if (errorMessage) {
+	<small class="error">{{ errorMessage }}</small>
+	} } @else { @if (config.label) {
+	<label [for]="config.id" class="label">{{ config.label }}</label>
+	}
+	<select [id]="config.id" [name]="config.id" [disabled]="disabled" [required]="validator?.required" size="1" (change)="onChange($event)">
+		@for (option of config.options; track option.value) { @if (option.type === 'group') {
+		<optgroup [label]="option.label">
+			@for (subOption of option.options; track subOption.value) {
+			<option [value]="subOption.value" [selected]="subOption.value === value">{{ subOption.label }}</option>
+			}
+		</optgroup>
+		} @else {
+		<option [value]="option.value" [selected]="option.value === value">{{ option.label }}</option>
+		} }
+	</select>
+	@if (errorMessage) {
+	<small class="error">{{ errorMessage }}</small>
+	} }
+</div>

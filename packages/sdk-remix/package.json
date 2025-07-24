@@ -1,12 +1,12 @@
 {
   "name": "@strivacity/sdk-remix",
-  "version": "1.0.1",
+  "version": "2.0.0-beta",
   "type": "module",
   "license": "MIT",
   "description": "Strivacity Remix SDK client",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-core": "1.0.1"
+    "@strivacity/sdk-core": "2.0.0-beta"
   },
   "peerDependencies": {
     "react": ">=18"

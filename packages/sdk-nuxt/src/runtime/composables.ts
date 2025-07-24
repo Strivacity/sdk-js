@@ -1,18 +1,20 @@
 import StorageClass from '#build/strivacity-sdk-storage';
 import { ref, useRuntimeConfig } from '#imports';
-import { initFlow, type IdTokenClaims } from '@strivacity/sdk-core';
+import { initFlow, type IdTokenClaims, type SDKOptions } from '@strivacity/sdk-core';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
-import type { PopupContext, RedirectContext } from '../types';
+import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
+import type { PopupContext, RedirectContext, NativeContext } from '../types';
 
-const loadingRef = ref<boolean>(false);
+const loadingRef = ref<boolean>(true);
+const optionsRef = ref<SDKOptions>({} as SDKOptions);
 const isAuthenticatedRef = ref<boolean>(false);
 const idTokenClaimsRef = ref<IdTokenClaims | null>(null);
 const accessTokenRef = ref<string | null>(null);
 const refreshTokenRef = ref<string | null>(null);
 const accessTokenExpiredRef = ref<boolean>(true);
 const accessTokenExpirationDateRef = ref<number | null>(null);
-let sdk: PopupFlow | RedirectFlow;
+let sdk: PopupFlow | RedirectFlow | NativeFlow;
 
 const updateSession = async () => {
 	isAuthenticatedRef.value = await sdk.isAuthenticated;
@@ -34,11 +36,12 @@ const updateSession = async () => {
  *
  * @throws {Error} If the Strivacity SDK context is not found.
  *
- * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext.
+ * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext or NativeContext.
  */
-export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
+export const useStrivacity = () => {
 	if (!sdk) {
 		sdk = initFlow({ ...useRuntimeConfig().public.strivacity, storage: StorageClass });
+		optionsRef.value = sdk.options;
 
 		sdk.subscribeToEvent('init', updateSession);
 		sdk.subscribeToEvent('loggedIn', updateSession);
@@ -51,7 +54,9 @@ export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 	}
 
 	return {
+		sdk: sdk,
 		loading: loadingRef,
+		options: optionsRef,
 		isAuthenticated: isAuthenticatedRef,
 		idTokenClaims: idTokenClaimsRef,
 		accessToken: accessTokenRef,
@@ -59,11 +64,19 @@ export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 		accessTokenExpired: accessTokenExpiredRef,
 		accessTokenExpirationDate: accessTokenExpirationDateRef,
 
-		login: async (options?: Parameters<PopupFlow['login'] | RedirectFlow['login']>[0]) => {
+		login: async (options?: Parameters<PopupFlow['login'] | RedirectFlow['login'] | NativeFlow['login']>[0]) => {
+			if (sdk.options.mode === 'native') {
+				return sdk.login(options);
+			}
+
 			await sdk.login(options);
 			await updateSession();
 		},
-		register: async (options?: Parameters<PopupFlow['register'] | RedirectFlow['register']>[0]) => {
+		register: async (options?: Parameters<PopupFlow['register'] | RedirectFlow['register'] | NativeFlow['register']>[0]) => {
+			if (sdk.options.mode === 'native') {
+				return sdk.register(options);
+			}
+
 			await sdk.register(options);
 			await updateSession();
 		},
@@ -79,9 +92,9 @@ export const useStrivacity = <T extends PopupContext | RedirectContext>() => {
 			await sdk.logout(options);
 			await updateSession();
 		},
-		handleCallback: async (url?: Parameters<PopupFlow['handleCallback'] | RedirectFlow['handleCallback']>[0]) => {
+		handleCallback: async (url?: Parameters<PopupFlow['handleCallback'] | RedirectFlow['handleCallback'] | NativeFlow['handleCallback']>[0]) => {
 			await sdk.handleCallback(url);
 			await updateSession();
 		},
-	} as T;
+	} as PopupContext | RedirectContext | NativeContext;
 };

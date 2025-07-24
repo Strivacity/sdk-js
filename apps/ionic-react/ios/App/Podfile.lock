@@ -1,0 +1,47 @@
+PODS:
+  - Capacitor (7.4.1):
+    - CapacitorCordova
+  - CapacitorApp (7.0.1):
+    - Capacitor
+  - CapacitorCordova (7.4.1)
+  - CapacitorInappbrowser (2.2.0):
+    - Capacitor
+    - OSInAppBrowserLib (~> 2.1.0)
+  - CapacitorPreferences (7.0.1):
+    - Capacitor
+  - OSInAppBrowserLib (2.1.0)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../../../node_modules/.pnpm/@capacitor+ios@7.4.1_@capacitor+core@7.4.1/node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../../../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.4.1/node_modules/@capacitor/app`)"
+  - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@7.4.1_@capacitor+core@7.4.1/node_modules/@capacitor/ios`)"
+  - "CapacitorInappbrowser (from `../../../../node_modules/.pnpm/@capacitor+inappbrowser@2.2.0_@capacitor+core@7.4.1/node_modules/@capacitor/inappbrowser`)"
+  - "CapacitorPreferences (from `../../../../node_modules/.pnpm/@capacitor+preferences@7.0.1_@capacitor+core@7.4.1/node_modules/@capacitor/preferences`)"
+
+SPEC REPOS:
+  trunk:
+    - OSInAppBrowserLib
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@7.4.1_@capacitor+core@7.4.1/node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../../../node_modules/.pnpm/@capacitor+app@7.0.1_@capacitor+core@7.4.1/node_modules/@capacitor/app"
+  CapacitorCordova:
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@7.4.1_@capacitor+core@7.4.1/node_modules/@capacitor/ios"
+  CapacitorInappbrowser:
+    :path: "../../../../node_modules/.pnpm/@capacitor+inappbrowser@2.2.0_@capacitor+core@7.4.1/node_modules/@capacitor/inappbrowser"
+  CapacitorPreferences:
+    :path: "../../../../node_modules/.pnpm/@capacitor+preferences@7.0.1_@capacitor+core@7.4.1/node_modules/@capacitor/preferences"
+
+SPEC CHECKSUMS:
+  Capacitor: 78ad32d4b0d9dfa25402eb8b0ac46c2b8a4696b8
+  CapacitorApp: febecbb9582cb353aed037e18ec765141f880fe9
+  CapacitorCordova: 34618fa1b14b6b091fd60a7658f7654044ae8d8a
+  CapacitorInappbrowser: 6d5630c9194cf108ba71a745ef44e45a68a73109
+  CapacitorPreferences: 6c98117d4d7508034a4af9db64d6b26fc75d7b94
+  OSInAppBrowserLib: 02111d866ad1bf19c663cd9b268bb22c7d41df4f
+
+PODFILE CHECKSUM: fed89c395d575e560900fd103519303c44a9ae8a
+
+COCOAPODS: 1.16.2

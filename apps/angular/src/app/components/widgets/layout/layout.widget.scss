@@ -1,0 +1,30 @@
+[data-widget='layout'] {
+	> div,
+	> form {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		margin-block-end: 1rem;
+	}
+
+	&[data-type='horizontal'] {
+		> div,
+		> form {
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+
+			* + * {
+				margin-inline-start: 0.25rem;
+			}
+		}
+	}
+
+	&[data-type='vertical'] {
+		> div,
+		> form {
+			flex-direction: column;
+			justify-content: center;
+		}
+	}
+}

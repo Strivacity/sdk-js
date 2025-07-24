@@ -1,6 +1,0 @@
-{
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "vitest",
-  "projectType": "library",
-  "sourceRoot": "tools/vitest"
-}

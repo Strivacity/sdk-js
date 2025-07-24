@@ -33,11 +33,12 @@ export const baseConfig = {
 		'@typescript-eslint/no-unsafe-call': 'off',
 		'@typescript-eslint/no-unsafe-member-access': 'off',
 		'@typescript-eslint/no-unsafe-return': 'off',
+		'@typescript-eslint/unbound-method': 'off',
 	},
 };
 
 export const ignoreConfig = {
-	ignores: ['.stylelintrc.js', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts', '**/dist', '**/reports'],
+	ignores: ['.stylelintrc.js', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts', '**/dist', '**/reports', '**/android', '**/ios'],
 };
 
 export const defineTsConfig = (...configs) =>

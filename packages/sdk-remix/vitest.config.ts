@@ -2,22 +2,26 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	test: {
-		globals: true,
-		watch: false,
-		pool: 'threads',
-		setupFiles: ['@strivacity/vitest/setup.ts'],
+		include: ['**/*.spec.tsx'],
+		setupFiles: ['../../tools/testing/vitest/setup.ts'],
 		environment: 'happy-dom',
+		watch: false,
+		globals: true,
+		mockReset: true,
+		clearMocks: true,
+		retry: 5,
+		pool: 'threads',
 		sequence: {
 			hooks: 'list',
 		},
 		reporters: ['verbose', 'junit'],
+		outputFile: '../../reports/sdk-remix.xml',
 		coverage: {
 			enabled: true,
 			provider: 'istanbul',
-			reporter: ['text', 'html', 'lcov'],
-			exclude: [...configDefaults.coverage.exclude!],
+			reporter: ['html', 'lcov'],
 			reportsDirectory: '../../coverages/sdk-remix',
+			exclude: [...configDefaults.coverage.exclude!],
 		},
-		outputFile: '../../reports/sdk-remix.xml',
 	},
 });

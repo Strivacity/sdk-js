@@ -11,5 +11,6 @@
     "module": "esnext",
     "strictNullChecks": true
   },
-  "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx", "./dist/types/**/*.ts"]
+  "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx", "./dist/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

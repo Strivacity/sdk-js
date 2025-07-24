@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "isolatedModules": true
+  },
+  "include": ["./.nuxt/nuxt.d.ts", "./app/**/*", "./server/**/*"],
+  "exclude": ["**/*.spec.ts"]
+}

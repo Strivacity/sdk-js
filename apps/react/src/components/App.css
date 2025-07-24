@@ -35,3 +35,8 @@ header {
 section {
 	padding: 1rem;
 }
+
+.login-renderer {
+	margin: 0 auto;
+	width: 360px;
+}

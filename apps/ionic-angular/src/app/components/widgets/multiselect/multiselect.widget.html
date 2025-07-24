@@ -1,0 +1,24 @@
+@for (option of config.options; track $index) {
+<div class="item">
+	@if (option.type === 'group') {
+	<p>{{ option.label }}</p>
+	@for (subOption of option.options; track subOption.value) {
+	<div>
+		<input
+			[id]="subOption.value"
+			type="checkbox"
+			[name]="config.id"
+			[value]="subOption.value"
+			[checked]="values.includes(subOption.value)"
+			(change)="onChange($event)"
+		/>
+		<label [for]="subOption.value">{{ subOption.label }}</label>
+	</div>
+	} } @else {
+	<input [id]="option.value" type="checkbox" [name]="config.id" [value]="option.value" [checked]="values.includes(option.value)" (change)="onChange($event)" />
+	<label [for]="option.value">{{ option.label }}</label>
+	}
+</div>
+} @if (errorMessage) {
+<small class="error">{{ errorMessage }}</small>
+}

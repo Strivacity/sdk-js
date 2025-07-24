@@ -5,10 +5,13 @@ import { composePlugins, withNx } from '@nx/next';
  **/
 const nextConfig = {
 	output: 'export',
-	trailingSlash: true,
+	reactStrictMode: false,
+	trailingSlash: false,
 	distDir: './dist',
 	env: {
+		MODE: process.env.VITE_MODE,
 		ISSUER: process.env.VITE_ISSUER,
+		REDIRECT_URI: process.env.VITE_REDIRECT_URI,
 		CLIENT_ID: process.env.VITE_CLIENT_ID,
 		SCOPES: process.env.VITE_SCOPES,
 	},

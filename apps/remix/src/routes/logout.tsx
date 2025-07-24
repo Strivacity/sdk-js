@@ -10,7 +10,7 @@ export default function Logout() {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (isAuthenticated) {
-				await logout();
+				await logout({ postLogoutRedirectUri: location.origin });
 			} else {
 				await navigate('/');
 			}
@@ -19,7 +19,7 @@ export default function Logout() {
 
 	return (
 		<section>
-			<h1>logout</h1>
+			<h1>Logging out...</h1>
 		</section>
 	);
 }

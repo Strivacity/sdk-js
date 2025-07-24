@@ -1,44 +1,45 @@
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, test, expect } from 'vitest';
 import { redirectUrlHandler, redirectCallbackHandler, popupUrlHandler, popupCallbackHandler } from '../../src/utils/handlers';
 
 describe('redirectUrlHandler', () => {
 	['self', 'top'].forEach((targetWindow) =>
-		it(`targetWindow: ${targetWindow}`, async () => {
-			const locationMethodSpy = vi.spyOn(window[targetWindow].location, 'assign').mockImplementation(() => {});
-			const url = new URL('https://brandtegrity.io');
+		test(`targetWindow: ${targetWindow}`, async () => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const locationMethodSpy = vi.spyOn(window[targetWindow as any].location, 'assign').mockImplementation(() => {});
+			const url = 'https://brandtegrity.io';
 
-			await redirectUrlHandler(url, { targetWindow: targetWindow as 'self' | 'top' }, false);
+			void redirectUrlHandler(url, { targetWindow: targetWindow as 'self' | 'top' });
 
-			expect(locationMethodSpy).toHaveBeenCalledWith(url);
+			await vi.waitFor(() => expect(locationMethodSpy).toHaveBeenCalledWith(url));
 		}),
 	);
 
 	['assign', 'replace'].forEach((locationMethod) =>
-		it(`locationMethod: ${locationMethod}`, async () => {
+		test(`locationMethod: ${locationMethod}`, async () => {
 			const locationMethodSpy = vi.spyOn(window.self.location, locationMethod as 'assign' | 'replace').mockImplementation(() => {});
-			const url = new URL('https://brandtegrity.io');
+			const url = 'https://brandtegrity.io';
 
-			await redirectUrlHandler(url, { locationMethod: locationMethod as 'assign' | 'replace' }, false);
+			void redirectUrlHandler(url, { locationMethod: locationMethod as 'assign' | 'replace' });
 
-			expect(locationMethodSpy).toHaveBeenCalledWith(url);
+			await vi.waitFor(() => expect(locationMethodSpy).toHaveBeenCalledWith(url));
 		}),
 	);
 });
 
 describe('redirectCallbackHandler', () => {
-	it('responseMode: query', () => {
-		expect(redirectCallbackHandler('https://brandtegrity.io?test=value#unused=fragment', 'query')).toEqual({ test: 'value' });
+	test('responseMode: query', async () => {
+		expect(await redirectCallbackHandler('https://brandtegrity.io?test=value#unused=fragment', 'query')).toEqual({ test: 'value' });
 	});
 
-	it('responseMode: fragment', () => {
-		expect(redirectCallbackHandler('https://brandtegrity.io?unused=query#test=value', 'fragment')).toEqual({ test: 'value' });
+	test('responseMode: fragment', async () => {
+		expect(await redirectCallbackHandler('https://brandtegrity.io?unused=query#test=value', 'fragment')).toEqual({ test: 'value' });
 	});
 });
 
 describe('popupUrlHandler', () => {
-	const url = new URL('https://brandtegrity.io');
+	const url = 'https://brandtegrity.io';
 
-	it('should open correctly', async () => {
+	test('should open correctly', async () => {
 		const popupWindow = {
 			closed: false,
 			close: vi.fn(),
@@ -64,7 +65,7 @@ describe('popupUrlHandler', () => {
 		expect(popupWindow.close).toHaveBeenCalled();
 	});
 
-	it('should set popup window target correctly', async () => {
+	test('should set popup window target correctly', async () => {
 		const popupWindow = {
 			closed: false,
 			close: vi.fn(),
@@ -87,7 +88,7 @@ describe('popupUrlHandler', () => {
 		expect(windowOpenSpy).toHaveBeenCalledWith(undefined, 'custom', expect.stringMatching(/\w+/));
 	});
 
-	it('should set additional popup window features correctly', async () => {
+	test('should set additional popup window features correctly', async () => {
 		const popupWindow = {
 			closed: false,
 			close: vi.fn(),
@@ -110,7 +111,7 @@ describe('popupUrlHandler', () => {
 		expect(windowOpenSpy).toHaveBeenCalledWith(undefined, '_blank', expect.stringMatching(/height=600,test=value,width=800/));
 	});
 
-	it('should handle close by user correctly', async () => {
+	test('should handle close by user correctly', async () => {
 		const popupWindow = {
 			closed: false,
 			close: vi.fn(),
@@ -132,7 +133,7 @@ describe('popupUrlHandler', () => {
 		expect(popupWindow.location.replace).toHaveBeenCalled();
 	});
 
-	it('should handle popup blocking correctly', async () => {
+	test('should handle popup blocking correctly', async () => {
 		// @ts-expect-error: Override window.open
 		vi.spyOn(window, 'open').mockImplementation(() => {});
 
@@ -141,27 +142,27 @@ describe('popupUrlHandler', () => {
 });
 
 describe('popupCallbackHandler', () => {
-	it('responseMode: query', () => {
+	test('responseMode: query', async () => {
 		const postMessageSpy = vi.fn().mockImplementation(() => {});
 
 		// @ts-expect-error: Override protected value
 		window.location = new URL('https://brandtegrity.io?test=value#unused=fragment');
 		window.opener = { postMessage: postMessageSpy };
 
-		popupCallbackHandler('query');
+		void popupCallbackHandler('', 'query');
 
-		expect(postMessageSpy).toHaveBeenCalledWith({ test: 'value' }, '*');
+		await vi.waitFor(() => expect(postMessageSpy).toHaveBeenCalledWith({ test: 'value' }, '*'));
 	});
 
-	it('responseMode: fragment', () => {
+	test('responseMode: fragment', async () => {
 		const postMessageSpy = vi.fn().mockImplementation(() => {});
 
 		// @ts-expect-error: Override protected value
 		window.location = new URL('https://brandtegrity.io?unused=query#test=value');
 		window.opener = { postMessage: postMessageSpy };
 
-		popupCallbackHandler('fragment');
+		void popupCallbackHandler('', 'fragment');
 
-		expect(postMessageSpy).toHaveBeenCalledWith({ test: 'value' }, '*');
+		await vi.waitFor(() => expect(postMessageSpy).toHaveBeenCalledWith({ test: 'value' }, '*'));
 	});
 });

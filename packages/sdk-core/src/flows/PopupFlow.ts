@@ -1,73 +1,69 @@
-import type { SDKOptions, PopupWindowParams } from '../types';
+import type { SDKOptions, PopupParams, SDKStorage, SDKHttpClient } from '../types';
 import { popupCallbackHandler, popupUrlHandler } from '../utils/handlers';
-import { isBrowser } from '../utils/constants';
-import { State } from '../State';
+import { State } from '../utils/State';
 import { BaseFlow } from './BaseFlow';
 
 /**
  * Implements the Popup flow for authentication using a popup window.
  */
-export class PopupFlow extends BaseFlow<SDKOptions, PopupWindowParams> {
+export class PopupFlow extends BaseFlow<SDKOptions, PopupParams> {
+	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient) {
+		if (!options.urlHandler) {
+			options.urlHandler = popupUrlHandler;
+		}
+		if (!options.callbackHandler) {
+			options.callbackHandler = popupCallbackHandler;
+		}
+
+		super(options, storage, httpClient);
+	}
+
 	/**
 	 * Initiates the login process via a popup window.
-	 * @param {PopupWindowParams} [options={}] Optional parameters for popup window configuration.
+	 * @param {PopupParams} [params={}] Optional parameters for popup window configuration.
 	 * @returns {Promise<void>} A promise that resolves when the login process completes.
 	 */
-	async login(options: PopupWindowParams = {}): Promise<void> {
-		if (!isBrowser) {
-			return;
+	async login(params: PopupParams = {}): Promise<void> {
+		if (typeof this.options.urlHandler !== 'function') {
+			throw new Error('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
 		}
 
 		const state = await State.create();
-		const url = await this.getAuthorizationUrl(options);
+		const url = await this.getAuthorizationUrl(params);
 
 		url.searchParams.append('state', state.id);
 		url.searchParams.append('code_challenge', state.codeChallenge);
 		url.searchParams.append('nonce', state.nonce);
 		url.searchParams.append('display', 'popup');
 
-		this.storage.set(`sty.${state.id}`, JSON.stringify(state));
+		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		this.dispatchEvent('loginInitiated', []);
 
-		const data = await this.urlHandler(url, options);
+		const data = (await this.options.urlHandler(url.toString(), params)) as Record<string, string>;
 
-		await this.exchangeCodeForTokens(data);
-
-		if (this.accessToken && this.idTokenClaims) {
-			this.dispatchEvent('loggedIn', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
-		}
+		await this.tokenExchange(data);
 	}
 
 	/**
 	 * Initiates the registration process via a popup window.
-	 * @param {PopupWindowParams} [options={}] Optional parameters for popup window configuration.
+	 * @param {PopupParams} [params={}] Optional parameters for popup window configuration.
 	 * @returns {Promise<void>} A promise that resolves when the registration process completes.
 	 */
-	async register(options: PopupWindowParams = {}): Promise<void> {
-		if (!isBrowser) {
-			return;
-		}
+	async register(params: PopupParams = {}): Promise<void> {
+		params.prompt = 'create';
 
-		options.prompt = 'create';
-
-		await this.login(options);
+		await this.login(params);
 	}
 
 	/**
 	 * Handles the callback after login or registration via a popup window.
 	 */
-	handleCallback(): void {
-		popupCallbackHandler(this.options.responseMode || 'fragment');
-	}
+	async handleCallback(): Promise<void> {
+		if (typeof this.options.callbackHandler !== 'function') {
+			throw new Error('Callback handler is not defined. Please provide a valid callback handler function in the SDK options.');
+		}
 
-	/**
-	 * Handles the URL redirection to a popup window.
-	 * @param {URL} url The URL to handle.
-	 * @param {PopupWindowParams} [options] Optional parameters for popup window configuration.
-	 * @returns {Promise<Record<string, string>>} A promise that resolves to the data returned from the popup window.
-	 */
-	async urlHandler(url: URL, options?: PopupWindowParams): Promise<Record<string, string>> {
-		return popupUrlHandler(url, options);
+		await this.options.callbackHandler(this.options.responseMode || 'fragment');
 	}
 }

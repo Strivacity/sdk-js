@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { type SDKOptions, AuthProvider, useStrivacity } from '@strivacity/sdk-next';
+import { type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-next';
 import './global.css';
 
 const options: SDKOptions = {
+	mode: process.env.MODE as 'redirect' | 'popup' | 'native',
 	issuer: process.env.ISSUER as string,
 	clientId: process.env.CLIENT_ID as string,
 	scopes: process.env.SCOPES?.split(' ') as Array<string>,
-	redirectUri: 'http://localhost:3000/callback',
+	redirectUri: process.env.REDIRECT_URI as string,
 	storageTokenName: 'sty.session.next',
 };
 
@@ -19,7 +20,7 @@ function App({ children }: { children: React.ReactElement }) {
 
 	useEffect(() => {
 		if (isAuthenticated) {
-			setName(`${idTokenClaims?.given_name} ${idTokenClaims?.family_name}`);
+			setName(`${idTokenClaims?.given_name ?? ''} ${idTokenClaims?.family_name ?? ''}`);
 		} else {
 			setName(null);
 		}
@@ -30,32 +31,35 @@ function App({ children }: { children: React.ReactElement }) {
 			<header>
 				<div>{isAuthenticated ? <strong>Welcome, {name}!</strong> : loading ? <strong>Loading...</strong> : null}</div>
 				<div>
-					<Link href="/" data-button="home">
-						Home
-					</Link>
-					{isAuthenticated ? (
+					{!loading && (
 						<>
-							<Link href="/profile" data-button="profile">
-								Profile
+							<Link href="/" data-button="home">
+								Home
 							</Link>
-							<Link href="/revoke" data-button="revoke">
-								Revoke
-							</Link>
-							<Link href="/logout" data-button="logout">
-								Logout
-							</Link>
+							{isAuthenticated ? (
+								<>
+									<Link href="/profile" data-button="profile">
+										Profile
+									</Link>
+									<Link href="/revoke" data-button="revoke">
+										Revoke
+									</Link>
+									<Link href="/logout" data-button="logout">
+										Logout
+									</Link>
+								</>
+							) : (
+								<>
+									<Link href="/login" data-button="login">
+										Login
+									</Link>
+									<Link href="/register" data-button="register">
+										Register
+									</Link>
+								</>
+							)}
 						</>
-					) : null}
-					{!isAuthenticated ? (
-						<>
-							<Link href="/login" data-button="login">
-								Login
-							</Link>
-							<Link href="/register" data-button="register">
-								Register
-							</Link>
-						</>
-					) : null}
+					)}
 				</div>
 			</header>
 			{children}
@@ -72,9 +76,9 @@ export default function RootLayout({ children }: { children: React.ReactElement 
 			</head>
 			<body>
 				<div id="app">
-					<AuthProvider options={options}>
+					<StyAuthProvider options={options}>
 						<App>{children}</App>
-					</AuthProvider>
+					</StyAuthProvider>
 				</div>
 			</body>
 		</html>

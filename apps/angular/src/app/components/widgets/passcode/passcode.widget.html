@@ -1,0 +1,20 @@
+@if (config.label) {
+<label [for]="config.id" class="label">{{ config.label }}</label>
+}
+<input
+	[id]="config.id"
+	[name]="config.id"
+	[type]="config.type"
+	[readonly]="disabled"
+	[attr.minlength]="validator?.length"
+	[attr.maxlength]="validator?.length"
+	autocomplete="off"
+	inputmode="numeric"
+	size="1"
+	(input)="onInput($event)"
+	(change)="onChange($event)"
+	(keydown.enter)="onKeyDown($event)"
+/>
+@if (errorMessage) {
+<small class="error">{{ errorMessage }}</small>
+}

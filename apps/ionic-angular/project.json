@@ -1,0 +1,71 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-ionic-angular",
+  "projectType": "application",
+  "sourceRoot": "apps/ionic-angular/src",
+  "targets": {
+    "build": {
+      "builder": "",
+      "executor": "@angular-builders/custom-webpack:browser",
+      "dependsOn": ["sdk-angular:build"],
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "apps/ionic-angular/dist",
+        "deleteOutputPath": false,
+        "index": "apps/ionic-angular/src/index.html",
+        "main": "apps/ionic-angular/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/ionic-angular/tsconfig.json",
+        "customWebpackConfig": {
+          "path": "apps/ionic-angular/webpack.config.cjs"
+        }
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve": {
+      "executor": "@angular-builders/custom-webpack:dev-server",
+      "dependsOn": ["sdk-angular:build"],
+      "configurations": {
+        "production": {
+          "buildTarget": "app-angular:build:production"
+        },
+        "development": {
+          "buildTarget": "app-angular:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve-static": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "app-angular:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/ionic-angular/browser",
+        "spa": true
+      }
+    },
+    "android:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-angular",
+        "command": "cap run android"
+      }
+    },
+    "ios:run": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "apps/ionic-angular",
+        "command": "cap run ios"
+      }
+    }
+  }
+}

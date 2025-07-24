@@ -1,20 +1,19 @@
 {
   "name": "@strivacity/sdk-nuxt",
-  "version": "1.0.1",
+  "version": "2.0.0-beta",
   "type": "module",
   "license": "MIT",
   "description": "Strivacity Nuxt SDK client",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-core": "1.0.1"
+    "@strivacity/sdk-core": "2.0.0-beta"
   },
-  "main": "./dist/module.cjs",
-  "types": "./dist/types.d.ts",
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/types.d.ts",
+      "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs",
-      "require": "./dist/module.cjs",
       "default": "./dist/module.mjs"
     }
   }
