@@ -1,3 +1,9 @@
+## 2.0.0-beta.2 (2025-07-24)
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.0.0-beta.2
+
 ## 2.0.0-beta (2025-07-24)
 
 ### 🚀 Features

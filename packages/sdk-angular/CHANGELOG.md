@@ -1,3 +1,13 @@
+## 2.0.0-beta.2 (2025-07-24)
+
+### 🩹 Fixes
+
+- sdk-angular dependency fixed ([3051229](https://github.com/strivacity/sdk-js/commit/3051229))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.0.0-beta.2
+
 ## 2.0.0-beta (2025-07-24)
 
 ### 🚀 Features
