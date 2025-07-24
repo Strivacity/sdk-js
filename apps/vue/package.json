@@ -1,11 +1,11 @@
 {
   "private": true,
   "name": "@strivacity/app-vue",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "type": "module",
   "license": "MIT",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-vue": "2.0.0-beta"
+    "@strivacity/sdk-vue": "2.0.0-beta.2"
   }
 }
