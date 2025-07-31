@@ -232,7 +232,7 @@ export const widgets = {
 };
 ```
 
-You can find example widgets here: [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/vue/src/components/widgets)
+You can find example widgets here: [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/nuxt/app/components)
 
 ###### Login page example
 
