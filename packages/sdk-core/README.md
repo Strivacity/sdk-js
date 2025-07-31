@@ -54,3 +54,66 @@ The `initFlow` function initializes and returns an instance of either `PopupFlow
   - `popup`: Uses a popup window for authentication. Returns an instance of `PopupFlow`.
   - `redirect`: Uses a full-page redirect for authentication. Returns an instance of `RedirectFlow`.
   - `native`: Uses a native flow for authentication. Returns an instance of `NativeFlow`.
+
+## Custom native flow
+
+You can use the `NativeFlowHandler` class if there is no existing Strivacity implementation for your JavaScript framework, or if you want to build a fully custom authentication flow.
+
+If you are looking for example implementations for different frameworks, visit [packages](https://github.com/Strivacity/sdk-js/tree/main/packages).
+
+### Usage
+
+```js
+import { initFlow } from '@strivacity/sdk-core';
+
+const sdk = initFlow({
+	mode: 'native',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+});
+
+// This will return with a `NativeFlowHandler` instance
+const handler = await sdk.login();
+
+// Start a new session or resume an existing one
+const state = await handler.startSession();
+
+if (state.finalizeUrl) {
+	// If the response contains a finalize URL, you can finalize the session
+	await handler.finalizeSession(state.finalizeUrl);
+} else {
+	// Handle the response as needed
+	console.log('Form submitted successfully:', state);
+}
+
+// Submit a form in the native flow
+const formState = await handler.submitForm('formId', {
+	// Your form data here
+});
+
+if (state.finalizeUrl) {
+	// If the response contains a finalize URL, you can finalize the session
+	await handler.finalizeSession(state.finalizeUrl);
+} else {
+	// Handle the response as needed
+	console.log('Form submitted successfully:', state);
+}
+```
+
+---
+
+### API Documentation
+
+#### `startSession(sessionId?: string | null): Promise<LoginFlowState | void>`
+
+Starts a new authentication session. If a `sessionId` is provided, resumes the session; otherwise, initiates a new one.
+
+#### `submitForm(formId?: string, body?: Record<string, unknown>): Promise<LoginFlowState>`
+
+Submits a form in the native flow. Optionally specify a form ID and request body.
+
+#### `finalizeSession(finalizeUrl: string): Promise<void>`
+
+Finalizes the session using the provided URL. You can gather the finalize URL from the `LoginFlowState` returned by `startSession` or `submitForm`.

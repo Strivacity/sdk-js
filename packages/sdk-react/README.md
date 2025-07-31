@@ -17,7 +17,7 @@ npm install @strivacity/sdk-react
 
 ### Wrap your app with `StyAuthProvider`
 
-Add the `StyAuthProvider` to your `layout.tsx` file.
+Add the `StyAuthProvider` to your `main.tsx` file.
 
 ```tsx
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
@@ -35,7 +35,9 @@ createRoot(document.getElementById('app')!).render(
 	<BrowserRouter>
 		<StyAuthProvider options={options}>
 			<Routes>
-				<Route element={<App />}>...</Route>
+				<Route path="/" element={<App />}>
+					...
+				</Route>
 			</Routes>
 		</StyAuthProvider>
 	</BrowserRouter>,
