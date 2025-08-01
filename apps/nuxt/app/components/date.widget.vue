@@ -22,6 +22,13 @@ const disabled = computed(() => !!context?.loading.value || !!props.config.reado
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
 
+onMounted(() => {
+	// Default value handling
+	if (value && value.length > 0) {
+		context?.setFormValue(props.formId, props.config.id, value);
+	}
+});
+
 setValues();
 
 function setValues() {

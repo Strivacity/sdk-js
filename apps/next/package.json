@@ -1,11 +1,11 @@
 {
   "private": true,
   "name": "@strivacity/app-next",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "type": "module",
   "license": "MIT",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-next": "2.0.0-beta.2"
+    "@strivacity/sdk-next": "2.0.0-beta.3"
   }
 }

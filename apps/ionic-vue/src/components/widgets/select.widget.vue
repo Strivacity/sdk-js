@@ -21,7 +21,7 @@ function onChange(event: Event) {
 <template>
 	<div data-widget="select" :data-form-id="formId" :data-widget-id="config.id">
 		<template v-if="config.render.type === 'radio'">
-			<div v-for="option in config.options" :key="option.label" class="item">
+			<div v-for="option in config.options" :key="option.label" class="group">
 				<template v-if="option.type === 'group'">
 					<p>{{ option.label }}</p>
 					<div v-for="subOption in option.options" :key="subOption.value" class="item">
@@ -95,6 +95,10 @@ function onChange(event: Event) {
 	.item {
 		display: flex;
 		align-items: center;
+
+		+ .item {
+			margin-block-start: 0.5rem;
+		}
 	}
 
 	.error {

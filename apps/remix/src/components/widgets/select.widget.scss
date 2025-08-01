@@ -17,6 +17,10 @@
 	.item {
 		display: flex;
 		align-items: center;
+
+		+ .item {
+			margin-block-start: 0.5rem;
+		}
 	}
 
 	.error {

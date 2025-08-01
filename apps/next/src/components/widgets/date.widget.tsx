@@ -23,6 +23,13 @@ export function DateWidget({ formId, config }: { formId: string; config: DateWid
 	const format: Array<'year' | 'month' | 'day'> = ['year', 'month', 'day'];
 
 	useEffect(() => {
+		// Default value handling
+		if (value.length > 0) {
+			context?.setFormValue(formId, config.id, value);
+		}
+	}, []);
+
+	useEffect(() => {
 		if (!value) {
 			return;
 		}

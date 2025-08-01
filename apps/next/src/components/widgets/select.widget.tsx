@@ -22,7 +22,7 @@ export function SelectWidget({ formId, config }: { formId: string; config: Selec
 			<div data-widget="select" data-form-id={formId} data-widget-id={config.id}>
 				{config.options.map((option) =>
 					option.type === 'group' ? (
-						<div key={option.label} className="item">
+						<div key={option.label} className="group">
 							<p>{option.label}</p>
 							{option.options.map((subOption) => (
 								<div key={subOption.value} className="item">

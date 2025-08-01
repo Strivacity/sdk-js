@@ -1,4 +1,4 @@
-import { Component, Input, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { InputWidget as InputWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
@@ -16,7 +16,7 @@ import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 		'[attr.data-widget-id]': 'config.id',
 	},
 })
-export class InputWidget {
+export class InputWidget implements OnInit {
 	@Input() formId!: string;
 	@Input() config!: InputWidgetConfig;
 
@@ -37,6 +37,14 @@ export class InputWidget {
 	}
 
 	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+
+	ngOnInit() {
+		// Default value handling
+		const value = this.value as string;
+		if (value && value.length > 0) {
+			this.widgetService.setFormValue(this.formId, this.config.id, value);
+		}
+	}
 
 	onChange(event: Event) {
 		if (this.disabled) {
