@@ -37,7 +37,7 @@ createRoot(document.getElementById('app')!).render(
 	<BrowserRouter>
 		<StyAuthProvider options={options}>
 			<Routes>
-				<Route element={<App />}>
+				<Route path="/" element={<App />}>
 					<Route index element={<Home />} />
 					<Route path="/callback" element={<Callback />} />
 					<Route path="/login" element={<Login />} />

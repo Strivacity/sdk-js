@@ -1,4 +1,4 @@
-import { Component, Input, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import type { DateWidget as DateWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
@@ -17,7 +17,7 @@ import { DateTime } from 'luxon';
 		'[attr.data-widget-id]': 'config.id',
 	},
 })
-export class DateWidget {
+export class DateWidget implements OnInit {
 	@Input() formId!: string;
 	@Input() config!: DateWidgetConfig;
 
@@ -52,6 +52,10 @@ export class DateWidget {
 	constructor(protected readonly widgetService: StrivacityWidgetService) {}
 
 	ngOnInit() {
+		// Default value handling
+		if (this.value && this.value.length > 0) {
+			this.widgetService.setFormValue(this.formId, this.config.id, this.value);
+		}
 		this.setInitialValues();
 	}
 

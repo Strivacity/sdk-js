@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import type { InputWidget } from '@strivacity/sdk-core';
 import { NativeFlowContext } from '@strivacity/sdk-remix';
 import './input.widget.scss';
@@ -8,6 +8,13 @@ export function InputWidget({ formId, config }: { formId: string; config: InputW
 	const value = (context?.forms[formId]?.[config.id] as string) ?? config.value ?? '';
 	const disabled = useMemo(() => !!context?.loading || !!config.readonly, [context?.loading, config.readonly]);
 	const errorMessage = context?.messages[formId]?.[config.id]?.text;
+
+	useEffect(() => {
+		// Default value handling
+		if (value.length > 0) {
+			context?.setFormValue(formId, config.id, value);
+		}
+	}, []);
 
 	const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (disabled) {
