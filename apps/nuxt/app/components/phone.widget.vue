@@ -7,6 +7,14 @@ const context = inject<NativeFlowContextValue>('nativeFlowContext');
 const disabled = computed(() => !!context?.loading.value || !!props.config.readonly);
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
+const value = computed(() => (context?.forms.value[props.formId]?.[props.config.id] as string) ?? props.config.value ?? '');
+
+onMounted(() => {
+	// Default value handling
+	if (value.value.length > 0) {
+		context?.setFormValue(props.formId, props.config.id, value.value);
+	}
+});
 
 function onChange(event: Event) {
 	if (disabled.value) {
@@ -41,7 +49,7 @@ async function onKeyDown(event: KeyboardEvent) {
 			inputmode="tel"
 			:readonly="disabled"
 			:required="validator?.required"
-			:value="context?.forms.value[props.formId]?.[props.config.id] || config.value"
+			:value="value"
 			size="1"
 			@change="onChange($event)"
 			@keydown.enter.stop="onKeyDown($event)"

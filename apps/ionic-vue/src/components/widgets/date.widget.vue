@@ -2,7 +2,7 @@
 import type { DateWidget } from '@strivacity/sdk-core';
 import type { NativeFlowContextValue } from '@strivacity/sdk-vue';
 import { DateTime } from 'luxon';
-import { computed, inject, ref } from 'vue';
+import { computed, inject, onMounted, ref } from 'vue';
 
 const props = defineProps<{ formId: string; config: DateWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');
@@ -22,6 +22,13 @@ const value = (context?.forms.value[props.formId]?.[props.config.id] as string) 
 const disabled = computed(() => !!context?.loading.value || !!props.config.readonly);
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
+
+onMounted(() => {
+	// Default value handling
+	if (value && value.length > 0) {
+		context?.setFormValue(props.formId, props.config.id, value);
+	}
+});
 
 setValues();
 
