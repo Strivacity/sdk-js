@@ -1,3 +1,9 @@
+## 2.0.0-beta.3 (2025-08-01)
+
+### 🩹 Fixes
+
+- documentation updates ([8203f52](https://github.com/strivacity/sdk-js/commit/8203f52))
+
 ## 2.0.0-beta.2 (2025-07-24)
 
 This was a version bump only for sdk-core to align it with other projects, there were no code changes.
