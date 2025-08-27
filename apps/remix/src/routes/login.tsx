@@ -1,6 +1,6 @@
+import { useNavigate } from '@remix-run/react';
+import { FallbackError, StyLoginRenderer, useStrivacity, type LoginFlowState } from '@strivacity/sdk-remix';
 import { Suspense, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-remix';
 import { widgets } from '../components/widgets';
 
 export default function Login() {
@@ -25,13 +25,13 @@ export default function Login() {
 				await login();
 			} else if (options.mode === 'popup') {
 				await login();
-				await navigate('/profile');
+				navigate('/profile');
 			}
 		})();
 	}, []);
 
-	const onLogin = async () => {
-		await navigate('/profile');
+	const onLogin = () => {
+		navigate('/profile');
 	};
 	const onFallback = (error: FallbackError) => {
 		if (error.url) {

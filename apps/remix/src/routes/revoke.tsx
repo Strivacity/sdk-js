@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@remix-run/react';
 import { useStrivacity } from '@strivacity/sdk-remix';
+import { useEffect } from 'react';
 
 export default function Revoke() {
 	const navigate = useNavigate();
@@ -13,7 +13,7 @@ export default function Revoke() {
 				await revoke();
 			}
 
-			await navigate('/');
+			navigate('/');
 		})();
 	}, []);
 
