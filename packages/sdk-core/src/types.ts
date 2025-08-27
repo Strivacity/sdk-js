@@ -1002,6 +1002,7 @@ export declare const WidgetTypeList: readonly [
 	'date',
 	'phone',
 	'loading',
+	'webauthn',
 ];
 export type WidgetType = (typeof WidgetTypeList)[number];
 export declare const SelectOptionTypeList: readonly ['item', 'group'];
@@ -1171,6 +1172,23 @@ export type LayoutWidget = {
 	type: 'vertical' | 'horizontal';
 	items: Array<Widget | LayoutWidget>;
 };
+export type WebAuthnWidget = {
+	id: string;
+	metadata?: {
+		assertionOptions?: PublicKeyCredentialRequestOptions;
+		creationOptions?: PublicKeyCredentialCreationOptions;
+	};
+	label?: string;
+	render: {
+		type: 'button';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
 export type LoginFlowMessage = {
 	type: string;
 	text: string;
@@ -1184,6 +1202,35 @@ export type LoginFlowState = {
 	layout?: LayoutWidget;
 	messages?: Record<string, Record<string, LoginFlowMessage>> & {
 		global?: LoginFlowMessage;
+	};
+};
+export type AssertionPublicKeyCredential = PublicKeyCredential & {
+	response: AuthenticatorAssertionResponse;
+};
+export type AssertionCredentialData = {
+	id: string;
+	type: string;
+	rawId: string;
+	response: {
+		clientDataJSON: string;
+		authenticatorData: string;
+		signature: string;
+		userHandle: string;
+	};
+};
+
+export type AttestationPublicKeyCredential = PublicKeyCredential & {
+	response: AuthenticatorAttestationResponse;
+};
+export type AttestationCredentialData = {
+	id: string;
+	type: string;
+	rawId: string;
+	authenticatorAttachment: string | null;
+	response: {
+		clientDataJSON: string;
+		attestationObject: string;
+		transports: Array<string>;
 	};
 };
 
