@@ -1,14 +1,9 @@
-@if (config.render.type === 'button') {
 <button
-	type="submit"
+	type="button"
 	[disabled]="disabled"
 	[style.backgroundColor]="config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? '#5d21ab' : '#ffffff')"
 	[style.color]="config.render.textColor ?? (config.render.hint?.variant === 'primary' ? '#ffffff' : '#5d21ab')"
-	(click)="onSubmit($event)"
-	(keydown)="onKeyDown($event)"
+	(click)="onSubmit()"
 >
 	{{ config.label }}
 </button>
-} @else {
-<a tabindex="0" (click)="onSubmit($event)" (keydown)="onKeyDown($event)">{{ config.label }}</a>
-}
