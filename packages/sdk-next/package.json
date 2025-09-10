@@ -1,12 +1,12 @@
 {
   "name": "@strivacity/sdk-next",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0",
   "type": "module",
   "license": "MIT",
   "description": "Strivacity Next.js SDK client",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-core": "2.0.0-beta.3"
+    "@strivacity/sdk-core": "2.0.0"
   },
   "peerDependencies": {
     "next": ">=13"
