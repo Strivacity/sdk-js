@@ -1,3 +1,13 @@
+# 2.0.0 (2025-09-10)
+
+### 🩹 Fixes
+
+- documentation updates ([3549d61](https://github.com/Strivacity/sdk-js/commit/3549d61))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.0.0
+
 ## 2.0.0-beta.3 (2025-08-01)
 
 ### 🩹 Fixes
