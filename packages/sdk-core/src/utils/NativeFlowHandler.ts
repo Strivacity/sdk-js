@@ -118,7 +118,7 @@ export class NativeFlowHandler {
 
 		if (!response.ok) {
 			if (response.status >= 400 && response.status < 500) {
-				if (response.status !== 403 && data?.hostedUrl) {
+				if (response.status !== 403 && data?.hostedUrl && !data.messages) {
 					throw new FallbackError(new URL(data.hostedUrl));
 				}
 

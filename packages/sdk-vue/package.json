@@ -1,12 +1,12 @@
 {
   "name": "@strivacity/sdk-vue",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "license": "MIT",
   "description": "Strivacity Vue.js SDK client",
   "author": "strivacity <info@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-core": "2.0.0"
+    "@strivacity/sdk-core": "2.0.1"
   },
   "peerDependencies": {
     "vue": ">=3"
