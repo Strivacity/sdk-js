@@ -1,3 +1,10 @@
+## 2.0.1 (2025-10-07)
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.0.1
+- Updated sdk-core to 2.0.1
+
 # 2.0.0 (2025-09-10)
 
 ### 🩹 Fixes

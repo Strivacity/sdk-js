@@ -1,3 +1,9 @@
+## 2.0.1 (2025-10-07)
+
+### 🩹 Fixes
+
+- native flow error handling fixed ([0f75a1f](https://github.com/Strivacity/sdk-js/commit/0f75a1f))
+
 # 2.0.0 (2025-09-10)
 
 ### 🩹 Fixes
