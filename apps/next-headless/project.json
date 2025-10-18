@@ -1,0 +1,26 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-next-headless",
+  "projectType": "application",
+  "sourceRoot": "apps/next-headless/src",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/next-headless",
+        "command": "next dev --port 4200"
+      },
+      "dependsOn": ["sdk-next:build"]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/next-headless",
+        "command": "next build"
+      },
+      "dependsOn": ["sdk-next:build"]
+    }
+  }
+}
