@@ -38,6 +38,36 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 	}
 
 	/**
+	 * Initiates the entry process via a redirect.
+	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
+	 * @returns {Promise<string>} A promise that resolves to the session ID.
+	 */
+	async entry(url?: string): Promise<string> {
+		if (!url) {
+			url = globalThis.window?.location.href;
+		}
+
+		const entryUrl = new URL(url);
+		entryUrl.searchParams.append('sdk', 'web');
+		entryUrl.searchParams.append('client_id', this.options.clientId);
+		entryUrl.searchParams.append('redirect_uri', this.options.redirectUri);
+
+		const response = await this.httpClient.request<string>(`${this.options.issuer}/provider/flow/entry?${entryUrl.searchParams.toString()}`);
+
+		if (!response.ok) {
+			throw new Error(`Entry request failed with status ${response.status}`);
+		}
+
+		const sessionId = new URL(await response.text()).searchParams.get('session_id');
+
+		if (!sessionId) {
+			throw new Error('Session ID not found in entry response');
+		}
+
+		return sessionId;
+	}
+
+	/**
 	 * Handles the callback after login or registration via a redirect.
 	 * @param {string} [url] The URL to handle the callback from. Defaults to the current window location.
 	 * @returns {Promise<void>} A promise that resolves when the callback is handled.

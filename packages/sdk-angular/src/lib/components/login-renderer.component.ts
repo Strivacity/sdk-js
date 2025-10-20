@@ -32,6 +32,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 
 	@Output('login') readonly onLogin = new EventEmitter<IdTokenClaims | null | undefined>();
 	@Output('fallback') readonly onFallback = new EventEmitter<FallbackError>();
+	@Output('close') readonly onClose = new EventEmitter();
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	@Output('error') readonly onError = new EventEmitter<any>();
 	@Output('globalMessage') readonly onGlobalMessage = new EventEmitter<string>();
@@ -51,6 +52,9 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 			}
 
 			this.onFallback.emit(new FallbackError(new URL(url)));
+		};
+		this.widgetService.triggerClose = () => {
+			this.onClose.emit();
 		};
 		this.widgetService.submitForm = async (formId: string) => {
 			try {

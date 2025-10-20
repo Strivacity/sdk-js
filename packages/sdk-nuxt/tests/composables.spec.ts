@@ -114,12 +114,13 @@ describe('useStrivacity', () => {
 	});
 
 	test('should call sdk functions correctly', async () => {
-		const { sdk, login, register, refresh, revoke, logout, handleCallback } = useStrivacity();
+		const { sdk, login, register, refresh, revoke, entry, logout, handleCallback } = useStrivacity();
 		const spies = {
 			login: vi.spyOn(sdk, 'login').mockReturnValue(Promise.resolve()),
 			register: vi.spyOn(sdk, 'register').mockReturnValue(Promise.resolve()),
 			refresh: vi.spyOn(sdk, 'refresh').mockReturnValue(Promise.resolve()),
 			revoke: vi.spyOn(sdk, 'revoke').mockReturnValue(Promise.resolve()),
+			entry: vi.spyOn(sdk, 'entry').mockReturnValue(Promise.resolve('session_id')),
 			logout: vi.spyOn(sdk, 'logout').mockReturnValue(Promise.resolve()),
 			handleCallback: vi.spyOn(sdk, 'handleCallback').mockReturnValue(Promise.resolve()),
 		};
@@ -128,6 +129,7 @@ describe('useStrivacity', () => {
 		await register({ loginHint: 'register' });
 		await refresh();
 		await revoke();
+		await entry();
 		await logout({ postLogoutRedirectUri: 'uri' });
 		await handleCallback('http://brandtegrity.io/app/callback/?code=1234');
 
@@ -135,6 +137,7 @@ describe('useStrivacity', () => {
 		expect(spies.register).toHaveBeenCalledWith({ loginHint: 'register' });
 		expect(spies.refresh).toHaveBeenCalled();
 		expect(spies.revoke).toHaveBeenCalled();
+		expect(spies.entry).toHaveBeenCalled();
 		expect(spies.logout).toHaveBeenCalledWith({ postLogoutRedirectUri: 'uri' });
 		expect(spies.handleCallback).toHaveBeenCalledWith('http://brandtegrity.io/app/callback/?code=1234');
 	});

@@ -514,6 +514,49 @@ describe('NativeFlow', () => {
 			});
 		});
 
+		describe('entry', () => {
+			test('should get back session_id correctly', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234'),
+				});
+
+				const sessionId = await flow.entry('http://localhost:4200/entry');
+
+				expect(flow.httpClient.request).toHaveBeenCalledWith(
+					`${flow.options.issuer}/provider/flow/entry?sdk=web&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
+				);
+				expect(sessionId).toEqual('abcd1234');
+			});
+
+			test('should throw error on failed request', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: false,
+					status: 400,
+					text: () => Promise.resolve(''),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('Entry request failed with status 400');
+			});
+
+			test('should throw error on missing session_id', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve('https://brandtegrity.io/entry'),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('Session ID not found in entry response');
+			});
+		});
+
 		describe('handleCallback', () => {
 			test('should handle correctly', async () => {
 				const state = await storage.generateState();

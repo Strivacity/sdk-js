@@ -22,6 +22,7 @@ export class StrivacityWidgetService {
 	readonly state$ = new BehaviorSubject<LoginFlowState>({});
 
 	triggerFallback!: (hostedUrl?: string) => void;
+	triggerClose!: () => void;
 	submitForm!: (formId: string) => Promise<void>;
 
 	setFormValue(formId: string, widgetId: string, value: unknown) {

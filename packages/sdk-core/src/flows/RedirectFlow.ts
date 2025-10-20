@@ -54,6 +54,25 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 	}
 
 	/**
+	 * Initiates the entry process via a redirect.
+	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
+	 * @returns {Promise<void>} A promise that resolves when the entry process completes.
+	 */
+	async entry(url?: string): Promise<void> {
+		if (typeof this.options.urlHandler !== 'function') {
+			throw new Error('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+		}
+
+		if (!url) {
+			url = globalThis.window?.location.href;
+		}
+
+		const entryUrl = new URL(url);
+
+		await this.options.urlHandler(`${this.options.issuer}/provider/entry?${entryUrl.searchParams.toString()}`);
+	}
+
+	/**
 	 * Handles the callback after login or registration via a redirect.
 	 * @param {string} [url] The URL to handle the callback from. Defaults to the current window location.
 	 * @returns {Promise<void>} A promise that resolves when the callback is handled.

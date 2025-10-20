@@ -168,3 +168,55 @@ export default function ProfilePage() {
 	);
 }
 ```
+
+## Pages
+
+Brief, purpose-oriented descriptions of files under src/app — what they do, expected behavior, and how they use the Strivacity hook/provider.
+
+- src/app/page.tsx
+
+  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
+  - Behavior: Shows public content and optionally user info when authenticated via useStrivacity(). Should render quickly and not block navigation.
+  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); Use client-side rendering for user-specific bits.
+
+- src/app/login/page.tsx
+
+  - Purpose: Login page / entry point for authentication flows.
+  - Behavior: Triggers the SDK login flow (redirect/popup/native depending on options). If the user is already authenticated, redirect to /profile or another intended route.
+  - Usage: Check isAuthenticated and call login() from useStrivacity(); provide UX for popup vs redirect modes.
+
+- src/app/register/page.tsx
+
+  - Purpose: Registration page (if supported).
+  - Behavior: Starts a registration flow or presents a registration form that calls backend/SDK to create a user. On success, either sign in automatically or redirect to login.
+  - Usage: Use SDK registration helper if provided (e.g., useStrivacity().register()) or post to your backend.
+
+- src/app/entry/page.tsx
+
+  - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
+  - Behavior: Calls the provider/hook entry() method; if a session_id is returned, redirect to /callback?session_id=...; otherwise fallback to home. Show loading and error states.
+  - Usage: const { entry } = useStrivacity(); handle network errors and timeouts gracefully.
+
+- src/app/callback/page.tsx
+
+  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
+  - Behavior: Receives query params (code, state, session_id), finalizes authentication via SDK (handleRedirect/token exchange) in a client effect, then redirects to the intended route (e.g., /profile).
+  - Note: Keep this route unprotected so external providers can return to it.
+  - Usage: Parse URL params, call SDK's callback/handleRedirect, handle success/error and redirect.
+
+- src/app/profile/page.tsx
+
+  - Purpose: Protected user profile page.
+  - Behavior: Require authentication (client-side guard or server redirect). Displays idTokenClaims and other user data from useStrivacity and offers logout.
+  - Usage: const { idTokenClaims, logout } = useStrivacity(); optionally fetch server-backed profile data using the authenticated session.
+
+- src/app/revoke/page.tsx
+
+  - Purpose: Revoke tokens or sessions (optional advanced session management page).
+  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then redirects or logs out.
+  - Usage: Call revoke endpoints via SDK or your backend; after success call logout() and redirect to home.
+
+- src/app/logout/page.tsx
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls the SDK logout method, clears client session state, and redirects to home or login. Implement as a simple action page that shows progress and redirects on completion.
+  - Usage: Perform logout in an effect and route the user to a public page when complete.

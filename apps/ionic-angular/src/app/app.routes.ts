@@ -6,6 +6,7 @@ import { LogoutPage } from './pages/logout';
 import { ProfilePage } from './pages/profile';
 import { RegisterPage } from './pages/register';
 import { RevokePage } from './pages/revoke';
+import { EntryPage } from './pages/entry';
 
 export const routes: Routes = [
 	{ path: '', component: HomePage },
@@ -15,4 +16,5 @@ export const routes: Routes = [
 	{ path: 'profile', component: ProfilePage },
 	{ path: 'register', component: RegisterPage },
 	{ path: 'revoke', component: RevokePage },
+	{ path: 'entry', component: EntryPage },
 ];

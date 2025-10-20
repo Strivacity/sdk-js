@@ -13,6 +13,7 @@ import { PhoneWidget } from './phone.widget';
 import { SelectWidget } from './select.widget';
 import { StaticWidget } from './static.widget';
 import { SubmitWidget } from './submit.widget';
+import { CloseWidget } from './close.widget';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const widgets: Record<WidgetType, ComponentType<any>> = {
@@ -28,4 +29,5 @@ export const widgets: Record<WidgetType, ComponentType<any>> = {
 	multiSelect: MultiSelectWidget,
 	static: StaticWidget,
 	submit: SubmitWidget,
+	close: CloseWidget,
 };

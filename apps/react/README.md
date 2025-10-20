@@ -148,3 +148,55 @@ export function App() {
 	);
 }
 ```
+
+### Pages
+
+Brief, purpose-oriented descriptions of files under src/pages — what they do, expected behavior, and how they use the Strivacity hook.
+
+- src/pages/Home.tsx
+
+  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
+  - Behavior: Shows public content and, when authenticated, brief user info from useStrivacity(). Should be fast and accessible without auth.
+  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); render conditional UI accordingly.
+
+- src/pages/Login.tsx
+
+  - Purpose: Login page / entry point for authentication flows.
+  - Behavior: Triggers the SDK login flow (redirect/popup/native based on options). If already authenticated, typically redirect to /profile.
+  - Usage: Call useStrivacity().login(); guard the route by checking isAuthenticated and redirect when appropriate.
+
+- src/pages/Register.tsx
+
+  - Purpose: Registration page (if supported).
+  - Behavior: Starts a registration flow or shows a form and calls backend/SDK to create a user. On success either sign-in or navigate to login.
+  - Usage: Use the SDK registration API or a custom backend action then call login or navigate.
+
+- src/pages/Entry.tsx
+
+  - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
+  - Behavior: Calls the hook's entry() method; if a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading/error states.
+  - Usage: const { entry } = useStrivacity(); handle returned session IDs and errors with clear UX.
+
+- src/pages/Callback.tsx
+
+  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
+  - Behavior: Receives query params (code, state, session_id), finalizes authentication via SDK, then redirects to the intended route (e.g., /profile).
+  - Note: Keep this route unprotected so external providers can return to it.
+  - Usage: Parse params and call SDK handleRedirect/handleCallback in an effect and redirect on success.
+
+- src/pages/Profile.tsx
+
+  - Purpose: Protected user profile page.
+  - Behavior: Require authentication (route guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
+  - Usage: const { idTokenClaims, logout } = useStrivacity(); provide logout button and profile editing or server-backed data as needed.
+
+- src/pages/Revoke.tsx
+
+  - Purpose: Revoke tokens or sessions (optional advanced session management page).
+  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then redirects or logs out.
+  - Usage: Call revoke() and then logout/redirect on success; present clear confirmation and error handling.
+
+- src/pages/Logout.tsx
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls the SDK logout method, clears client session state, and redirects to home or login. Implement as an effect that shows progress and navigates away.
+  - Usage: Perform logout in a useEffect and navigate when complete.

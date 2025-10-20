@@ -173,6 +173,7 @@ describe('StrivacityAuthService', () => {
 			register: vi.spyOn(service.sdk, 'register').mockReturnValue(Promise.resolve()),
 			refresh: vi.spyOn(service.sdk, 'refresh').mockReturnValue(Promise.resolve()),
 			revoke: vi.spyOn(service.sdk, 'revoke').mockReturnValue(Promise.resolve()),
+			entry: vi.spyOn(service.sdk, 'entry').mockReturnValue(Promise.resolve('session_id')),
 			logout: vi.spyOn(service.sdk, 'logout').mockReturnValue(Promise.resolve()),
 			handleCallback: vi.spyOn(service.sdk, 'handleCallback').mockReturnValue(Promise.resolve()),
 		};
@@ -181,6 +182,7 @@ describe('StrivacityAuthService', () => {
 		service.register({ loginHint: 'register' });
 		service.refresh();
 		service.revoke();
+		service.entry();
 		service.logout({ postLogoutRedirectUri: 'uri' });
 		service.handleCallback('http://brandtegrity.io/app/callback/?code=1234');
 
