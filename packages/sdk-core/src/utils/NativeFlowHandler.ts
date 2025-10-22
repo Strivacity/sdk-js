@@ -41,7 +41,7 @@ export class NativeFlowHandler {
 		const state = await State.create();
 		const authorizationUrl = await this.sdk.getAuthorizationUrl(this.params);
 
-		authorizationUrl.searchParams.append('sdk', 'web');
+		authorizationUrl.searchParams.append('sdk', this.params.sdk || 'web');
 		authorizationUrl.searchParams.append('state', state.id);
 		authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
 		authorizationUrl.searchParams.append('nonce', state.nonce);
