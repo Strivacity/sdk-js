@@ -987,7 +987,7 @@ export type PopupParams = ExtraRequestArgs & {
 /**
  * Parameters for native authentication flow.
  */
-export type NativeParams = RedirectParams;
+export type NativeParams = RedirectParams & { sdk?: string };
 
 export declare const WidgetTypeList: readonly [
 	'layout',

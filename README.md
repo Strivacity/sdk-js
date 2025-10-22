@@ -44,6 +44,7 @@ To start the development server for an example application, use one of the follo
 
 - `pnpm app:angular:serve` – Serve the Angular example app
 - `pnpm app:next:serve` – Serve the Next.js example app
+- `pnpm app:next-headless:serve` – Serve the Next.js headless example app
 - `pnpm app:nuxt:serve` – Serve the Nuxt example app
 - `pnpm app:react:serve` – Serve the React example app
 - `pnpm app:remix:serve` – Serve the Remix example app

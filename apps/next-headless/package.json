@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "name": "@strivacity/app-next-headless",
+  "version": "1.0.10",
+  "type": "module",
+  "license": "MIT",
+  "author": "strivacity <info@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-next": "2.0.1"
+  }
+}

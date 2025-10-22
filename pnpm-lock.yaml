@@ -397,6 +397,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sdk-next
 
+  apps/next-headless:
+    dependencies:
+      '@strivacity/sdk-next':
+        specifier: workspace:*
+        version: link:../../packages/sdk-next
+
   apps/nuxt:
     dependencies:
       '@strivacity/sdk-nuxt':

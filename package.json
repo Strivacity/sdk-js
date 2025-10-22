@@ -29,6 +29,8 @@
     "app:angular:build": "nx run app-angular:build",
     "app:next:serve": "nx run app-next:serve",
     "app:next:build": "nx run app-next:build",
+    "app:next-headless:serve": "nx run app-next-headless:serve",
+    "app:next-headless:build": "nx run app-next-headless:build",
     "app:nuxt:serve": "nx run app-nuxt:serve",
     "app:nuxt:build": "nx run app-nuxt:build",
     "app:react:serve": "nx run app-react:serve",
