@@ -16,20 +16,20 @@ const options: SDKOptions = {
 
 function App({ children }: { children: React.ReactElement }) {
 	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-	const [name, setName] = useState<string | null>(null);
+	const [email, setEmail] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (isAuthenticated) {
-			setName(`${idTokenClaims?.given_name ?? ''} ${idTokenClaims?.family_name ?? ''}`);
+			setEmail(idTokenClaims?.email ?? '');
 		} else {
-			setName(null);
+			setEmail(null);
 		}
 	}, [isAuthenticated, idTokenClaims]);
 
 	return (
 		<>
 			<header>
-				<div>{isAuthenticated ? <strong>Welcome, {name}!</strong> : loading ? <strong>Loading...</strong> : null}</div>
+				<div>{isAuthenticated ? <strong>Welcome, {email}!</strong> : loading ? <strong>Loading...</strong> : null}</div>
 				<div>
 					{!loading && (
 						<>
