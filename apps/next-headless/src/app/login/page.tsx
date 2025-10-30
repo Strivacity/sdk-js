@@ -118,6 +118,7 @@ export default function Login() {
 				window.location.href = state.hostedUrl;
 			} else {
 				alert(error.message);
+				window.location.href = '/';
 			}
 		} finally {
 			setIsLoading(false);
