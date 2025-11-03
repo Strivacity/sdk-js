@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { LoginFlowState, LoginFlowMessage, NativeContext, StaticWidget, SubmitWidget, MultiSelectWidget, InputWidget } from '@strivacity/sdk-next';
 import type { NativeFlowHandler } from 'packages/sdk-core/dist/utils/NativeFlowHandler';
+import { unflattenObject } from '@strivacity/sdk-core/utils/object';
 import { useStrivacity, FallbackError } from '@strivacity/sdk-next';
 
 export default function Login() {
@@ -102,7 +103,7 @@ export default function Login() {
 		try {
 			setIsLoading(true);
 			await onBeforeSubmit?.(data);
-			const newState = await handler.submitForm(formId, data);
+			const newState = await handler.submitForm(formId, unflattenObject(data));
 
 			if (await sdk.isAuthenticated) {
 				router.push('/profile');
