@@ -27,6 +27,7 @@ export function SubmitWidget({ formId, config }: { formId: string; config: Submi
 		<>
 			{config.render.type === 'button' ? (
 				<button
+					type="submit"
 					disabled={disabled}
 					style={{
 						backgroundColor: config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? `#5d21ab` : `#ffffff`),

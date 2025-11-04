@@ -25,6 +25,7 @@ async function onSubmit(event: Event) {
 <template>
 	<button
 		v-if="config.render.type === 'button'"
+		type="submit"
 		:disabled="disabled"
 		:style="{
 			backgroundColor: config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? `#5d21ab` : `#ffffff`),
