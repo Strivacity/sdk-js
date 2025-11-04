@@ -7,6 +7,15 @@ const context = inject<NativeFlowContextValue>('nativeFlowContext');
 const disabled = computed(() => !!context?.loading.value || !!props.config.readonly);
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
+const autocomplete = computed(() => {
+	if (props.config.autocomplete && props.config.render?.autocompleteHint) {
+		return `${props.config.autocomplete} ${props.config.render.autocompleteHint}`;
+	} else if (props.config.autocomplete) {
+		return props.config.autocomplete;
+	} else {
+		return 'on';
+	}
+});
 const value = computed(() => (context?.forms.value[props.formId]?.[props.config.id] as string) ?? props.config.value ?? '');
 
 onMounted(() => {
@@ -44,7 +53,7 @@ async function onKeyDown(event: KeyboardEvent) {
 		<input
 			:id="config.id"
 			:name="config.id"
-			:autocomplete="config.autocomplete || 'on'"
+			:autocomplete="autocomplete"
 			:inputmode="config.inputmode"
 			:readonly="disabled"
 			:required="validator?.required"

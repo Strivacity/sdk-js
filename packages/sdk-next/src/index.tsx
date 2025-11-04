@@ -6,6 +6,7 @@ export type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 export { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
 export { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 export { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
+export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 
 export { useStrivacity } from './composables';
 export { StyAuthProvider } from './AuthProvider';

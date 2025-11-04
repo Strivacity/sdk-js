@@ -9,6 +9,7 @@ export type * from './lib/utils/types';
 export { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
 export { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 export { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
+export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 export { StyLoginRenderer } from './lib/components/login-renderer.component';
 export { StrivacityAuthService } from './lib/services/auth.service';
 export { StrivacityWidgetService } from './lib/services/widget.service';

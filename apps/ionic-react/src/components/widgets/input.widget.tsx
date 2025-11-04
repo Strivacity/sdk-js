@@ -6,8 +6,17 @@ import './input.widget.scss';
 export function InputWidget({ formId, config }: { formId: string; config: InputWidget }) {
 	const context = useContext(NativeFlowContext);
 	const value = (context?.forms[formId]?.[config.id] as string) ?? config.value ?? '';
-	const disabled = useMemo(() => !!context?.loading || !!config.readonly, [context?.loading, config.readonly]);
 	const errorMessage = context?.messages[formId]?.[config.id]?.text;
+	const disabled = useMemo(() => !!context?.loading || !!config.readonly, [context?.loading, config.readonly]);
+	const autocomplete = useMemo(() => {
+		if (config.autocomplete && config.render?.autocompleteHint) {
+			return `${config.autocomplete} ${config.render.autocompleteHint}`;
+		} else if (config.autocomplete) {
+			return config.autocomplete;
+		} else {
+			return 'on';
+		}
+	}, [config.autocomplete, config.render?.autocompleteHint]);
 
 	useEffect(() => {
 		// Default value handling
@@ -49,7 +58,7 @@ export function InputWidget({ formId, config }: { formId: string; config: InputW
 			<input
 				id={config.id}
 				name={config.id}
-				autoComplete={config.autocomplete || 'on'}
+				autoComplete={autocomplete}
 				inputMode={config.inputmode}
 				readOnly={disabled}
 				required={config.validator?.required}

@@ -36,6 +36,16 @@ export class InputWidget implements OnInit {
 		return this.config.validator;
 	}
 
+	get autocomplete() {
+		if (this.config.autocomplete && this.config.render?.autocompleteHint) {
+			return `${this.config.autocomplete} ${this.config.render.autocompleteHint}`;
+		} else if (this.config.autocomplete) {
+			return this.config.autocomplete;
+		} else {
+			return 'on';
+		}
+	}
+
 	constructor(protected readonly widgetService: StrivacityWidgetService) {}
 
 	ngOnInit() {

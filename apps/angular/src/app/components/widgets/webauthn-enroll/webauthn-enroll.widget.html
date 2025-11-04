@@ -1,0 +1,5 @@
+@if (config.render.type === 'button') {
+<button type="button" [disabled]="disabled" (click)="onClick()" (keydown)="onKeyDown($event)">{{ config.label }}</button>
+} @else {
+<a tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">{{ config.label }}</a>
+}

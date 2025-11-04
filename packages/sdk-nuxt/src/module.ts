@@ -16,6 +16,7 @@ declare module '@nuxt/schema' {
 export type ModuleOptions = SDKOptions;
 
 export * from '@strivacity/sdk-core';
+export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 export type * from './types';
 export type { PopupFlow, RedirectFlow, NativeFlow };
 export { HttpClient, LocalStorage, SessionStorage };

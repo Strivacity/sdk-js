@@ -457,6 +457,397 @@ export class CustomMultiSelectWidget {
 }
 ```
 
+## Passkey Login Widget
+
+The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn credentials). It uses the `getCredential` function to retrieve authentication data.
+
+### Properties
+
+- `formId`: The form ID.
+- `config`: Passkey login widget config, which includes:
+  - `id`: The unique identifier for the passkey login widget.
+  - `type`: The type of the widget.
+  - `label`: The label displayed on the passkey login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```typescript
+@Component({
+	selector: 'custom-passkey-login-widget',
+	template: `
+		<ng-container *ngIf="formId === 'identifier'; else defaultPasskeyLogin">
+			<button
+				*ngIf="config.render.type === 'button'; else linkPasskeyLogin"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkPasskeyLogin>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+			<div>Additional content for identifier passkey login</div>
+		</ng-container>
+		<ng-template #defaultPasskeyLogin>
+			<button
+				*ngIf="config.render.type === 'button'; else linkPasskeyLoginDefault"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkPasskeyLoginDefault>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+		</ng-template>
+	`,
+})
+export class CustomPasskeyLoginWidget {
+	@Input() formId!: string;
+	@Input() config!: any;
+
+	get disabled() {
+		return !!this.widgetService.loading$.value;
+	}
+
+	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+
+	async onClick() {
+		if (this.disabled) {
+			return;
+		}
+
+		try {
+			const response = await getCredential(this.config.assertionOptions);
+			this.widgetService.setFormValue(this.formId, this.config.id, response);
+			await this.widgetService.submitForm(this.formId);
+		} catch (error) {
+			console.error(error);
+			alert('Authentication failed. Please try again.');
+		}
+	}
+
+	async onKeyDown(event: KeyboardEvent) {
+		if (['Enter', 'Space'].includes(event.code)) {
+			await this.onClick();
+		}
+	}
+}
+```
+
+## Passkey Enroll Widget
+
+The Passkey Enroll Widget allows users to register new passkeys. It uses the `createCredential` function to create new WebAuthn credentials.
+
+### Properties
+
+- `formId`: The form ID.
+- `config`: Passkey enroll widget config, which includes:
+  - `id`: The unique identifier for the passkey enroll widget.
+  - `type`: The type of the widget.
+  - `label`: The label displayed on the passkey enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```typescript
+@Component({
+	selector: 'custom-passkey-enroll-widget',
+	template: `
+		<ng-container *ngIf="formId === 'identifier'; else defaultPasskeyEnroll">
+			<button
+				*ngIf="config.render.type === 'button'; else linkPasskeyEnroll"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkPasskeyEnroll>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+			<div>Additional content for identifier passkey enrollment</div>
+		</ng-container>
+		<ng-template #defaultPasskeyEnroll>
+			<button
+				*ngIf="config.render.type === 'button'; else linkPasskeyEnrollDefault"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkPasskeyEnrollDefault>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+		</ng-template>
+	`,
+})
+export class CustomPasskeyEnrollWidget {
+	@Input() formId!: string;
+	@Input() config!: any;
+
+	get disabled() {
+		return !!this.widgetService.loading$.value;
+	}
+
+	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+
+	async onClick() {
+		if (this.disabled) {
+			return;
+		}
+
+		try {
+			const response = await createCredential(this.config.enrollOptions);
+			this.widgetService.setFormValue(this.formId, this.config.id, response);
+			await this.widgetService.submitForm(this.formId);
+		} catch (error) {
+			console.error(error);
+			alert('Enrollment failed. Please try again.');
+		}
+	}
+
+	async onKeyDown(event: KeyboardEvent) {
+		if (['Enter', 'Space'].includes(event.code)) {
+			await this.onClick();
+		}
+	}
+}
+```
+
+## WebAuthn Login Widget
+
+The WebAuthn Login Widget provides WebAuthn-based authentication functionality, similar to the Passkey Login Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The form ID.
+- `config`: WebAuthn login widget config, which includes:
+  - `id`: The unique identifier for the webauthn login widget.
+  - `type`: The type of the widget.
+  - `label`: The label displayed on the webauthn login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```typescript
+@Component({
+	selector: 'custom-webauthn-login-widget',
+	template: `
+		<ng-container *ngIf="formId === 'identifier'; else defaultWebAuthnLogin">
+			<button
+				*ngIf="config.render.type === 'button'; else linkWebAuthnLogin"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkWebAuthnLogin>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+			<div>Additional content for identifier WebAuthn login</div>
+		</ng-container>
+		<ng-template #defaultWebAuthnLogin>
+			<button
+				*ngIf="config.render.type === 'button'; else linkWebAuthnLoginDefault"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkWebAuthnLoginDefault>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+		</ng-template>
+	`,
+})
+export class CustomWebAuthnLoginWidget {
+	@Input() formId!: string;
+	@Input() config!: any;
+
+	get disabled() {
+		return !!this.widgetService.loading$.value;
+	}
+
+	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+
+	async onClick() {
+		if (this.disabled) {
+			return;
+		}
+
+		try {
+			const response = await getCredential(this.config.assertionOptions);
+			this.widgetService.setFormValue(this.formId, this.config.id, response);
+			await this.widgetService.submitForm(this.formId);
+		} catch (error) {
+			console.error(error);
+			alert('Authentication failed. Please try again.');
+		}
+	}
+
+	async onKeyDown(event: KeyboardEvent) {
+		if (['Enter', 'Space'].includes(event.code)) {
+			await this.onClick();
+		}
+	}
+}
+```
+
+## WebAuthn Enroll Widget
+
+The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, similar to the Passkey Enroll Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The form ID.
+- `config`: WebAuthn enroll widget config, which includes:
+  - `id`: The unique identifier for the webauthn enroll widget.
+  - `type`: The type of the widget.
+  - `label`: The label displayed on the webauthn enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```typescript
+@Component({
+	selector: 'custom-webauthn-enroll-widget',
+	template: `
+		<ng-container *ngIf="formId === 'identifier'; else defaultWebAuthnEnroll">
+			<button
+				*ngIf="config.render.type === 'button'; else linkWebAuthnEnroll"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkWebAuthnEnroll>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+			<div>Additional content for identifier WebAuthn enrollment</div>
+		</ng-container>
+		<ng-template #defaultWebAuthnEnroll>
+			<button
+				*ngIf="config.render.type === 'button'; else linkWebAuthnEnrollDefault"
+				type="button"
+				[id]="config.id"
+				[disabled]="disabled"
+				(click)="onClick()"
+				(keydown)="onKeyDown($event)"
+			>
+				{{ config.label }}
+			</button>
+			<ng-template #linkWebAuthnEnrollDefault>
+				<a [id]="config.id" tabindex="0" (click)="onClick()" (keydown)="onKeyDown($event)">
+					{{ config.label }}
+				</a>
+			</ng-template>
+		</ng-template>
+	`,
+})
+export class CustomWebAuthnEnrollWidget {
+	@Input() formId!: string;
+	@Input() config!: any;
+
+	get disabled() {
+		return !!this.widgetService.loading$.value;
+	}
+
+	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+
+	async onClick() {
+		if (this.disabled) {
+			return;
+		}
+
+		try {
+			const response = await createCredential(this.config.enrollOptions);
+			this.widgetService.setFormValue(this.formId, this.config.id, response);
+			await this.widgetService.submitForm(this.formId);
+		} catch (error) {
+			console.error(error);
+			alert('Enrollment failed. Please try again.');
+		}
+	}
+
+	async onKeyDown(event: KeyboardEvent) {
+		if (['Enter', 'Space'].includes(event.code)) {
+			await this.onClick();
+		}
+	}
+}
+```
+
+## Credential Management Functions
+
+The passkey and WebAuthn widgets rely on two core functions for credential management:
+
+### `createCredential(credentialOptions)`
+
+This function is used for registering new credentials (passkeys/WebAuthn). It:
+
+- Takes `PublicKeyCredentialCreationOptions` as input
+- Handles Base64URL encoding/decoding of credential data
+- Uses the browser's WebAuthn API to create new credentials
+- Returns `AttestationCredentialData` containing the new credential information
+- Includes error handling for unsupported credential types
+
+### `getCredential(credentialOptions, conditional?)`
+
+This function is used for authenticating with existing credentials. It:
+
+- Takes `PublicKeyCredentialRequestOptions` as input and an optional conditional flag
+- Handles Base64URL encoding/decoding of assertion data
+- Uses the browser's WebAuthn API to get existing credentials
+- Returns `AssertionCredentialData` containing the authentication response
+- Supports conditional UI for passive credential selection
+- Includes error handling for authentication failures
+
+Both functions are imported from `@strivacity/sdk-angular` and handle the low-level WebAuthn protocol details, making it easy to integrate passkey authentication into your Angular applications.
+
 ## Loading Widget
 
 Animated loading icon.
