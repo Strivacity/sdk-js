@@ -95,6 +95,9 @@ export const createStrivacitySDK = (options: SDKOptions) => {
 					await sdk.register(options);
 					await updateSession();
 				},
+				entry: async (url?: string) => {
+					return await sdk.entry(url);
+				},
 				refresh: async () => {
 					await sdk.refresh();
 					await updateSession();

@@ -62,11 +62,12 @@ export const StyLoginRenderer: React.FC<{
 	sessionId?: string | null;
 	onLogin?: (claims?: IdTokenClaims | null) => void;
 	onFallback?: (error: FallbackError) => void;
+	onClose?: () => void;
 	onError?: (error: any) => void;
 	onGlobalMessage?: (message: string) => void;
 	onBlockReady?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
 }> = (props) => {
-	const { params, widgets, sessionId, onLogin, onFallback, onError, onGlobalMessage, onBlockReady } = {
+	const { params, widgets, sessionId, onLogin, onFallback, onClose, onError, onGlobalMessage, onBlockReady } = {
 		params: {},
 		widgets: {},
 		sessionId: null,
@@ -92,6 +93,10 @@ export const StyLoginRenderer: React.FC<{
 		},
 		[state, onFallback],
 	);
+
+	const triggerClose = useCallback(() => {
+		onClose?.();
+	}, [onClose]);
 
 	const setFormValue = useCallback((formId: string, widgetId: string, value: unknown) => {
 		setforms((prev) => ({
@@ -170,7 +175,7 @@ export const StyLoginRenderer: React.FC<{
 				}
 			}
 		},
-		[sdk, params, forms, state, onLogin, onFallback, onError, onGlobalMessage, onBlockReady],
+		[sdk, params, forms, state, onLogin, onFallback, onClose, onError, onGlobalMessage, onBlockReady],
 	);
 
 	// Provide context value
@@ -181,6 +186,7 @@ export const StyLoginRenderer: React.FC<{
 		state,
 		submitForm,
 		triggerFallback,
+		triggerClose,
 		setFormValue,
 		setMessage,
 	};

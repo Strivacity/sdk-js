@@ -105,6 +105,22 @@ export class StrivacityAuthService<
 	}
 
 	/**
+	 * Initiates the entry process using the provided challenge.
+	 *
+	 * @param {string} [url] Optional URL to use for the entry process. If not provided, the current window location will be used.
+	 * @returns {Observable<void>} An observable that completes when the entry process is done.
+	 */
+	entry(url?: string) {
+		const result = this.sdk.entry(url);
+
+		if (result instanceof Promise) {
+			return from(result);
+		}
+
+		return result;
+	}
+
+	/**
 	 * Registers a new user using the specified options.
 	 *
 	 * @param {Parameters<Flow['register']>[0]} [options] Options to customize the registration behavior.

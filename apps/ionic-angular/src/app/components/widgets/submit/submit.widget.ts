@@ -42,7 +42,7 @@ export class SubmitWidget {
 	}
 
 	async onKeyDown(event: KeyboardEvent) {
-		if (event.key === 'Enter' || event.key === ' ') {
+		if (['Enter', 'Space'].includes(event.code)) {
 			await this.onSubmit(event);
 		}
 	}

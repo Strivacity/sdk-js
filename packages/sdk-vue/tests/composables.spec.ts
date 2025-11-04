@@ -79,6 +79,7 @@ describe('useStrivacity', () => {
 				register: expect.anything(),
 				refresh: expect.anything(),
 				revoke: expect.anything(),
+				entry: expect.anything(),
 				logout: expect.anything(),
 				handleCallback: expect.anything(),
 			}),

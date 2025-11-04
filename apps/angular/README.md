@@ -188,3 +188,55 @@ export class AuthComponent {
 	}
 }
 ```
+
+## Pages
+
+Brief, purpose-oriented descriptions of the components under src/app/pages — what they do, expected behavior, and how they use the StrivacityService.
+
+- src/app/pages/home.component.ts
+
+  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
+  - Behavior: Shows public content and, when authenticated, brief user info from StrivacityService.idTokenClaims(). Should be accessible without auth.
+  - Usage: const strivacity = inject(StrivacityService); use strivacity.loading, strivacity.isAuthenticated() and strivacity.idTokenClaims() (or signal accessors) for conditional UI.
+
+- src/app/pages/login.component.ts
+
+  - Purpose: Login page / entry point for authentication flows.
+  - Behavior: Triggers the SDK login flow (redirect/popup depending on configuration). If already authenticated, typically navigate to /profile.
+  - Usage: const strivacity = inject(StrivacityService); call strivacity.login(); check strivacity.isAuthenticated() and navigate when appropriate.
+
+- src/app/pages/register.component.ts
+
+  - Purpose: Registration page (if supported).
+  - Behavior: Initiates a registration flow via the SDK or backend. On success either sign-in or navigate to login.
+  - Usage: inject(StrivacityService) or use a form + backend call, then call login/redirect as needed.
+
+- src/app/pages/entry.component.ts
+
+  - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
+  - Behavior: Calls StrivacityService.entry(); if a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading and error states.
+  - Usage: const strivacity = inject(StrivacityService); run entry() in an effect/ngOnInit and handle the returned session ID and errors.
+
+- src/app/pages/callback.component.ts
+
+  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
+  - Behavior: Processes query params (code, state, session_id), completes authentication via the SDK, then redirects to the intended route (e.g., /profile).
+  - Note: Keep this route unprotected so external providers can return to it.
+  - Usage: inject(StrivacityService); call the SDK callback/redirect handler (e.g., handleRedirect or the appropriate method) in an effect, then Router.navigate() on success.
+
+- src/app/pages/profile.component.ts
+
+  - Purpose: Protected user profile page.
+  - Behavior: Require authentication (route guard or component-level check). Displays idTokenClaims and other user data from StrivacityService; optionally fetch server data using the session.
+  - Usage: const strivacity = inject(StrivacityService); use strivacity.idTokenClaims, provide a logout button that calls strivacity.logout().
+
+- src/app/pages/revoke.component.ts
+
+  - Purpose: Revoke tokens or sessions (optional advanced session management page).
+  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
+  - Usage: inject(StrivacityService); call the SDK revoke method (if available) and then call logout/redirect on success.
+
+- src/app/pages/logout.component.ts
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls StrivacityService.logout(), clears client-side state, and redirects to home or login. Implement as an effect that shows progress and navigates away.
+  - Usage: const strivacity = inject(StrivacityService); perform logout in ngOnInit/effect and Router.navigate when complete.

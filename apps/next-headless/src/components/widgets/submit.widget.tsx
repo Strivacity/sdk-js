@@ -37,7 +37,7 @@ export function SubmitWidget({ formId, config }: { formId: string; config: Submi
 					data-form-id={formId}
 					data-widget-id={config.id}
 					onClick={(e) => void onSubmit(e)}
-					onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ' ? void onSubmit(e) : undefined)}
+					onKeyDown={(e) => (['Enter', 'Space'].includes(e.code) ? void onSubmit(e) : undefined)}
 				>
 					{config.label}
 				</button>
@@ -49,7 +49,7 @@ export function SubmitWidget({ formId, config }: { formId: string; config: Submi
 					data-widget-id={config.id}
 					tabIndex={0}
 					onClick={(e) => void onSubmit(e)}
-					onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ' ? void onSubmit(e) : undefined)}
+					onKeyDown={(e) => (['Enter', 'Space'].includes(e.code) ? void onSubmit(e) : undefined)}
 				>
 					{config.label}
 				</a>

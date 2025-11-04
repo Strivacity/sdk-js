@@ -176,3 +176,54 @@ export default defineNuxtRouteMiddleware(() => {
 	}
 });
 ```
+
+### Pages
+
+Brief, purpose-oriented descriptions of files under app/pages — what they do, expected behavior, and how they use the Strivacity composable.
+
+- app/pages/index.vue
+
+  - Purpose: Landing/home page. Publicly accessible; introduces the app and often includes links to login/register.
+  - Behavior: If the app knows authenticated state, it can display user info (e.g., name) using the useStrivacity composable.
+  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+
+- app/pages/login.vue
+
+  - Purpose: Login page / entry point for the authentication flow.
+  - Behavior: Triggers the Strivacity login flow (redirect/popup/native depending on module config). If already authenticated, commonly redirects to the profile page.
+  - Tip: Check isAuthenticated and redirect (e.g., to /profile) if true.
+
+- app/pages/register.vue
+
+  - Purpose: Registration page (if registration is supported by your setup).
+  - Behavior: Starts a registration flow or presents a registration form and calls the Strivacity backend. Logic is often similar to login but focused on user creation.
+  - Usage: useStrivacity().register() or custom UI + SDK calls.
+
+- app/pages/callback.vue
+
+  - Purpose: OAuth / OpenID Connect callback handler — the identity provider returns the user here.
+  - Behavior: Receives query params (code, state, etc.), calls the SDK's callback/handleRedirect method, completes authentication, and redirects to the target (e.g., /profile or a previously saved route).
+  - Note: Do NOT protect this page with auth middleware because external providers must be able to return here.
+
+- app/pages/profile.vue
+
+  - Purpose: User profile page — intended for authenticated users only.
+  - Behavior: Protected route (e.g., definePageMeta({ middleware: 'auth' }) or via global middleware). Displays idTokenClaims and other user data from useStrivacity.
+  - Usage: const { idTokenClaims, logout } = useStrivacity(); — for displaying data and signing out.
+
+- app/pages/entry.vue
+
+  - Purpose: Page-level entry component that initiates different operations via links. It is used to start an entry flow (for example when a link or external action should trigger a server-side or SDK-driven operation).
+  - Behavior: On mount it calls the composable's entry() method (useStrivacity().entry()). If the call returns a session id the page redirects to /callback with that session_id as a query parameter; otherwise it redirects to the home page. Basic error handling shows a message and redirects to home on failure.
+  - Usage: const { entry } = useStrivacity(); — useful for link-driven flows where the entry endpoint decides the next step (redirect to callback or fallback to home).
+
+- app/pages/revoke.vue
+
+  - Purpose: Revoke tokens or user sessions (e.g., revoke refresh tokens or explicit consent) — optional endpoint for advanced session management.
+  - Behavior: Calls the SDK or backend revoke endpoint to invalidate tokens and optionally triggers a logout/redirect. Should surface success/error feedback to the user and then redirect (home or login).
+  - Usage: Use the SDK's revoke or session-management API (or call your backend) and then use logout/redirect flow; ensure proper UX (loading, error handling).
+
+- app/pages/logout.vue
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls the SDK logout method, clears local session state if needed, and redirects to the home or login page.
+  - Tip: This can be a simple "perform logout and redirect" component.

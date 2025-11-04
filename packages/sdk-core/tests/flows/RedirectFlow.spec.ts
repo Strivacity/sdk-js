@@ -634,6 +634,21 @@ describe('RedirectFlow', () => {
 			});
 		});
 
+		describe('entry', () => {
+			test('should throw error w/o urlHandler', async () => {
+				// @ts-expect-error: Invalid options
+				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
+				await expect(() => flow.entry()).rejects.toThrowError('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+			});
+
+			test('should call provider url correctly', async () => {
+				const { flow } = spyInitFlow({ ...options, urlHandler: vi.fn() });
+
+				await flow.entry('http://localhost:4200/entry?callback=abcd');
+				expect(flow.options.urlHandler).toHaveBeenCalledWith(`${options.issuer}/provider/entry?callback=abcd`);
+			});
+		});
+
 		describe('handleCallback', () => {
 			test('should handle correctly', async () => {
 				const state = await storage.generateState();

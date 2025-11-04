@@ -992,6 +992,7 @@ export type NativeParams = RedirectParams & { sdk?: string };
 export declare const WidgetTypeList: readonly [
 	'layout',
 	'submit',
+	'close',
 	'static',
 	'input',
 	'checkbox',
@@ -1144,6 +1145,20 @@ export type StaticWidget = {
 export type SubmitWidget = {
 	id: string;
 	type: 'submit';
+	label?: string;
+	render: {
+		type: 'button' | 'link';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
+export type CloseWidget = {
+	id: string;
+	type: 'close';
 	label?: string;
 	render: {
 		type: 'button' | 'link';
