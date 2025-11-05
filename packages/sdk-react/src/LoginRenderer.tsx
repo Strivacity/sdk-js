@@ -7,6 +7,7 @@ import { unflattenObject } from '@strivacity/sdk-core/utils/object';
 import { useStrivacity } from './composables';
 
 export const NativeFlowContext = createContext<NativeFlowContextValue | null>(null);
+const formData: Record<string, Record<string, unknown>> = {};
 
 const StyWidgetRenderer: React.FC<{
 	items: LayoutWidget['items'];
@@ -77,8 +78,8 @@ export const StyLoginRenderer: React.FC<{
 	const loginHandlerRef = useRef<ReturnType<(typeof sdk)['login']> | null>(null);
 
 	const [loading, setLoading] = useState(false);
-	const [forms, setforms] = useState<Record<string, Record<string, unknown>>>({});
-	const [messages, setmessages] = useState<Record<string, Record<string, LoginFlowMessage>>>({});
+	const [forms, setForms] = useState<Record<string, Record<string, unknown>>>({});
+	const [messages, setMessages] = useState<Record<string, Record<string, LoginFlowMessage>>>({});
 	const [state, setState] = useState<LoginFlowState>({});
 
 	const triggerFallback = useCallback(
@@ -96,17 +97,22 @@ export const StyLoginRenderer: React.FC<{
 
 	const triggerClose = useCallback(() => {
 		onClose?.();
-	}, [state, onClose]);
+	}, [onClose]);
 
 	const setFormValue = useCallback((formId: string, widgetId: string, value: unknown) => {
-		setforms((prev) => ({
+		formData[formId] = {
+			...formData[formId],
+			[widgetId]: value === '' ? null : value,
+		};
+
+		setForms((prev) => ({
 			...prev,
 			[formId]: { ...(prev[formId] || {}), [widgetId]: value === '' ? null : value },
 		}));
 	}, []);
 
 	const setMessage = useCallback((formId: string, widgetId: string, value: LoginFlowMessage) => {
-		setmessages((prev) => ({
+		setMessages((prev) => ({
 			...prev,
 			[formId]: { ...(prev[formId] || {}), [widgetId]: value },
 		}));
@@ -117,7 +123,7 @@ export const StyLoginRenderer: React.FC<{
 			try {
 				setLoading(true);
 
-				const data = await loginHandlerRef.current?.submitForm(formId, unflattenObject(forms[formId]));
+				const data = await loginHandlerRef.current?.submitForm(formId, unflattenObject(formData[formId]));
 
 				if (await sdk.isAuthenticated) {
 					onLogin?.(sdk.idTokenClaims);
@@ -134,23 +140,23 @@ export const StyLoginRenderer: React.FC<{
 					};
 
 					if (newState.screen !== state.screen) {
-						const newforms: typeof forms = {};
-						const newmessages: typeof messages = {};
+						const newForms: typeof forms = {};
+						const newMessages: typeof messages = {};
 
 						for (const form of newState.forms ?? []) {
-							newforms[form.id] = {};
-							newmessages[form.id] = {};
+							newForms[form.id] = {};
+							newMessages[form.id] = {};
 						}
 
-						setforms(newforms);
-						setmessages(newmessages);
+						setForms(newForms);
+						setMessages(newMessages);
 					}
 
 					Object.keys(newState.messages ?? {}).forEach((formId) => {
 						if (formId === 'global') {
 							onGlobalMessage?.(newState.messages?.global?.text ?? '');
 						} else {
-							setmessages((prev) => ({
+							setMessages((prev) => ({
 								...prev,
 								[formId]: newState.messages![formId],
 							}));
@@ -178,7 +184,6 @@ export const StyLoginRenderer: React.FC<{
 		[sdk, params, forms, state, onLogin, onFallback, onClose, onError, onGlobalMessage, onBlockReady],
 	);
 
-	// Provide context value
 	const contextValue: NativeFlowContextValue = {
 		loading,
 		forms,
@@ -212,23 +217,23 @@ export const StyLoginRenderer: React.FC<{
 					onLogin?.(sdk.idTokenClaims);
 				} else {
 					if (newState.screen !== state.screen) {
-						const newforms: typeof forms = {};
-						const newmessages: typeof messages = {};
+						const newForms: typeof forms = {};
+						const newMessages: typeof messages = {};
 
 						for (const form of newState.forms ?? []) {
-							newforms[form.id] = {};
-							newmessages[form.id] = {};
+							newForms[form.id] = {};
+							newMessages[form.id] = {};
 						}
 
-						setforms(newforms);
-						setmessages(newmessages);
+						setForms(newForms);
+						setMessages(newMessages);
 					}
 
 					Object.keys(newState.messages ?? {}).forEach((formId) => {
 						if (formId === 'global') {
 							onGlobalMessage?.(newState.messages?.global?.text ?? '');
 						} else {
-							setmessages((prev) => ({
+							setMessages((prev) => ({
 								...prev,
 								[formId]: newState.messages![formId],
 							}));
