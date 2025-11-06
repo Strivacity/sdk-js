@@ -14,6 +14,10 @@ import { SelectWidget } from './select.widget';
 import { StaticWidget } from './static.widget';
 import { SubmitWidget } from './submit.widget';
 import { CloseWidget } from './close.widget';
+import { PasskeyEnrollWidget } from './passkey-enroll.widget';
+import { PasskeyLoginWidget } from './passkey-login.widget';
+import { WebAuthnEnrollWidget } from './webauthn-enroll.widget';
+import { WebAuthnLoginWidget } from './webauthn-login.widget';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const widgets: Record<WidgetType, ComponentType<any>> = {
@@ -30,4 +34,8 @@ export const widgets: Record<WidgetType, ComponentType<any>> = {
 	static: StaticWidget,
 	submit: SubmitWidget,
 	close: CloseWidget,
+	passkeyEnroll: PasskeyEnrollWidget,
+	passkeyLogin: PasskeyLoginWidget,
+	webauthnEnroll: WebAuthnEnrollWidget,
+	webauthnLogin: WebAuthnLoginWidget,
 };

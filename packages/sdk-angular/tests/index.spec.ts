@@ -3,7 +3,7 @@ import * as index from '../src/public-api';
 
 describe('imports', () => {
 	test('should import the correct things from client', () => {
-		expect(Object.keys(index)).toHaveLength(13);
+		expect(Object.keys(index)).toHaveLength(15);
 		expect(index).toHaveProperty('LocalStorage');
 		expect(index).toHaveProperty('SessionStorage');
 		expect(index).toHaveProperty('StyLoginRenderer');
@@ -16,6 +16,8 @@ describe('imports', () => {
 		expect(index).toHaveProperty('HttpClient');
 		expect(index).toHaveProperty('SDKStorage');
 		expect(index).toHaveProperty('SDKHttpClient');
+		expect(index).toHaveProperty('getCredential');
+		expect(index).toHaveProperty('createCredential');
 		expect(index).toHaveProperty('initFlow');
 	});
 });

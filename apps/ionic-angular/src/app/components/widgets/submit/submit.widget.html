@@ -1,5 +1,6 @@
 @if (config.render.type === 'button') {
 <button
+	type="submit"
 	[disabled]="disabled"
 	[style.backgroundColor]="config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? '#5d21ab' : '#ffffff')"
 	[style.color]="config.render.textColor ?? (config.render.hint?.variant === 'primary' ? '#ffffff' : '#5d21ab')"

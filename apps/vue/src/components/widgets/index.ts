@@ -14,6 +14,10 @@ import SelectWidget from './select.widget.vue';
 import StaticWidget from './static.widget.vue';
 import SubmitWidget from './submit.widget.vue';
 import CloseWidget from './close.widget.vue';
+import PasskeyLoginWidget from './passkey-login.widget.vue';
+import PasskeyEnrollWidget from './passkey-enroll.widget.vue';
+import WebauthnLoginWidget from './webauthn-login.widget.vue';
+import WebauthnEnrollWidget from './webauthn-enroll.widget.vue';
 
 export const widgets: Record<WidgetType, Component> = {
 	checkbox: CheckboxWidget,
@@ -29,4 +33,8 @@ export const widgets: Record<WidgetType, Component> = {
 	static: StaticWidget,
 	submit: SubmitWidget,
 	close: CloseWidget,
+	passkeyLogin: PasskeyLoginWidget,
+	passkeyEnroll: PasskeyEnrollWidget,
+	webauthnLogin: WebauthnLoginWidget,
+	webauthnEnroll: WebauthnEnrollWidget,
 };

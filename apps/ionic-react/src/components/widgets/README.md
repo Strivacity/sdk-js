@@ -641,3 +641,326 @@ export default function CustomLoadingWidget() {
 	return <LoadingWidget diameter={60} stroke={3} />;
 }
 ```
+
+## Passkey Login Widget
+
+The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn credentials). It uses the `getCredential` function to retrieve authentication data.
+
+### Properties
+
+- `formId`: The unique identifier for the passkey login widget.
+- `config`: The configuration object for the passkey login widget, which includes:
+  - `id`: The unique identifier for the passkey login widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the passkey login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options for the passkey login widget:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```tsx
+import React, { useContext, useMemo } from 'react';
+import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import { NativeFlowContext, getCredential } from '@strivacity/sdk-react';
+
+export function CustomPasskeyLoginWidget({ formId, config }: { formId: string; config: PasskeyLoginWidget }) {
+	const context = useContext(NativeFlowContext);
+	const disabled = useMemo(() => !!context?.loading, [context?.loading]);
+
+	const onClick = async () => {
+		if (!context || disabled) {
+			return;
+		}
+
+		try {
+			const response = await getCredential(config.assertionOptions);
+			context.setFormValue(formId, config.id, response);
+			await context.submitForm(formId);
+		} catch (error) {
+			console.error(error);
+			alert('Authentication failed. Please try again.');
+		}
+	};
+
+	if (formId === 'identifier') {
+		return (
+			<div>
+				{config.render.type === 'button' ? (
+					<button type="button" disabled={disabled} onClick={() => void onClick()}>
+						{config.label}
+					</button>
+				) : (
+					<a tabIndex={0} onClick={() => void onClick()}>
+						{config.label}
+					</a>
+				)}
+				<div>Additional content for identifier passkey login</div>
+			</div>
+		);
+	}
+
+	return (
+		<>
+			{config.render.type === 'button' ? (
+				<button type="button" disabled={disabled} onClick={() => void onClick()}>
+					{config.label}
+				</button>
+			) : (
+				<a tabIndex={0} onClick={() => void onClick()}>
+					{config.label}
+				</a>
+			)}
+		</>
+	);
+}
+```
+
+## Passkey Enroll Widget
+
+The Passkey Enroll Widget allows users to register new passkeys. It uses the `createCredential` function to create new WebAuthn credentials.
+
+### Properties
+
+- `formId`: The unique identifier for the passkey enroll widget.
+- `config`: The configuration object for the passkey enroll widget, which includes:
+  - `id`: The unique identifier for the passkey enroll widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the passkey enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options for the passkey enroll widget:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```tsx
+import React, { useContext, useMemo } from 'react';
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import { NativeFlowContext, createCredential } from '@strivacity/sdk-react';
+
+export function CustomPasskeyEnrollWidget({ formId, config }: { formId: string; config: PasskeyEnrollWidget }) {
+	const context = useContext(NativeFlowContext);
+	const disabled = useMemo(() => !!context?.loading, [context?.loading]);
+
+	const onClick = async () => {
+		if (!context || disabled) {
+			return;
+		}
+
+		try {
+			const response = await createCredential(config.enrollOptions);
+			context.setFormValue(formId, config.id, response);
+			await context.submitForm(formId);
+		} catch (error) {
+			console.error(error);
+			alert('Passkey enrollment failed. Please try again.');
+		}
+	};
+
+	if (formId === 'identifier') {
+		return (
+			<div>
+				{config.render.type === 'button' ? (
+					<button type="button" disabled={disabled} onClick={() => void onClick()}>
+						{config.label}
+					</button>
+				) : (
+					<a tabIndex={0} onClick={() => void onClick()}>
+						{config.label}
+					</a>
+				)}
+				<div>Additional content for identifier passkey enrollment</div>
+			</div>
+		);
+	}
+
+	return (
+		<>
+			{config.render.type === 'button' ? (
+				<button type="button" disabled={disabled} onClick={() => void onClick()}>
+					{config.label}
+				</button>
+			) : (
+				<a tabIndex={0} onClick={() => void onClick()}>
+					{config.label}
+				</a>
+			)}
+		</>
+	);
+}
+```
+
+## WebAuthn Login Widget
+
+The WebAuthn Login Widget provides WebAuthn-based authentication functionality, similar to the Passkey Login Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The unique identifier for the webauthn login widget.
+- `config`: The configuration object for the webauthn login widget, which includes:
+  - `id`: The unique identifier for the webauthn login widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the webauthn login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options for the webauthn login widget:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```tsx
+import React, { useContext, useMemo } from 'react';
+import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import { NativeFlowContext, getCredential } from '@strivacity/sdk-react';
+
+export function CustomWebAuthnLoginWidget({ formId, config }: { formId: string; config: PasskeyLoginWidget }) {
+	const context = useContext(NativeFlowContext);
+	const disabled = useMemo(() => !!context?.loading, [context?.loading]);
+
+	const onClick = async () => {
+		if (!context || disabled) {
+			return;
+		}
+
+		try {
+			const response = await getCredential(config.assertionOptions);
+			context.setFormValue(formId, config.id, response);
+			await context.submitForm(formId);
+		} catch (error) {
+			console.error(error);
+			alert('Authentication failed. Please try again.');
+		}
+	};
+
+	if (formId === 'identifier') {
+		return (
+			<div>
+				{config.render.type === 'button' ? (
+					<button type="button" disabled={disabled} onClick={() => void onClick()}>
+						{config.label}
+					</button>
+				) : (
+					<a tabIndex={0} onClick={() => void onClick()}>
+						{config.label}
+					</a>
+				)}
+				<div>Additional content for identifier WebAuthn login</div>
+			</div>
+		);
+	}
+
+	return (
+		<>
+			{config.render.type === 'button' ? (
+				<button type="button" disabled={disabled} onClick={() => void onClick()}>
+					{config.label}
+				</button>
+			) : (
+				<a tabIndex={0} onClick={() => void onClick()}>
+					{config.label}
+				</a>
+			)}
+		</>
+	);
+}
+```
+
+## WebAuthn Enroll Widget
+
+The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, similar to the Passkey Enroll Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The unique identifier for the webauthn enroll widget.
+- `config`: The configuration object for the webauthn enroll widget, which includes:
+  - `id`: The unique identifier for the webauthn enroll widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the webauthn enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options for the webauthn enroll widget:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```tsx
+import React, { useContext, useMemo } from 'react';
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import { NativeFlowContext, createCredential } from '@strivacity/sdk-react';
+
+export function CustomWebAuthnEnrollWidget({ formId, config }: { formId: string; config: PasskeyEnrollWidget }) {
+	const context = useContext(NativeFlowContext);
+	const disabled = useMemo(() => !!context?.loading, [context?.loading]);
+
+	const onClick = async () => {
+		if (!context || disabled) {
+			return;
+		}
+
+		try {
+			const response = await createCredential(config.enrollOptions);
+			context.setFormValue(formId, config.id, response);
+			await context.submitForm(formId);
+		} catch (error) {
+			console.error(error);
+			alert('Passkey enrollment failed. Please try again.');
+		}
+	};
+
+	if (formId === 'identifier') {
+		return (
+			<div>
+				{config.render.type === 'button' ? (
+					<button type="button" disabled={disabled} onClick={() => void onClick()}>
+						{config.label}
+					</button>
+				) : (
+					<a tabIndex={0} onClick={() => void onClick()}>
+						{config.label}
+					</a>
+				)}
+				<div>Additional content for identifier WebAuthn enrollment</div>
+			</div>
+		);
+	}
+
+	return (
+		<>
+			{config.render.type === 'button' ? (
+				<button type="button" disabled={disabled} onClick={() => void onClick()}>
+					{config.label}
+				</button>
+			) : (
+				<a tabIndex={0} onClick={() => void onClick()}>
+					{config.label}
+				</a>
+			)}
+		</>
+	);
+}
+```
+
+## Credential Management Functions
+
+The passkey and WebAuthn widgets rely on two core functions for credential management:
+
+### `createCredential(credentialOptions)`
+
+This function is used for registering new credentials (passkeys/WebAuthn). It:
+
+- Takes `PublicKeyCredentialCreationOptions` as input
+- Handles Base64URL encoding/decoding of credential data
+- Uses the browser's WebAuthn API to create new credentials
+- Returns `AttestationCredentialData` containing the new credential information
+- Includes error handling for unsupported credential types
+
+### `getCredential(credentialOptions, conditional?)`
+
+This function is used for authenticating with existing credentials. It:
+
+- Takes `PublicKeyCredentialRequestOptions` as input and an optional conditional flag
+- Handles Base64URL encoding/decoding of assertion data
+- Uses the browser's WebAuthn API to get existing credentials
+- Returns `AssertionCredentialData` containing the authentication response
+- Supports conditional UI for passive credential selection
+- Includes error handling for authentication failures
+
+Both functions are imported from `@strivacity/sdk-react` and handle the low-level WebAuthn protocol details, making it easy to integrate passkey authentication into your applications.

@@ -11,6 +11,7 @@ import { STRIVACITY_SDK, useStrivacity } from './composables';
 import LoginRendererComponent from './login-renderer.vue';
 
 export * from '@strivacity/sdk-core';
+export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 export type * from './types';
 export type { PopupFlow, RedirectFlow, NativeFlow };
 export { HttpClient, LocalStorage, SessionStorage, useStrivacity };

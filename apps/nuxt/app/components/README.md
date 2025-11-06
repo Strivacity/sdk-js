@@ -587,3 +587,274 @@ import LoadingWidget from './loading.widget.vue';
 	<LoadingWidget :diameter="60" :stroke="3" />
 </template>
 ```
+
+## Passkey Login Widget
+
+The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn credentials). It uses the `getCredential` function to retrieve authentication data.
+
+### Properties
+
+- `formId`: The unique identifier for the passkey login widget.
+- `config`: The configuration object for the passkey login widget, which includes:
+  - `id`: The unique identifier for the passkey login widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the passkey login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options for the passkey login widget:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```vue
+<script setup lang="ts">
+import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import { type NativeFlowContextValue, getCredential } from '@strivacity/sdk-nuxt';
+
+const props = defineProps<{ formId: string; config: PasskeyLoginWidget }>();
+const context = inject<NativeFlowContextValue>('nativeFlowContext');
+const disabled = computed(() => !!context?.loading.value);
+
+async function onClick() {
+	if (!context || disabled.value) {
+		return;
+	}
+
+	try {
+		const response = await getCredential(props.config.assertionOptions);
+		context.setFormValue(props.formId, props.config.id, response);
+		await context.submitForm(props.formId);
+	} catch (error) {
+		console.error(error);
+		alert('Authentication failed. Please try again.');
+	}
+}
+</script>
+
+<template>
+	<button
+		v-if="config.render.type === 'button'"
+		type="button"
+		:disabled="disabled"
+		data-widget="passkeyLogin"
+		data-type="button"
+		:data-form-id="formId"
+		:data-widget-id="config.id"
+		@click.prevent="onClick()"
+	>
+		{{ config.label }}
+	</button>
+	<a v-else data-widget="passkeyLogin" data-type="link" :data-form-id="formId" :data-widget-id="config.id" tabindex="0" @click.prevent="onClick()">
+		{{ config.label }}
+	</a>
+</template>
+```
+
+## Passkey Enroll Widget
+
+The Passkey Enroll Widget allows users to register new passkeys. It uses the `createCredential` function to create new WebAuthn credentials.
+
+### Properties
+
+- `formId`: The unique identifier for the passkey enroll widget.
+- `config`: The configuration object for the passkey enroll widget, which includes:
+  - `id`: The unique identifier for the passkey enroll widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the passkey enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options for the passkey enroll widget:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```vue
+<script setup lang="ts">
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import { type NativeFlowContextValue, createCredential } from '@strivacity/sdk-nuxt';
+
+const props = defineProps<{ formId: string; config: PasskeyEnrollWidget }>();
+const context = inject<NativeFlowContextValue>('nativeFlowContext');
+const disabled = computed(() => !!context?.loading.value);
+
+async function onClick() {
+	if (!context || disabled.value) {
+		return;
+	}
+
+	try {
+		const response = await createCredential(props.config.enrollOptions);
+		context.setFormValue(props.formId, props.config.id, response);
+		await context.submitForm(props.formId);
+	} catch (error) {
+		console.error(error);
+		alert('Passkey enrollment failed. Please try again.');
+	}
+}
+</script>
+
+<template>
+	<button
+		v-if="config.render.type === 'button'"
+		type="button"
+		:disabled="disabled"
+		data-widget="passkeyEnroll"
+		data-type="button"
+		:data-form-id="formId"
+		:data-widget-id="config.id"
+		@click.prevent="onClick()"
+	>
+		{{ config.label }}
+	</button>
+	<a v-else data-widget="passkeyEnroll" data-type="link" :data-form-id="formId" :data-widget-id="config.id" tabindex="0" @click.prevent="onClick()">
+		{{ config.label }}
+	</a>
+</template>
+```
+
+## WebAuthn Login Widget
+
+The WebAuthn Login Widget provides WebAuthn-based authentication functionality, similar to the Passkey Login Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The unique identifier for the webauthn login widget.
+- `config`: The configuration object for the webauthn login widget, which includes:
+  - `id`: The unique identifier for the webauthn login widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the webauthn login widget.
+  - `assertionOptions`: WebAuthn assertion options for authentication.
+  - `render`: Rendering options for the webauthn login widget:
+    - `type`: The type of login control, either `'button'` or `'link'`.
+
+### How to customize
+
+```vue
+<script setup lang="ts">
+import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import { type NativeFlowContextValue, getCredential } from '@strivacity/sdk-nuxt';
+
+const props = defineProps<{ formId: string; config: PasskeyLoginWidget }>();
+const context = inject<NativeFlowContextValue>('nativeFlowContext');
+const disabled = computed(() => !!context?.loading.value);
+
+async function onClick() {
+	if (!context || disabled.value) {
+		return;
+	}
+
+	try {
+		const response = await getCredential(props.config.assertionOptions);
+		context.setFormValue(props.formId, props.config.id, response);
+		await context.submitForm(props.formId);
+	} catch (error) {
+		console.error(error);
+		alert('Authentication failed. Please try again.');
+	}
+}
+</script>
+
+<template>
+	<button
+		v-if="config.render.type === 'button'"
+		type="button"
+		:disabled="disabled"
+		data-widget="webauthnLogin"
+		data-type="button"
+		:data-form-id="formId"
+		:data-widget-id="config.id"
+		@click.prevent="onClick()"
+	>
+		{{ config.label }}
+	</button>
+	<a v-else data-widget="webauthnLogin" data-type="link" :data-form-id="formId" :data-widget-id="config.id" tabindex="0" @click.prevent="onClick()">
+		{{ config.label }}
+	</a>
+</template>
+```
+
+## WebAuthn Enroll Widget
+
+The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, similar to the Passkey Enroll Widget but specifically for WebAuthn protocols.
+
+### Properties
+
+- `formId`: The unique identifier for the webauthn enroll widget.
+- `config`: The configuration object for the webauthn enroll widget, which includes:
+  - `id`: The unique identifier for the webauthn enroll widget.
+  - `type`: The type of the widget. This represents the type of widget.
+  - `label`: The label displayed on the webauthn enroll widget.
+  - `enrollOptions`: WebAuthn creation options for registration.
+  - `render`: Rendering options for the webauthn enroll widget:
+    - `type`: The type of enroll control, either `'button'` or `'link'`.
+
+### How to customize
+
+```vue
+<script setup lang="ts">
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import { type NativeFlowContextValue, createCredential } from '@strivacity/sdk-nuxt';
+
+const props = defineProps<{ formId: string; config: PasskeyEnrollWidget }>();
+const context = inject<NativeFlowContextValue>('nativeFlowContext');
+const disabled = computed(() => !!context?.loading.value);
+
+async function onClick() {
+	if (!context || disabled.value) {
+		return;
+	}
+
+	try {
+		const response = await createCredential(props.config.enrollOptions);
+		context.setFormValue(props.formId, props.config.id, response);
+		await context.submitForm(props.formId);
+	} catch (error) {
+		console.error(error);
+		alert('Passkey enrollment failed. Please try again.');
+	}
+}
+</script>
+
+<template>
+	<button
+		v-if="config.render.type === 'button'"
+		type="button"
+		:disabled="disabled"
+		data-widget="webauthnEnroll"
+		data-type="button"
+		:data-form-id="formId"
+		:data-widget-id="config.id"
+		@click.prevent="onClick()"
+	>
+		{{ config.label }}
+	</button>
+	<a v-else data-widget="webauthnEnroll" data-type="link" :data-form-id="formId" :data-widget-id="config.id" tabindex="0" @click.prevent="onClick()">
+		{{ config.label }}
+	</a>
+</template>
+```
+
+## Credential Management Functions
+
+The passkey and WebAuthn widgets rely on two core functions for credential management:
+
+### `createCredential(credentialOptions)`
+
+This function is used for registering new credentials (passkeys/WebAuthn). It:
+
+- Takes `PublicKeyCredentialCreationOptions` as input
+- Handles Base64URL encoding/decoding of credential data
+- Uses the browser's WebAuthn API to create new credentials
+- Returns `AttestationCredentialData` containing the new credential information
+- Includes error handling for unsupported credential types
+
+### `getCredential(credentialOptions, conditional?)`
+
+This function is used for authenticating with existing credentials. It:
+
+- Takes `PublicKeyCredentialRequestOptions` as input and an optional conditional flag
+- Handles Base64URL encoding/decoding of assertion data
+- Uses the browser's WebAuthn API to get existing credentials
+- Returns `AssertionCredentialData` containing the authentication response
+- Supports conditional UI for passive credential selection
+- Includes error handling for authentication failures
+
+Both functions are imported from `@strivacity/sdk-nuxt` and handle the low-level WebAuthn protocol details, making it easy to integrate passkey authentication into your applications.

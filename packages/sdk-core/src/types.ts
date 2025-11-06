@@ -1003,6 +1003,10 @@ export declare const WidgetTypeList: readonly [
 	'date',
 	'phone',
 	'loading',
+	'passkeyLogin',
+	'passkeyEnroll',
+	'webauthnLogin',
+	'webauthnEnroll',
 ];
 export type WidgetType = (typeof WidgetTypeList)[number];
 export declare const SelectOptionTypeList: readonly ['item', 'group'];
@@ -1054,6 +1058,9 @@ export type InputWidget = {
 	autocomplete?: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	inputmode: any;
+	render?: {
+		autocompleteHint?: string;
+	};
 	validator?: {
 		required?: boolean;
 		minLength?: number;
@@ -1186,6 +1193,64 @@ export type LayoutWidget = {
 	type: 'vertical' | 'horizontal';
 	items: Array<Widget | LayoutWidget>;
 };
+export type PasskeyLoginWidget = {
+	id: string;
+	label?: string;
+	render: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+		notification?: {
+			cancelled?: string;
+		};
+	};
+	assertionOptions: PublicKeyCredentialRequestOptions;
+};
+export type PasskeyEnrollWidget = {
+	id: string;
+	label?: string;
+	render: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+		notification?: {
+			cancelled?: string;
+		};
+	};
+	enrollOptions: PublicKeyCredentialCreationOptions;
+};
+export type WebauthnLoginWidget = {
+	id: string;
+	label?: string;
+	authenticatorType: 'deviceBiometrics' | 'securityKey';
+	render: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+		notification?: {
+			cancelled?: string;
+		};
+	};
+	assertionOptions: PublicKeyCredentialRequestOptions;
+};
+export type WebauthnEnrollWidget = {
+	id: string;
+	label?: string;
+	authenticatorType: 'deviceBiometrics' | 'securityKey';
+	render: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+		notification?: {
+			cancelled?: string;
+		};
+	};
+	enrollOptions: PublicKeyCredentialCreationOptions;
+};
 export type LoginFlowMessage = {
 	type: string;
 	text: string;
@@ -1199,6 +1264,34 @@ export type LoginFlowState = {
 	layout?: LayoutWidget;
 	messages?: Record<string, Record<string, LoginFlowMessage>> & {
 		global?: LoginFlowMessage;
+	};
+};
+export type AssertionPublicKeyCredential = PublicKeyCredential & {
+	response: AuthenticatorAssertionResponse;
+};
+export type AssertionCredentialData = {
+	id: string;
+	type: string;
+	rawId: string;
+	response: {
+		clientDataJSON: string;
+		authenticatorData: string;
+		signature: string;
+		userHandle: string;
+	};
+};
+export type AttestationPublicKeyCredential = PublicKeyCredential & {
+	response: AuthenticatorAttestationResponse;
+};
+export type AttestationCredentialData = {
+	id: string;
+	type: string;
+	rawId: string;
+	authenticatorAttachment: string | null;
+	response: {
+		clientDataJSON: string;
+		attestationObject: string;
+		transports: Array<string>;
 	};
 };
 
