@@ -26,6 +26,7 @@ const props = withDefaults(
 const emit = defineEmits<{
 	login: [IdTokenClaims | null | undefined];
 	fallback: [FallbackError];
+	close: [];
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	error: [any];
 	globalMessage: [string];
@@ -91,6 +92,7 @@ provide<NativeFlowContextValue>('nativeFlowContext', {
 	state,
 	submitForm,
 	triggerFallback,
+	triggerClose,
 	setFormValue,
 	setMessage,
 });
@@ -119,6 +121,10 @@ function triggerFallback(hostedUrl?: string): void {
 	}
 
 	emit('fallback', new FallbackError(new URL(url)));
+}
+
+function triggerClose(): void {
+	emit('close');
 }
 
 function setFormValue(formId: string, widgetId: string, value: unknown) {

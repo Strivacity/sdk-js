@@ -320,3 +320,55 @@ import { useStrivacity } from '@strivacity/sdk-vue';
 const { loading, isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
 </script>
 ```
+
+### Pages
+
+Brief, purpose-oriented descriptions of route components under src/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the SDK / composables.
+
+- src/pages/home.page.vue
+
+  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
+  - Behavior: Displays public content and, when authenticated, brief user info from useStrivacity(). Should be fast and accessible without auth.
+  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); use computed refs and v-if for conditional UI.
+
+- src/pages/login.page.vue
+
+  - Purpose: Login page / entry point for authentication flows.
+  - Behavior: Triggers sdk.login() (redirect/popup depending on options). On web this usually redirects; on mobile open InAppBrowser and exchange tokens when the callback is received.
+  - Usage: onMounted(async () => { await login(); /_ handle mobile token exchange if needed _/ }); use sdk.options.callbackHandler(...) and sdk.tokenExchange(params) for mobile flows.
+
+- src/pages/register.page.vue
+
+  - Purpose: Registration page (if supported).
+  - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback like login.
+  - Usage: call registration API or sdk.register(), then login/redirect as appropriate.
+
+- src/pages/entry.page.vue
+
+  - Purpose: Entry page for link-driven flows (deep links or external links) that start server/SDK-driven operations.
+  - Behavior: Calls sdk.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
+  - Usage: onMounted/async setup: const params = await sdk.entry(); handle returned session_id and router.push.
+
+- src/pages/callback.page.vue
+
+  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
+  - Behavior: Reads query params (code, state, session_id) from the router, finalizes authentication via sdk.tokenExchange or sdk.handleCallback, then redirects to the intended route (e.g., /profile).
+  - Note: Keep this route unprotected so external providers and InAppBrowser flows can return.
+  - Usage: onMounted(async () => { const params = parseQuery(...) ; await sdk.tokenExchange(params); router.push('/profile'); });
+
+- src/pages/profile.page.vue
+
+  - Purpose: Protected user profile page.
+  - Behavior: Require authentication (router guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
+  - Usage: const { idTokenClaims, logout } = useStrivacity(); show claims and provide logout button that calls logout().
+
+- src/pages/revoke.page.vue
+
+  - Purpose: Revoke tokens or sessions (optional advanced session management).
+  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
+  - Usage: await sdk.revoke(params) or call backend, then call logout() / router.push('/') on success.
+
+- src/pages/logout.page.vue
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls sdk.logout(), clears client/native storage (Capacitor Preferences) and redirects to home or login. Implement as an onMounted action that shows progress and navigates away.
+  - Usage: onMounted(async () => { await logout(); router.push('/'); });

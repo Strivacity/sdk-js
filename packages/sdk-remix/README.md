@@ -19,7 +19,7 @@ npm install @strivacity/sdk-remix
 Add the `StyAuthProvider` to your `main.tsx` file.
 
 ```tsx
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-react';
 
 const options: SDKOptions = {
@@ -82,7 +82,7 @@ The callback page handles the response from the identity provider after successf
 
 ```tsx
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Callback() {
@@ -171,7 +171,7 @@ This URI must be configured in the Admin Console as an allowed post-logout redir
 
 ```tsx
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Logout() {
@@ -251,7 +251,7 @@ This example demonstrates how to handle session management, implement callback f
 
 ```tsx
 import { Suspense, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-remix';
 import { widgets } from '@/components/widgets';
 
@@ -348,7 +348,7 @@ This component is essential for handling social login providers (like Google, Fa
 
 ```tsx
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Callback() {

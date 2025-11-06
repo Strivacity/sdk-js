@@ -13,6 +13,7 @@ import PhoneWidget from '../components/phone.widget.vue';
 import SelectWidget from '../components/select.widget.vue';
 import StaticWidget from '../components/static.widget.vue';
 import SubmitWidget from '../components/submit.widget.vue';
+import CloseWidget from '../components/close.widget.vue';
 
 export const widgets: Record<WidgetType, Component> = {
 	checkbox: CheckboxWidget,
@@ -27,4 +28,5 @@ export const widgets: Record<WidgetType, Component> = {
 	multiSelect: MultiSelectWidget,
 	static: StaticWidget,
 	submit: SubmitWidget,
+	close: CloseWidget,
 };

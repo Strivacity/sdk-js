@@ -73,6 +73,11 @@ export type PopupSDK = {
 	register: InstanceType<typeof PopupFlow>['register'];
 
 	/**
+	 * Initiates the entry process.
+	 */
+	entry: InstanceType<typeof PopupFlow>['entry'];
+
+	/**
 	 * Refreshes the user's session.
 	 */
 	refresh: InstanceType<typeof PopupFlow>['refresh'];
@@ -110,6 +115,11 @@ export type RedirectSDK = {
 	register: InstanceType<typeof RedirectFlow>['register'];
 
 	/**
+	 * Initiates the entry process.
+	 */
+	entry: InstanceType<typeof RedirectFlow>['entry'];
+
+	/**
 	 * Refreshes the user's session.
 	 */
 	refresh: InstanceType<typeof RedirectFlow>['refresh'];
@@ -145,6 +155,11 @@ export type NativeSDK = {
 	 * Registers a new user.
 	 */
 	register: InstanceType<typeof NativeFlow>['register'];
+
+	/**
+	 * Initiates the entry process.
+	 */
+	entry: InstanceType<typeof NativeFlow>['entry'];
 
 	/**
 	 * Refreshes the user's session.
@@ -189,6 +204,7 @@ export type NativeFlowContextValue = {
 	state: Ref<Partial<LoginFlowState>>;
 	submitForm: (formId: string) => Promise<void>;
 	triggerFallback: (hostedUrl?: string) => void;
+	triggerClose: () => void;
 	setFormValue: (formId: string, widgetId: string, value: unknown) => void;
 	setMessage: (formId: string, widgetId: string, value: LoginFlowMessage) => void;
 };

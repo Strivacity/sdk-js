@@ -9,6 +9,7 @@ import { Logout } from './pages/Logout';
 import { Profile } from './pages/Profile';
 import { Register } from './pages/Register';
 import { Revoke } from './pages/Revoke';
+import { Entry } from './pages/Entry';
 
 const options: SDKOptions = {
 	mode: import.meta.env.VITE_MODE,
@@ -52,6 +53,7 @@ createRoot(document.getElementById('app')!).render(
 					/>
 					<Route path="/register" element={<Register />} />
 					<Route path="/revoke" element={<Revoke />} />
+					<Route path="/entry" element={<Entry />} />
 				</Route>
 			</Routes>
 		</StyAuthProvider>

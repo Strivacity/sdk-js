@@ -1,4 +1,4 @@
-/* eslint-disable no-async-promise-executor, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
@@ -10,6 +10,7 @@ import { widgets } from '../components/widgets';
 export const Login = () => {
 	const navigate = useNavigate();
 	const { sdk, options, login } = useStrivacity();
+	const [loading, setLoading] = useState<boolean>(true);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -20,9 +21,12 @@ export const Login = () => {
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
+
+		setLoading(false);
 	}, []);
 
 	useEffect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (options.mode === 'redirect') {
 				await login();
@@ -49,6 +53,7 @@ export const Login = () => {
 			} else {
 				await InAppBrowser.openInWebView({ url: error.url.toString(), options: DefaultWebViewOptions });
 
+				// eslint-disable-next-line no-async-promise-executor
 				const params = await new Promise<Record<string, string>>(async (resolve, reject) => {
 					let navigationListener: PluginListenerHandle | null = null;
 					let finishListener: PluginListenerHandle | null = null;
@@ -110,6 +115,9 @@ export const Login = () => {
 			alert(error);
 		}
 	};
+	const onClose = () => {
+		location.reload();
+	};
 	const onError = (error: string) => {
 		// eslint-disable-next-line no-console
 		console.error(`Error: ${error}`);
@@ -129,12 +137,13 @@ export const Login = () => {
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'native' && (
+			{options.mode === 'native' && !loading && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}
+						onClose={onClose}
 						onLogin={() => void onLogin()}
 						onError={onError}
 						onGlobalMessage={onGlobalMessage}

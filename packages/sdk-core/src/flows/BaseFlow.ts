@@ -233,6 +233,13 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	abstract register(params?: URLHandlerParams): unknown;
 
 	/**
+	 * Initiates the entry process.
+	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
+	 * @returns {Promise<void>} A promise that resolves when the entry process completes.
+	 */
+	abstract entry(url?: string): unknown;
+
+	/**
 	 * Logs out the current user and optionally redirects to a post-logout URI.
 	 *
 	 * @param {URLHandlerParams & LogoutParams} [params] - Additional params for handling URLs during logout.

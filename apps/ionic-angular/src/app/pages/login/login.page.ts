@@ -139,6 +139,10 @@ export class LoginPage implements OnInit, OnDestroy {
 		}
 	}
 
+	onClose() {
+		location.reload();
+	}
+
 	onError(error: any) {
 		console.error(`Error: ${error}`);
 		alert(error);

@@ -39,6 +39,9 @@ const onFallback = (error: FallbackError) => {
 		alert(error);
 	}
 };
+const onClose = () => {
+	location.reload();
+};
 const onError = (error: string) => {
 	// eslint-disable-next-line no-console
 	console.error(`Error: ${error}`);
@@ -65,6 +68,7 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 					:widgets="widgets"
 					:session-id="sessionId"
 					@fallback="onFallback"
+					@close="onClose"
 					@login="onLogin"
 					@error="onError"
 					@global-message="onGlobalMessage"

@@ -4,6 +4,7 @@ import HomePage from './pages/index.page.vue';
 import LoginPage from './pages/login.page.vue';
 import RevokePage from './pages/revoke.page.vue';
 import RegisterPage from './pages/register.page.vue';
+import EntryPage from './pages/entry.page.vue';
 import LogoutPage from './pages/logout.page.vue';
 import CallbackPage from './pages/callback.page.vue';
 import ProfilePage from './pages/profile.page.vue';
@@ -30,6 +31,11 @@ export const router = createRouter({
 			path: '/register',
 			name: 'register',
 			component: RegisterPage,
+		},
+		{
+			path: '/entry',
+			name: 'entry',
+			component: EntryPage,
 		},
 		{
 			path: '/logout',

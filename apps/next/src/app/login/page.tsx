@@ -8,6 +8,7 @@ import { widgets } from '../../components/widgets';
 export default function Login() {
 	const router = useRouter();
 	const { options, login } = useStrivacity();
+	const [loading, setLoading] = useState<boolean>(true);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -18,6 +19,8 @@ export default function Login() {
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
+
+		setLoading(false);
 	}, []);
 
 	useEffect(() => {
@@ -46,6 +49,9 @@ export default function Login() {
 			alert(error);
 		}
 	};
+	const onClose = () => {
+		location.reload();
+	};
 	const onError = (error: string) => {
 		// eslint-disable-next-line no-console
 		console.error(`Error: ${error}`);
@@ -65,12 +71,13 @@ export default function Login() {
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'native' && (
+			{options.mode === 'native' && !loading && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}
+						onClose={onClose}
 						onLogin={() => void onLogin()}
 						onError={onError}
 						onGlobalMessage={onGlobalMessage}

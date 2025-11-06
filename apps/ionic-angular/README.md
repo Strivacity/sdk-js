@@ -399,3 +399,54 @@ export class AuthComponent {
 	}
 }
 ```
+
+### Pages
+
+Brief, purpose-oriented descriptions of route components under src/app/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the AuthService.
+
+- src/app/pages/home/home.component.ts
+
+  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
+  - Behavior: Displays user info when authenticated via AuthService observables.
+  - Usage: Inject AuthService and subscribe to isAuthenticated$, loading$, idTokenClaims$.
+
+- src/app/pages/login/login.component.ts
+
+  - Purpose: Login page / entry point for authentication flows.
+  - Behavior: Calls AuthService.login() which may redirect or open InAppBrowser on mobile. For mobile, listen for InAppBrowser navigation events and forward callback params to AuthService for token exchange.
+  - Usage: AuthService.login(); handle mobile fallback via Capacitor InAppBrowser and AuthService.handleCallback().
+
+- src/app/pages/register/register.component.ts
+
+  - Purpose: Registration page (if supported).
+  - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback like login.
+  - Usage: AuthService.register() or custom form + AuthService calls.
+
+- src/app/pages/entry/entry.component.ts
+
+  - Purpose: Entry component for link-driven flows (deep links or external links) that start server/SDK-driven operations.
+  - Behavior: On init call AuthService.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
+  - Usage: AuthService.entry().subscribe(...) or await in async init.
+
+- src/app/pages/callback/callback.component.ts
+
+  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
+  - Behavior: Reads query params (code, state, session_id) from ActivatedRoute. Finalizes authentication via AuthService.handleCallback(params) (token exchange or session resume) then navigate to intended route (e.g., /profile).
+  - Note: Keep this route unguarded so external providers and InAppBrowser flows can return.
+
+- src/app/pages/profile/profile.component.ts
+
+  - Purpose: Protected user profile page.
+  - Behavior: Guarded by an AuthGuard (canActivate) that consults AuthService.isAuthenticated$ (or resolver). Displays idTokenClaims and user data from AuthService.
+  - Usage: Inject AuthService, show idTokenClaims$, provide logout button calling AuthService.logout().
+
+- src/app/pages/revoke/revoke.component.ts
+
+  - Purpose: Revoke tokens or sessions (advanced session management).
+  - Behavior: Calls AuthService.revoke() or server endpoint to invalidate refresh tokens/sessions. Surface success/errors and optionally log out or redirect.
+  - Usage: AuthService.revoke().subscribe(...); after successful revoke call AuthService.logout() / Router.navigate(['/']).
+
+- src/app/pages/logout/logout.component.ts
+  - Purpose: Initiates logout and clears the session.
+  - Behavior: Calls AuthService.logout(), clears native storage (Capacitor Preferences) and navigates to home or login. Implement as an init action showing progress then redirect.
+  - Tip: Run logout logic in ngOnInit() and show a spinner while redirecting.

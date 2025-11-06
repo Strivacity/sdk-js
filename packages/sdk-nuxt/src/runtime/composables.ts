@@ -84,6 +84,9 @@ export const useStrivacity = () => {
 			await sdk.refresh();
 			await updateSession();
 		},
+		entry: async (url?: string) => {
+			return await sdk.entry(url);
+		},
 		revoke: async () => {
 			await sdk.revoke();
 			await updateSession();

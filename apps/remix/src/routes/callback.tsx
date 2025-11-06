@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Callback() {
@@ -14,11 +14,11 @@ export default function Callback() {
 			const sessionId = url.searchParams.get('session_id');
 
 			if (sessionId) {
-				await navigate(`/login?session_id=${sessionId}`);
+				navigate(`/login?session_id=${sessionId}`);
 			} else {
 				try {
 					await handleCallback();
-					await navigate('/profile');
+					navigate('/profile');
 				} catch (error) {
 					// eslint-disable-next-line no-console
 					console.error('Error during callback handling:', error);

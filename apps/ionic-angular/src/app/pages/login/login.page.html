@@ -8,6 +8,7 @@
 		[widgets]="widgets"
 		[sessionId]="sessionId"
 		(fallback)="onFallback($event)"
+		(close)="onClose($event)"
 		(login)="onLogin()"
 		(error)="onError($event)"
 		(globalMessage)="onGlobalMessage($event)"
