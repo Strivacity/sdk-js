@@ -29,7 +29,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	/**
 	 * @ignore
 	 */
-	#initialized = false;
+	#initializationPromise: Promise<void>;
 
 	/**
 	 * @ignore
@@ -191,7 +191,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		this.httpClient = httpClient;
 		this.metadata = new Metadata(this, new URL('/.well-known/openid-configuration', options.issuer).toString());
 
-		void this.#init();
+		this.#initializationPromise = this.#init();
 	}
 
 	/**
@@ -201,19 +201,15 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	async #init() {
 		this.session = Session.load(await this.storage.get(this.options.storageTokenName!));
 
-		setTimeout(() => {
-			this.dispatchEvent('init', []);
+		this.dispatchEvent('init', []);
 
-			if (this.session && this.accessToken && this.idTokenClaims) {
-				this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
-			}
+		if (this.session && this.accessToken && this.idTokenClaims) {
+			this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+		}
 
-			if (this.accessToken && this.accessTokenExpired) {
-				this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
-			}
-
-			this.#initialized = true;
-		});
+		if (this.accessToken && this.accessTokenExpired) {
+			this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
+		}
 	}
 
 	/**
@@ -465,9 +461,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	}
 
 	protected async waitToInitialize(): Promise<void> {
-		while (!this.#initialized) {
-			await new Promise((resolve) => setTimeout(resolve, 10));
-		}
+		await this.#initializationPromise;
 	}
 
 	/**

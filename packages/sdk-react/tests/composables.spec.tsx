@@ -53,6 +53,7 @@ describe('useStrivacity', () => {
 
 		await vi.waitFor(() => expect(initFlow).toHaveBeenCalledWith(options));
 
+		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('init', expect.any(Function)));
 		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('loggedIn', expect.any(Function)));
 		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('sessionLoaded', expect.any(Function)));
 		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('tokenRefreshed', expect.any(Function)));
@@ -61,10 +62,19 @@ describe('useStrivacity', () => {
 		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('tokenRevoked', expect.any(Function)));
 		await vi.waitFor(() => expect(flow.subscribeToEvent).toHaveBeenCalledWith('tokenRevokeFailed', expect.any(Function)));
 
+		// Wait for initial loading state
+		await vi.waitFor(() => expect(result.current.loading).toBeTruthy());
+
+		// Trigger the init callback to update the session
+		const initCallback = vi.mocked(flow.subscribeToEvent).mock.calls.find((call) => call[0] === 'init')?.[1];
+		if (initCallback) {
+			await initCallback();
+		}
+
 		await vi.waitFor(() =>
 			expect(result.current).toEqual({
 				sdk: expect.anything(),
-				loading: true,
+				loading: false,
 				options: options,
 				isAuthenticated: false,
 				idTokenClaims: null,
@@ -82,14 +92,6 @@ describe('useStrivacity', () => {
 				handleCallback: expect.anything(),
 			}),
 		);
-
-		await vi.waitFor(() => expect(result.current.loading).toBeFalsy());
-		await vi.waitFor(() => expect(result.current.isAuthenticated).toBeFalsy());
-		await vi.waitFor(() => expect(result.current.idTokenClaims).toBeNull());
-		await vi.waitFor(() => expect(result.current.accessToken).toBeNull());
-		await vi.waitFor(() => expect(result.current.refreshToken).toBeNull());
-		await vi.waitFor(() => expect(result.current.accessTokenExpired).toBeTruthy());
-		await vi.waitFor(() => expect(result.current.accessTokenExpirationDate).toBeNull());
 	});
 
 	it('should update context correctly', async () => {
@@ -123,8 +125,12 @@ describe('useStrivacity', () => {
 		refreshTokenMock.mockReturnValue(refreshToken);
 		accessTokenExpiredMock.mockReturnValue(false);
 		accessTokenExpirationDateMock.mockReturnValue(accessTokenExpirationDate);
-		// @ts-expect-error: Protected function
-		flow.dispatchEvent('init', []);
+
+		// Get the callback function that was registered with subscribeToEvent
+		const initCallback = vi.mocked(flow.subscribeToEvent).mock.calls.find((call) => call[0] === 'init')?.[1];
+		if (initCallback) {
+			await initCallback();
+		}
 
 		hook.rerender();
 
