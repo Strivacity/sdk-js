@@ -37,6 +37,13 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	#isAuthenticatedPromise: Promise<boolean> | null = null;
 
 	/**
+	 * Indicates whether a token refresh operation is currently in progress.
+	 *
+	 * @type {boolean}
+	 */
+	#refreshInProgressState = false;
+
+	/**
 	 * An instance of the HTTP client used for making requests.
 	 *
 	 * @type {SDKHttpClient}
@@ -99,6 +106,15 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	}
 
 	/**
+	 * Indicates whether a token refresh operation is currently in progress.
+	 *
+	 * @type {boolean}
+	 */
+	get refreshInProgress(): boolean {
+		return this.#refreshInProgressState;
+	}
+
+	/**
 	 * Determines if the access token has expired.
 	 *
 	 * @type {boolean}
@@ -126,21 +142,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			return this.#isAuthenticatedPromise;
 		}
 
-		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
-		this.#isAuthenticatedPromise = new Promise(async (resolve) => {
-			await this.waitToInitialize();
-
-			try {
-				if (this.refreshToken && this.accessTokenExpired) {
-					await this.refresh();
-				}
-			} catch {}
-
-			setTimeout(() => {
-				resolve(!this.accessTokenExpired);
-				this.#isAuthenticatedPromise = null;
-			});
-		});
+		this.#isAuthenticatedPromise = this.#checkAuthentication();
 
 		return this.#isAuthenticatedPromise;
 	}
@@ -210,6 +212,40 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		if (this.accessToken && this.accessTokenExpired) {
 			this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
 		}
+	}
+
+	/**
+	 * Internal method to check authentication status with proper error handling.
+	 * @ignore
+	 */
+	async #checkAuthentication(): Promise<boolean> {
+		let isAuthenticated = false;
+
+		try {
+			await this.waitToInitialize();
+		} catch {
+			// Initialization failed
+		}
+
+		// Attempt to refresh the token if it has expired
+		if (this.accessTokenExpired && this.refreshToken && !this.refreshInProgress) {
+			try {
+				this.#refreshInProgressState = true;
+				await this.refresh();
+			} catch {
+				// Token refresh failed - if you want to log errors use the tokenRefreshFailed event
+			} finally {
+				this.#refreshInProgressState = false;
+			}
+		}
+
+		if (!this.accessTokenExpired) {
+			isAuthenticated = true;
+		}
+
+		this.#isAuthenticatedPromise = null;
+
+		return isAuthenticated;
 	}
 
 	/**
