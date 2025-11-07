@@ -148,6 +148,16 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	}
 
 	/**
+	 * Checks authentication status without attempting token refresh.
+	 * Useful when you want to avoid side effects.
+	 *
+	 * @returns {boolean} - Returns `true` if the user has a valid, non-expired access token.
+	 */
+	get isAuthenticatedSync(): boolean {
+		return Boolean(this.session?.access_token && !this.accessTokenExpired);
+	}
+
+	/**
 	 * Constructs a new instance of the `BaseFlow` class.
 	 *
 	 * @param {Options} options - Configuration options for the flow.
