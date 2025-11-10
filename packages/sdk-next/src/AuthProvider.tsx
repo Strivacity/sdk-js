@@ -1,5 +1,5 @@
-import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { type FC } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { initFlow } from '@strivacity/sdk-core';
 import type { SDKOptions, IdTokenClaims } from '@strivacity/sdk-core';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
@@ -24,6 +24,7 @@ export const StyAuthProvider: FC<{ options: SDKOptions; children?: Children }> =
 	const [refreshToken, setRefreshToken] = useState<string | null>(null);
 	const [accessTokenExpired, setAccessTokenExpired] = useState<boolean>(true);
 	const [accessTokenExpirationDate, setAccessTokenExpirationDate] = useState<number | null>(null);
+	const events = useRef<{ dispose: () => void }[]>([]);
 
 	const updateSession = async () => {
 		setIsAuthenticated(await sdk.isAuthenticated);
@@ -38,21 +39,28 @@ export const StyAuthProvider: FC<{ options: SDKOptions; children?: Children }> =
 		}
 	};
 
-	// @ts-expect-error: Ignore SDK type mismatch for initFlow
-	const value = useMemo<PopupContext | RedirectContext | NativeContext>(() => {
+	useEffect(() => {
 		if (!sdk) {
 			sdk = initFlow(options);
 
-			sdk.subscribeToEvent('init', updateSession);
-			sdk.subscribeToEvent('loggedIn', updateSession);
-			sdk.subscribeToEvent('sessionLoaded', updateSession);
-			sdk.subscribeToEvent('tokenRefreshed', updateSession);
-			sdk.subscribeToEvent('tokenRefreshFailed', updateSession);
-			sdk.subscribeToEvent('logoutInitiated', updateSession);
-			sdk.subscribeToEvent('tokenRevoked', updateSession);
-			sdk.subscribeToEvent('tokenRevokeFailed', updateSession);
+			events.current.push(sdk.subscribeToEvent('init', updateSession));
+			events.current.push(sdk.subscribeToEvent('loggedIn', updateSession));
+			events.current.push(sdk.subscribeToEvent('sessionLoaded', updateSession));
+			events.current.push(sdk.subscribeToEvent('tokenRefreshed', updateSession));
+			events.current.push(sdk.subscribeToEvent('tokenRefreshFailed', updateSession));
+			events.current.push(sdk.subscribeToEvent('logoutInitiated', updateSession));
+			events.current.push(sdk.subscribeToEvent('tokenRevoked', updateSession));
+			events.current.push(sdk.subscribeToEvent('tokenRevokeFailed', updateSession));
 		}
 
+		return () => {
+			events.current.forEach((event) => event.dispose());
+			events.current = [];
+		};
+	}, []);
+
+	// @ts-expect-error: Ignore SDK type mismatch for initFlow
+	const value = useMemo<PopupContext | RedirectContext | NativeContext>(() => {
 		return {
 			sdk,
 			loading,
