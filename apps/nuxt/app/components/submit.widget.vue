@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { SubmitWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, SubmitWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: SubmitWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { DateWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, DateWidget } from '@strivacity/sdk-nuxt';
 import { DateTime } from 'luxon';
 
 const props = defineProps<{ formId: string; config: DateWidget }>();

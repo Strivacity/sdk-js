@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { CheckboxWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, CheckboxWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: CheckboxWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

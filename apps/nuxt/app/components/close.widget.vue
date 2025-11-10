@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { CloseWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, CloseWidget } from '@strivacity/sdk-nuxt';
 import { computed, inject } from 'vue';
 
 defineProps<{ formId: string; config: CloseWidget }>();

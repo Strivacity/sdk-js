@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { MultiSelectWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, MultiSelectWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: MultiSelectWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

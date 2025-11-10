@@ -18,7 +18,7 @@ The fundamental idea is to create a custom layout widget that can render differe
 
 ```vue
 <script setup lang="ts">
-import type { LayoutWidget } from '@strivacity/sdk-core';
+import type { LayoutWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = withDefaults(defineProps<{ formId: string; type: LayoutWidget['type']; tag?: string }>(), {
@@ -68,7 +68,7 @@ The Static Widget is a simple component that displays static content. It can be 
 
 ```vue
 <script setup lang="ts">
-import type { StaticWidget } from '@strivacity/sdk-core';
+import type { StaticWidget } from '@strivacity/sdk-nuxt';
 defineProps<{ formId: string; config: StaticWidget }>();
 </script>
 
@@ -108,7 +108,7 @@ The Input Widget is a versatile component that allows you to create input fields
 
 ```vue
 <script setup lang="ts">
-import type { InputWidget } from '@strivacity/sdk-core';
+import type { InputWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: InputWidget }>();
@@ -163,7 +163,7 @@ function onChange(event: Event) {
 
 ```vue
 <script setup lang="ts">
-import type { SubmitWidget } from '@strivacity/sdk-core';
+import type { SubmitWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: SubmitWidget }>();
@@ -223,7 +223,7 @@ The Checkbox Widget is a simple component that displays a checkbox input in your
 
 ```vue
 <script setup lang="ts">
-import type { CheckboxWidget } from '@strivacity/sdk-core';
+import type { CheckboxWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: CheckboxWidget }>();
@@ -273,7 +273,7 @@ The Date Widget allows you to display a date input field, either as a native dat
 
 ```vue
 <script setup lang="ts">
-import type { DateWidget } from '@strivacity/sdk-core';
+import type { DateWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: DateWidget }>();
@@ -320,7 +320,7 @@ The Password Widget displays a password input field, optionally with a quality i
 
 ```vue
 <script setup lang="ts">
-import type { PasswordWidget } from '@strivacity/sdk-core';
+import type { PasswordWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasswordWidget }>();
@@ -365,7 +365,7 @@ The Passcode Widget is a simple numeric code input field.
 
 ```vue
 <script setup lang="ts">
-import type { PasscodeWidget } from '@strivacity/sdk-core';
+import type { PasscodeWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasscodeWidget }>();
@@ -418,7 +418,7 @@ The Phone Widget displays a phone number input field.
 
 ```vue
 <script setup lang="ts">
-import type { PhoneWidget } from '@strivacity/sdk-core';
+import type { PhoneWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PhoneWidget }>();
@@ -469,7 +469,7 @@ The Select Widget is a selection field, which can be rendered as a dropdown or a
 
 ```vue
 <script setup lang="ts">
-import type { SelectWidget } from '@strivacity/sdk-core';
+import type { SelectWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: SelectWidget }>();
@@ -517,7 +517,7 @@ The MultiSelect Widget allows selecting multiple options, either as checkboxes o
 
 ```vue
 <script setup lang="ts">
-import type { MultiSelectWidget } from '@strivacity/sdk-core';
+import type { MultiSelectWidget } from '@strivacity/sdk-nuxt';
 import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: any }>();
@@ -607,7 +607,7 @@ The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn c
 
 ```vue
 <script setup lang="ts">
-import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import type { PasskeyLoginWidget } from '@strivacity/sdk-nuxt';
 import { type NativeFlowContextValue, getCredential } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasskeyLoginWidget }>();
@@ -668,7 +668,7 @@ The Passkey Enroll Widget allows users to register new passkeys. It uses the `cr
 
 ```vue
 <script setup lang="ts">
-import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-nuxt';
 import { type NativeFlowContextValue, createCredential } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasskeyEnrollWidget }>();
@@ -729,7 +729,7 @@ The WebAuthn Login Widget provides WebAuthn-based authentication functionality, 
 
 ```vue
 <script setup lang="ts">
-import type { PasskeyLoginWidget } from '@strivacity/sdk-core';
+import type { PasskeyLoginWidget } from '@strivacity/sdk-nuxt';
 import { type NativeFlowContextValue, getCredential } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasskeyLoginWidget }>();
@@ -790,7 +790,7 @@ The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, si
 
 ```vue
 <script setup lang="ts">
-import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
+import type { PasskeyEnrollWidget } from '@strivacity/sdk-nuxt';
 import { type NativeFlowContextValue, createCredential } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasskeyEnrollWidget }>();

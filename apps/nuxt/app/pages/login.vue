@@ -7,7 +7,7 @@ const router = useRouter();
 const { options, login } = useStrivacity();
 const sessionId = ref<string | null>(null);
 
-if (location.search !== '') {
+if (window.location.search !== '') {
 	const url = new URL(window.location.href);
 	sessionId.value = url.searchParams.get('session_id');
 

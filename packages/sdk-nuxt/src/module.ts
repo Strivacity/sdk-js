@@ -54,5 +54,7 @@ export default CustomStorage`,
 			filePath: resolver.resolve('./runtime/login-renderer.vue'),
 		});
 		addImports({ name: 'useStrivacity', as: 'useStrivacity', from: resolver.resolve('./runtime/composables') });
+		addImports({ name: 'getCredential', as: 'getCredential', from: resolver.resolve('./runtime/composables') });
+		addImports({ name: 'createCredential', as: 'createCredential', from: resolver.resolve('./runtime/composables') });
 	},
 });

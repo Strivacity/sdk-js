@@ -6,6 +6,8 @@ import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
 import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 import type { PopupContext, RedirectContext, NativeContext } from '../types';
 
+export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
+
 const loadingRef = ref<boolean>(true);
 const optionsRef = ref<SDKOptions>({} as SDKOptions);
 const isAuthenticatedRef = ref<boolean>(false);
