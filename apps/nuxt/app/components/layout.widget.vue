@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { LayoutWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, LayoutWidget } from '@strivacity/sdk-nuxt';
 
 const props = withDefaults(defineProps<{ formId: string; type: LayoutWidget['type']; tag?: string }>(), {
 	tag: 'div',

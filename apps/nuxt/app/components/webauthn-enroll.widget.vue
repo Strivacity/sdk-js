@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { PasskeyEnrollWidget } from '@strivacity/sdk-core';
-import { type NativeFlowContextValue, createCredential } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, PasskeyEnrollWidget } from '@strivacity/sdk-nuxt';
 import { computed, inject } from 'vue';
 
 const props = defineProps<{ formId: string; config: PasskeyEnrollWidget }>();

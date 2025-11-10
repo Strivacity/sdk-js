@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { InputWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, InputWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: InputWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

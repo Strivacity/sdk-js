@@ -1,3 +1,9 @@
+## 2.1.0 (2025-11-10)
+
+### 🚀 Features
+
+- nextjs headless example app added ([0c1dafa](https://github.com/Strivacity/sdk-js/commit/0c1dafa))
+
 # 2.0.0 (2025-09-10)
 
 This was a version bump only for testing to align it with other projects, there were no code changes.

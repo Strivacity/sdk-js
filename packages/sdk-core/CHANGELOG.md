@@ -1,3 +1,17 @@
+## 2.1.0 (2025-11-10)
+
+### 🚀 Features
+
+- webauthn support added ([f1b0fc4](https://github.com/Strivacity/sdk-js/commit/f1b0fc4))
+- entry url added ([808bf81](https://github.com/Strivacity/sdk-js/commit/808bf81))
+- nextjs headless example app added ([0c1dafa](https://github.com/Strivacity/sdk-js/commit/0c1dafa))
+- sdk param for nativeFlowHandler added ([8c3ffed](https://github.com/Strivacity/sdk-js/commit/8c3ffed))
+
+### 🩹 Fixes
+
+- isAuthenticated getter refresh token handling updated ([a067318](https://github.com/Strivacity/sdk-js/commit/a067318))
+- async flow initialization updated ([477df9f](https://github.com/Strivacity/sdk-js/commit/477df9f))
+
 ## 2.0.1 (2025-10-07)
 
 ### 🩹 Fixes

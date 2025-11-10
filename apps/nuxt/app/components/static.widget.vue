@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { StaticWidget } from '@strivacity/sdk-core';
+import type { StaticWidget } from '@strivacity/sdk-nuxt';
 
 defineProps<{ formId: string; config: StaticWidget }>();
 </script>

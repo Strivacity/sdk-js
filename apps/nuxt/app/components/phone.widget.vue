@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { PhoneWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, PhoneWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PhoneWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

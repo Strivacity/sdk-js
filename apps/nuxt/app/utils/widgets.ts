@@ -1,5 +1,5 @@
 import type { Component } from 'vue';
-import type { WidgetType } from '@strivacity/sdk-core';
+import type { WidgetType } from '@strivacity/sdk-nuxt';
 
 import CheckboxWidget from '../components/checkbox.widget.vue';
 import DateWidget from '../components/date.widget.vue';
@@ -14,6 +14,10 @@ import SelectWidget from '../components/select.widget.vue';
 import StaticWidget from '../components/static.widget.vue';
 import SubmitWidget from '../components/submit.widget.vue';
 import CloseWidget from '../components/close.widget.vue';
+import PasskeyLoginWidget from '../components/passkey-login.widget.vue';
+import PasskeyEnrollWidget from '../components/passkey-enroll.widget.vue';
+import WebauthnLoginWidget from '../components/webauthn-login.widget.vue';
+import WebauthnEnrollWidget from '../components/webauthn-enroll.widget.vue';
 
 export const widgets: Record<WidgetType, Component> = {
 	checkbox: CheckboxWidget,
@@ -29,4 +33,8 @@ export const widgets: Record<WidgetType, Component> = {
 	static: StaticWidget,
 	submit: SubmitWidget,
 	close: CloseWidget,
+	passkeyLogin: PasskeyLoginWidget,
+	passkeyEnroll: PasskeyEnrollWidget,
+	webauthnLogin: WebauthnLoginWidget,
+	webauthnEnroll: WebauthnEnrollWidget,
 };

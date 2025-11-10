@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { PasswordWidget } from '@strivacity/sdk-core';
-import type { NativeFlowContextValue } from '@strivacity/sdk-nuxt';
+import type { NativeFlowContextValue, PasswordWidget } from '@strivacity/sdk-nuxt';
 
 const props = defineProps<{ formId: string; config: PasswordWidget }>();
 const context = inject<NativeFlowContextValue>('nativeFlowContext');

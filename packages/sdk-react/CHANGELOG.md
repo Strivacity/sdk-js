@@ -1,3 +1,22 @@
+## 2.1.0 (2025-11-10)
+
+### 🚀 Features
+
+- extract side-effect from AuthProvider ([0c726f9](https://github.com/Strivacity/sdk-js/commit/0c726f9))
+- webauthn support added ([f1b0fc4](https://github.com/Strivacity/sdk-js/commit/f1b0fc4))
+- entry url added ([808bf81](https://github.com/Strivacity/sdk-js/commit/808bf81))
+- nextjs headless example app added ([0c1dafa](https://github.com/Strivacity/sdk-js/commit/0c1dafa))
+
+### 🩹 Fixes
+
+- react based framework AuthProvider minor fixes ([bace37d](https://github.com/Strivacity/sdk-js/commit/bace37d))
+- async flow initialization updated ([477df9f](https://github.com/Strivacity/sdk-js/commit/477df9f))
+- react based framework formData calculation fixed ([d4ef6b5](https://github.com/Strivacity/sdk-js/commit/d4ef6b5))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.1.0
+
 # 2.0.0 (2025-09-10)
 
 ### 🩹 Fixes
