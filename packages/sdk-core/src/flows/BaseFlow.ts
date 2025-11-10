@@ -29,12 +29,19 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	/**
 	 * @ignore
 	 */
-	#initialized = false;
+	#initializationPromise: Promise<void>;
 
 	/**
 	 * @ignore
 	 */
 	#isAuthenticatedPromise: Promise<boolean> | null = null;
+
+	/**
+	 * Indicates whether a token refresh operation is currently in progress.
+	 *
+	 * @type {boolean}
+	 */
+	#refreshInProgressState = false;
 
 	/**
 	 * An instance of the HTTP client used for making requests.
@@ -99,6 +106,15 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	}
 
 	/**
+	 * Indicates whether a token refresh operation is currently in progress.
+	 *
+	 * @type {boolean}
+	 */
+	get refreshInProgress(): boolean {
+		return this.#refreshInProgressState;
+	}
+
+	/**
 	 * Determines if the access token has expired.
 	 *
 	 * @type {boolean}
@@ -126,23 +142,19 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			return this.#isAuthenticatedPromise;
 		}
 
-		// eslint-disable-next-line no-async-promise-executor, @typescript-eslint/no-misused-promises
-		this.#isAuthenticatedPromise = new Promise(async (resolve) => {
-			await this.waitToInitialize();
-
-			try {
-				if (this.refreshToken && this.accessTokenExpired) {
-					await this.refresh();
-				}
-			} catch {}
-
-			setTimeout(() => {
-				resolve(!this.accessTokenExpired);
-				this.#isAuthenticatedPromise = null;
-			});
-		});
+		this.#isAuthenticatedPromise = this.#checkAuthentication();
 
 		return this.#isAuthenticatedPromise;
+	}
+
+	/**
+	 * Checks authentication status without attempting token refresh.
+	 * Useful when you want to avoid side effects.
+	 *
+	 * @returns {boolean} - Returns `true` if the user has a valid, non-expired access token.
+	 */
+	get isAuthenticatedSync(): boolean {
+		return Boolean(this.session?.access_token && !this.accessTokenExpired);
 	}
 
 	/**
@@ -191,7 +203,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		this.httpClient = httpClient;
 		this.metadata = new Metadata(this, new URL('/.well-known/openid-configuration', options.issuer).toString());
 
-		void this.#init();
+		this.#initializationPromise = this.#init();
 	}
 
 	/**
@@ -201,19 +213,49 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	async #init() {
 		this.session = Session.load(await this.storage.get(this.options.storageTokenName!));
 
-		setTimeout(() => {
-			this.dispatchEvent('init', []);
+		this.dispatchEvent('init', []);
 
-			if (this.session && this.accessToken && this.idTokenClaims) {
-				this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+		if (this.session && this.accessToken && this.idTokenClaims) {
+			this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+		}
+
+		if (this.accessToken && this.accessTokenExpired) {
+			this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
+		}
+	}
+
+	/**
+	 * Internal method to check authentication status with proper error handling.
+	 * @ignore
+	 */
+	async #checkAuthentication(): Promise<boolean> {
+		let isAuthenticated = false;
+
+		try {
+			await this.waitToInitialize();
+		} catch {
+			// Initialization failed
+		}
+
+		// Attempt to refresh the token if it has expired
+		if (this.accessTokenExpired && this.refreshToken && !this.refreshInProgress) {
+			try {
+				this.#refreshInProgressState = true;
+				await this.refresh();
+			} catch {
+				// Token refresh failed - if you want to log errors use the tokenRefreshFailed event
+			} finally {
+				this.#refreshInProgressState = false;
 			}
+		}
 
-			if (this.accessToken && this.accessTokenExpired) {
-				this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
-			}
+		if (!this.accessTokenExpired) {
+			isAuthenticated = true;
+		}
 
-			this.#initialized = true;
-		});
+		this.#isAuthenticatedPromise = null;
+
+		return isAuthenticated;
 	}
 
 	/**
@@ -465,9 +507,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	}
 
 	protected async waitToInitialize(): Promise<void> {
-		while (!this.#initialized) {
-			await new Promise((resolve) => setTimeout(resolve, 10));
-		}
+		await this.#initializationPromise;
 	}
 
 	/**

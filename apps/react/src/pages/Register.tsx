@@ -5,7 +5,8 @@ import { widgets } from '../components/widgets';
 
 export const Register = () => {
 	const navigate = useNavigate();
-	const { options, register } = useStrivacity();
+	const { options, loading, register } = useStrivacity();
+	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -16,6 +17,8 @@ export const Register = () => {
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
+
+		setUrlHandled(true);
 	}, []);
 
 	useEffect(() => {
@@ -58,18 +61,22 @@ export const Register = () => {
 		// eslint-disable-next-line no-console
 		console.log('state', state);
 	};
+	const onClose = () => {
+		location.reload();
+	};
 
 	return (
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'native' && (
+			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
 						params={{ prompt: 'create' }}
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}
+						onClose={onClose}
 						onLogin={() => void onLogin()}
 						onError={onError}
 						onGlobalMessage={onGlobalMessage}

@@ -7,7 +7,8 @@ import { widgets } from '../../components/widgets';
 
 export default function Register() {
 	const router = useRouter();
-	const { options, register } = useStrivacity();
+	const { options, loading, register } = useStrivacity();
+	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -18,6 +19,8 @@ export default function Register() {
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
+
+		setUrlHandled(true);
 	}, []);
 
 	useEffect(() => {
@@ -46,6 +49,9 @@ export default function Register() {
 			alert(error);
 		}
 	};
+	const onClose = () => {
+		location.reload();
+	};
 	const onError = (error: string) => {
 		// eslint-disable-next-line no-console
 		console.error(`Error: ${error}`);
@@ -65,14 +71,15 @@ export default function Register() {
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'native' && (
+			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
 						params={{ prompt: 'create' }}
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}
-						onLogin={onLogin}
+						onClose={onClose}
+						onLogin={() => void onLogin()}
 						onError={onError}
 						onGlobalMessage={onGlobalMessage}
 						onBlockReady={onBlockReady}

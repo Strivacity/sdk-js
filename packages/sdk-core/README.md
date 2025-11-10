@@ -117,3 +117,60 @@ Submits a form in the native flow. Optionally specify a form ID and request body
 #### `finalizeSession(finalizeUrl: string): Promise<void>`
 
 Finalizes the session using the provided URL. You can gather the finalize URL from the `LoginFlowState` returned by `startSession` or `submitForm`.
+
+---
+
+## Event Subscription
+
+The SDK provides an event subscription system that allows you to listen to various authentication lifecycle events.
+
+### Usage
+
+```js
+import { initFlow } from '@strivacity/sdk-core';
+
+const sdk = initFlow({
+	mode: 'redirect',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+});
+
+// Subscribe to events
+function updateSession(eventData) {
+	console.log('Event received:', eventData);
+	// Handle the event as needed
+}
+
+sdk.subscribeToEvent('init', updateSession);
+sdk.subscribeToEvent('loggedIn', updateSession);
+sdk.subscribeToEvent('sessionLoaded', updateSession);
+sdk.subscribeToEvent('tokenRefreshed', updateSession);
+sdk.subscribeToEvent('tokenRefreshFailed', updateSession);
+sdk.subscribeToEvent('logoutInitiated', updateSession);
+sdk.subscribeToEvent('tokenRevoked', updateSession);
+sdk.subscribeToEvent('tokenRevokeFailed', updateSession);
+```
+
+### Available Events
+
+- **`init`**: Fired when the SDK is initialized
+- **`loggedIn`**: Fired when a user successfully logs in
+- **`sessionLoaded`**: Fired when an existing session is loaded
+- **`tokenRefreshed`**: Fired when access tokens are successfully refreshed
+- **`tokenRefreshFailed`**: Fired when token refresh fails
+- **`logoutInitiated`**: Fired when logout process is initiated
+- **`tokenRevoked`**: Fired when tokens are successfully revoked
+- **`tokenRevokeFailed`**: Fired when token revocation fails
+
+### API Documentation
+
+#### `subscribeToEvent(eventType: string, callback: (eventData: any) => void): void`
+
+Subscribe to SDK events to handle authentication state changes.
+
+**Parameters:**
+
+- `eventType` (string): The type of event to listen for
+- `callback` (function): The function to call when the event is fired

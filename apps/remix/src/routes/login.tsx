@@ -5,8 +5,8 @@ import { widgets } from '../components/widgets';
 
 export default function Login() {
 	const navigate = useNavigate();
-	const { options, login } = useStrivacity();
-	const [loading, setLoading] = useState<boolean>(true);
+	const { options, loading, login } = useStrivacity();
+	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -18,7 +18,7 @@ export default function Login() {
 			window.history.replaceState({}, '', url.toString());
 		}
 
-		setLoading(false);
+		setUrlHandled(true);
 	}, []);
 
 	useEffect(() => {
@@ -69,7 +69,7 @@ export default function Login() {
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'native' && !loading && (
+			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
 						widgets={widgets}
