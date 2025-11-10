@@ -1,11 +1,11 @@
 {
   "private": true,
   "name": "@strivacity/app-remix",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "type": "module",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-remix": "2.0.0"
+    "@strivacity/sdk-remix": "2.1.0"
   }
 }

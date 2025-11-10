@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@strivacity/app-ionic-react",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "type": "module",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -9,6 +9,6 @@
     "@capacitor/app": "^7.0.1",
     "@capacitor/inappbrowser": "2.2.0",
     "@capacitor/preferences": "^7.0.1",
-    "@strivacity/sdk-react": "2.0.0"
+    "@strivacity/sdk-react": "2.1.0"
   }
 }

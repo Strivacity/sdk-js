@@ -1,3 +1,15 @@
+## 2.1.0 (2025-11-10)
+
+### 🚀 Features
+
+- webauthn support added ([f1b0fc4](https://github.com/Strivacity/sdk-js/commit/f1b0fc4))
+- entry url added ([808bf81](https://github.com/Strivacity/sdk-js/commit/808bf81))
+- nextjs headless example app added ([0c1dafa](https://github.com/Strivacity/sdk-js/commit/0c1dafa))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.1.0
+
 # 2.0.0 (2025-09-10)
 
 ### 🧱 Updated Dependencies
