@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "description": "Strivacity JavaScript SDK client",
-  "author": "strivacity <info@strivacity.com>",
+  "author": "strivacity <opensource@strivacity.com>",
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {

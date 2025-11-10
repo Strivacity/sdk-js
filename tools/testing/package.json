@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "type": "module",
   "license": "UNLICENSED",
-  "author": "strivacity<info@strivacity.com>",
+  "author": "strivacity<opensource@strivacity.com>",
   "exports": {
     "./fixtures/*": "./fixtures/*",
     "./mocks/*": "./mocks/*.ts",

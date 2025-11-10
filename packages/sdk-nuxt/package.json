@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "description": "Strivacity Nuxt SDK client",
-  "author": "strivacity <info@strivacity.com>",
+  "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
     "@strivacity/sdk-core": "2.0.1"
   },

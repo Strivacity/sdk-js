@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "type": "module",
   "license": "MIT",
-  "author": "strivacity <info@strivacity.com>",
+  "author": "strivacity <opensource@strivacity.com>",
   "description": "Strivacity Angular SDK client",
   "dependencies": {
     "@strivacity/sdk-core": "2.0.1"

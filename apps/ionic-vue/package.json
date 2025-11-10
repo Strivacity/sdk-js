@@ -4,7 +4,7 @@
   "version": "1.0.15",
   "type": "module",
   "license": "MIT",
-  "author": "strivacity <info@strivacity.com>",
+  "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
     "@capacitor/app": "^7.0.1",
     "@capacitor/inappbrowser": "2.2.0",
