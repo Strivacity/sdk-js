@@ -57,7 +57,7 @@ export const StyAuthProvider: FC<{ options: SDKOptions; children?: Children }> =
 			events.current.forEach((event) => event.dispose());
 			events.current = [];
 		};
-	}, []);
+	}, [options]);
 
 	// @ts-expect-error: Ignore SDK type mismatch for initFlow
 	const value = useMemo<PopupContext | RedirectContext | NativeContext>(() => {
