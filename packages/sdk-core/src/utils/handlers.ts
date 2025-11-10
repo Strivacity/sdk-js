@@ -18,7 +18,7 @@ async function redirectUrlHandler(url: string, params?: RedirectParams): Promise
 	}
 
 	// NOTE: Wait for the previous action
-	return new Promise(() => undefined);
+	return new Promise((resolve) => resolve());
 }
 
 /**
