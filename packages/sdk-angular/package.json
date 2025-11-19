@@ -6,7 +6,7 @@
   "author": "strivacity <opensource@strivacity.com>",
   "description": "Strivacity Angular SDK client",
   "dependencies": {
-    "@strivacity/sdk-core": "2.1.0"
+    "@strivacity/sdk-core": "2.1.1"
   },
   "peerDependencies": {
     "@angular/core": ">=14"

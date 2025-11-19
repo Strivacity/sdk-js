@@ -1,3 +1,10 @@
+## 2.1.1 (2025-11-19)
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.1.1
+- Updated sdk-core to 2.1.1
+
 ## 2.1.0 (2025-11-10)
 
 ### 🚀 Features

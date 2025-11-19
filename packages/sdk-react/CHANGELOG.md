@@ -1,3 +1,13 @@
+## 2.1.1 (2025-11-19)
+
+### 🩹 Fixes
+
+- type module removed from package.json files ([9b2fb1f](https://github.com/Strivacity/sdk-js/commit/9b2fb1f))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.1.1
+
 ## 2.1.0 (2025-11-10)
 
 ### 🚀 Features
