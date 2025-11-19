@@ -1,7 +1,6 @@
 {
   "name": "@strivacity/sdk-vue",
   "version": "2.1.0",
-  "type": "module",
   "license": "MIT",
   "description": "Strivacity Vue.js SDK client",
   "author": "strivacity <opensource@strivacity.com>",

@@ -1,7 +1,6 @@
 {
   "name": "@strivacity/sdk-remix",
   "version": "2.1.0",
-  "type": "module",
   "license": "MIT",
   "description": "Strivacity Remix SDK client",
   "author": "strivacity <opensource@strivacity.com>",
