@@ -107,6 +107,12 @@ export function mockLocalStorage() {
 	vi.spyOn(globalThis.window.localStorage, 'setItem').mockImplementation((key: string, value: string) => storages.local.set(key, value));
 	vi.spyOn(globalThis.window.localStorage, 'removeItem').mockImplementation((key: string) => storages.local.delete(key));
 
+	storages.local.spies = {
+		get: vi.spyOn(storages.local, 'get'),
+		set: vi.spyOn(storages.local, 'set'),
+		delete: vi.spyOn(storages.local, 'delete'),
+	};
+
 	return storages.local;
 }
 
@@ -115,18 +121,14 @@ export function mockSessionStorage() {
 	vi.spyOn(globalThis.window.sessionStorage, 'setItem').mockImplementation((key: string, value: string) => storages.session.set(key, value));
 	vi.spyOn(globalThis.window.sessionStorage, 'removeItem').mockImplementation((key: string) => storages.session.delete(key));
 
+	storages.session.spies = {
+		get: vi.spyOn(storages.session, 'get'),
+		set: vi.spyOn(storages.session, 'set'),
+		delete: vi.spyOn(storages.session, 'delete'),
+	};
+
 	return storages.session;
 }
-
-beforeEach(() => {
-	for (const key in storages) {
-		storages[key].spies = {
-			get: vi.spyOn(storages[key], 'get'),
-			set: vi.spyOn(storages[key], 'set'),
-			delete: vi.spyOn(storages[key], 'delete'),
-		};
-	}
-});
 
 afterEach(() => {
 	for (const key in storages) {

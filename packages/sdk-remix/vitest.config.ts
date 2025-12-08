@@ -7,7 +7,6 @@ export default defineConfig({
 		environment: 'happy-dom',
 		watch: false,
 		globals: true,
-		mockReset: true,
 		clearMocks: true,
 		retry: 5,
 		pool: 'threads',
