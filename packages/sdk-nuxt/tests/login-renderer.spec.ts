@@ -372,7 +372,7 @@ describe('StyLoginRenderer', () => {
 
 			test('throws error when no hosted URL is available', async () => {
 				component = await componentFactory();
-				component.vm.state.value = {};
+				component.vm.state = {};
 
 				expect(() => component.vm.triggerFallback()).toThrow('No hosted URL provided');
 			});
@@ -441,14 +441,14 @@ describe('StyLoginRenderer', () => {
 		test('converts empty string to null', async () => {
 			component = await componentFactory();
 			component.vm.setFormValue('password', 'w1', '');
-			expect(component.vm.forms.value['password']['w1']).toBe(null);
+			expect(component.vm.forms['password']['w1']).toBe(null);
 		});
 
 		test('sets messages correctly', async () => {
 			component = await componentFactory();
 			const message = { text: 'Error message', type: 'error' };
 			component.vm.setMessage('password', 'w1', message);
-			expect(component.vm.messages.value['password']['w1']).toEqual(message);
+			expect(component.vm.messages['password']['w1']).toEqual(message);
 		});
 
 		test('submits form correctly', async () => {
@@ -537,27 +537,31 @@ describe('StyLoginRenderer', () => {
 			await component.vm.handleResponse({ screen: 'mfa', forms: [{ id: 'mfa', widgets: [] }] });
 			await nextTick();
 
-			expect(component.vm.forms.value).toEqual({ mfa: {} });
-			expect(component.vm.messages.value).toEqual({ mfa: {} });
+			expect(component.vm.forms).toEqual({ mfa: {} });
+			expect(component.vm.messages).toEqual({ mfa: {} });
 		});
 
 		test('preserves forms and messages when screen stays the same', async () => {
 			component = await componentFactory();
-			component.vm.setFormValue('identifier', 'w1', 'testvalue');
-			component.vm.setMessage('identifier', 'w1', { text: 'test message' });
+			await nextTick();
+
+			component.vm.setFormValue('identifier', 'identifier', 'testvalue');
+			component.vm.setMessage('identifier', 'identifier', { text: 'test message' });
 
 			await component.vm.handleResponse({ screen: 'identification', forms: mockInitialState.forms });
 			await nextTick();
 
-			expect(component.vm.forms.value['identifier']['w1']).toBe('testvalue');
-			expect(component.vm.messages.value['identifier']['w1']).toEqual({ text: 'test message' });
+			expect(component.vm.forms['identifier']['identifier']).toBe('testvalue');
+			expect(component.vm.messages['identifier']['identifier']).toEqual({ text: 'test message' });
 		});
 
 		test('should update messages when screen changes', async () => {
 			const newState: LoginFlowState = {
 				...mockInitialState,
 				messages: {
-					identifier: { type: 'error', text: 'Invalid identifier' },
+					identifier: {
+						identifier: { type: 'error', text: 'Invalid identifier' },
+					},
 				},
 			};
 
@@ -565,7 +569,7 @@ describe('StyLoginRenderer', () => {
 			component = await componentFactory();
 			await nextTick();
 
-			expect(component.vm.messages.value.identifier).toEqual({ type: 'error', text: 'Invalid identifier' });
+			expect(component.vm.messages.identifier.identifier).toEqual({ type: 'error', text: 'Invalid identifier' });
 		});
 	});
 });

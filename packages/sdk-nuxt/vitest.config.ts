@@ -8,7 +8,6 @@ export default defineVitestConfig({
 		environment: 'nuxt',
 		watch: false,
 		globals: true,
-		mockReset: true,
 		clearMocks: true,
 		retry: 5,
 		pool: 'threads',

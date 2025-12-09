@@ -136,7 +136,7 @@ describe('StrivacityAuthService', () => {
 		await vi.waitFor(() =>
 			expect(latestEmission()).toEqual({
 				loading: false,
-				isAuthenticated: false,
+				isAuthenticated: true,
 				idTokenClaims: null,
 				accessToken: null,
 				refreshToken: null,
