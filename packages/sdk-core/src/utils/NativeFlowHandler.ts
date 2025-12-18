@@ -83,7 +83,11 @@ export class NativeFlowHandler {
 	 * @param {string} finalizeUrl The URL to finalize the session.
 	 */
 	async finalizeSession(finalizeUrl: string): Promise<void> {
-		const response = await this.sdk.httpClient.request(finalizeUrl, { method: 'GET', credentials: 'include' });
+		const response = await this.sdk.httpClient.request(finalizeUrl, {
+			method: 'GET',
+			headers: { Authorization: `Bearer ${this.sessionId}` },
+			credentials: 'include',
+		});
 		const redirectUri = new URL(await response.text());
 
 		if (typeof this.sdk.options.callbackHandler !== 'function') {
