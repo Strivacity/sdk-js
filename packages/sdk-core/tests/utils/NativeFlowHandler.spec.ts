@@ -297,7 +297,11 @@ describe('NativeFlowHandler', () => {
 			handler.sessionId = 'sessionId';
 			await handler.submitForm();
 
-			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/oauth2/finalize`, { method: 'GET', credentials: 'include' });
+			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/oauth2/finalize`, {
+				method: 'GET',
+				headers: { Authorization: `Bearer sessionId` },
+				credentials: 'include',
+			});
 			expect(spies.tokenExchange).toHaveBeenCalledWith({ code: '1234' });
 		});
 
