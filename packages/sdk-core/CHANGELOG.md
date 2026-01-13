@@ -1,3 +1,13 @@
+## 2.1.2 (2026-01-13)
+
+### 🩹 Fixes
+
+- add authorization header to the finish endpoint ([f9a973f](https://github.com/Strivacity/sdk-js/commit/f9a973f))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 2.1.1
+
 ## 2.1.1 (2025-11-19)
 
 ### 🩹 Fixes
