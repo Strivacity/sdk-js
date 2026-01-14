@@ -4,6 +4,10 @@
   "license": "MIT",
   "description": "Strivacity JavaScript SDK client",
   "author": "strivacity <opensource@strivacity.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Strivacity/sdk-js"
+  },
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {

@@ -4,6 +4,10 @@
   "license": "MIT",
   "description": "Strivacity React SDK client",
   "author": "strivacity <opensource@strivacity.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Strivacity/sdk-js"
+  },
   "dependencies": {
     "@strivacity/sdk-core": "2.1.2"
   },
