@@ -3,7 +3,8 @@
 import { Component, OnDestroy, OnInit, SkipSelf } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState } from '@strivacity/sdk-angular';
+import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
+import { type ImportMeta } from '../../app.config';
 import { widgets } from '../../components/widgets';
 
 @Component({
@@ -17,6 +18,9 @@ export class LoginPage implements OnInit, OnDestroy {
 	readonly subscription = new Subscription();
 	sessionId: string | null = null;
 	options: SDKOptions;
+	extraParams: ExtraRequestArgs = {
+		audiences: (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES?.split(' '),
+	};
 
 	constructor(
 		protected router: Router,
@@ -36,7 +40,7 @@ export class LoginPage implements OnInit, OnDestroy {
 		if (this.options?.mode === 'redirect') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for login
-				this.strivacityAuthService.login().subscribe({
+				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: () => {},
 					error: (error: any) => this.onError(error),
 				}),
@@ -44,7 +48,7 @@ export class LoginPage implements OnInit, OnDestroy {
 		} else if (this.options?.mode === 'popup') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for login
-				this.strivacityAuthService.login().subscribe({
+				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: () => {
 						void this.router.navigateByUrl('/profile');
 					},

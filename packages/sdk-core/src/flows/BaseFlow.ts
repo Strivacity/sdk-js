@@ -502,6 +502,9 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		if (params.uiLocales) {
 			url.searchParams.append('ui_locales', params.uiLocales.join(' '));
 		}
+		if (params.audiences) {
+			url.searchParams.append('audience', params.audiences.join(' '));
+		}
 
 		return url;
 	}

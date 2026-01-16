@@ -5,7 +5,7 @@
 	<h1>Loading...</h1>
 	} @else if (options?.mode === 'native') {
 	<sty-login-renderer
-		[params]="{ prompt: 'create' }"
+		[params]="extraParams"
 		[widgets]="widgets"
 		[sessionId]="sessionId"
 		(fallback)="onFallback($event)"

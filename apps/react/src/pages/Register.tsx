@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-react';
+import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-react';
 import { widgets } from '../components/widgets';
 
 export const Register = () => {
@@ -8,6 +8,11 @@ export const Register = () => {
 	const { options, loading, register } = useStrivacity();
 	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+
+	const extraParams: ExtraRequestArgs = {
+		prompt: 'create',
+		audiences: import.meta.env.VITE_AUDIENCES?.split(' '),
+	};
 
 	useEffect(() => {
 		if (window.location.search !== '') {
@@ -25,9 +30,9 @@ export const Register = () => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (options.mode === 'redirect') {
-				await register();
+				await register(extraParams);
 			} else if (options.mode === 'popup') {
-				await register();
+				await register(extraParams);
 				await navigate('/profile');
 			}
 		})();
@@ -72,7 +77,7 @@ export const Register = () => {
 			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
-						params={{ prompt: 'create' }}
+						params={extraParams}
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}

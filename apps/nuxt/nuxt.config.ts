@@ -19,6 +19,11 @@ export default defineNuxtConfig({
 	},
 	devServer: { host: 'localhost', port: 4200 },
 	modules: ['@strivacity/sdk-nuxt'],
+	runtimeConfig: {
+		public: {
+			AUDIENCES: process.env.AUDIENCES || process.env.VITE_AUDIENCES,
+		},
+	},
 	strivacity: {
 		mode: process.env.VITE_MODE as 'redirect' | 'popup' | 'native',
 		issuer: process.env.VITE_ISSUER,

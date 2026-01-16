@@ -6,7 +6,9 @@ export class RegisterPage extends LitElement {
 	connectedCallback(): void {
 		super.connectedCallback();
 
-		void globalThis.sdk.register();
+		void globalThis.sdk.register({
+			audiences: import.meta.env?.VITE_AUDIENCES?.split(' '),
+		});
 	}
 
 	render() {

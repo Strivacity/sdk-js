@@ -14,6 +14,7 @@ const nextConfig = {
 		REDIRECT_URI: process.env.VITE_REDIRECT_URI,
 		CLIENT_ID: process.env.VITE_CLIENT_ID,
 		SCOPES: process.env.VITE_SCOPES,
+		AUDIENCES: process.env.VITE_AUDIENCES,
 	},
 };
 
