@@ -3,6 +3,7 @@ import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
 	ssr: false,
+	telemetry: false,
 	buildDir: './.nuxt',
 	workspaceDir: resolve(__dirname, '../../'),
 	devtools: { enabled: true },
