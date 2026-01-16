@@ -5,7 +5,8 @@ import { Subscription } from 'rxjs';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
 import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
-import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState } from '@strivacity/sdk-angular';
+import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
+import { type ImportMeta } from '../../app.config';
 import { widgets } from '../../components/widgets';
 
 @Component({
@@ -19,6 +20,9 @@ export class LoginPage implements OnInit, OnDestroy {
 	readonly subscription = new Subscription();
 	sessionId: string | null = null;
 	options: SDKOptions;
+	extraParams: ExtraRequestArgs = {
+		audiences: (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES?.split(' '),
+	};
 
 	constructor(
 		protected router: Router,
@@ -38,7 +42,7 @@ export class LoginPage implements OnInit, OnDestroy {
 		if (this.options?.mode === 'redirect') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for login
-				this.strivacityAuthService.login().subscribe({
+				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: async () => {
 						if (Capacitor.getPlatform() !== 'web') {
 							const params = (await this.options.callbackHandler!(this.options.redirectUri, this.options.responseMode || 'fragment')) as Record<string, string>;
@@ -52,7 +56,7 @@ export class LoginPage implements OnInit, OnDestroy {
 		} else if (this.options?.mode === 'popup') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for login
-				this.strivacityAuthService.login().subscribe({
+				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: async () => {
 						await this.router.navigateByUrl('/profile');
 					},

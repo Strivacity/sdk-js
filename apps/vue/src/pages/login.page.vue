@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { FallbackError, useStrivacity, type LoginFlowState } from '@strivacity/sdk-vue';
+import { FallbackError, useStrivacity, type ExtraRequestArgs, type LoginFlowState } from '@strivacity/sdk-vue';
 import { widgets } from '../components/widgets';
 
 const router = useRouter();
 const { options, login } = useStrivacity();
 const sessionId = ref<string | null>(null);
+const extraParams: ExtraRequestArgs = {
+	audiences: import.meta.env.VITE_AUDIENCES?.split(' '),
+};
 
 if (location.search !== '') {
 	const url = new URL(window.location.href);
@@ -18,9 +21,9 @@ if (location.search !== '') {
 
 onMounted(async () => {
 	if (options.value.mode === 'redirect') {
-		await login();
+		await login(extraParams);
 	} else if (options.value.mode === 'popup') {
-		await login();
+		await login(extraParams);
 		await router.push('/profile');
 	}
 });
@@ -67,6 +70,7 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 				<StyLoginRenderer
 					:widgets="widgets"
 					:session-id="sessionId"
+					:params="extraParams"
 					@fallback="onFallback"
 					@close="onClose"
 					@login="onLogin"

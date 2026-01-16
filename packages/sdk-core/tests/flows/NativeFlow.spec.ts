@@ -162,6 +162,7 @@ describe('NativeFlow', () => {
 					loginHint: 'hint',
 					acrValues: ['acr', 'value'],
 					uiLocales: ['hu-HU', 'en-US'],
+					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
 				const handler = flow.login(extraParams);
@@ -188,6 +189,7 @@ describe('NativeFlow', () => {
 					loginHint: 'hint',
 					acrValues: ['acr', 'value'],
 					uiLocales: ['hu-HU', 'en-US'],
+					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
 				const handler = flow.register(extraParams);

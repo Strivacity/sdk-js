@@ -8,13 +8,14 @@ import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-cor
 import { provideStrivacity, SDKStorage, SDKHttpClient, LocalStorage, type HttpClientResponse } from '@strivacity/sdk-angular';
 import { routes } from './app.routes';
 
-interface ImportMeta {
+export interface ImportMeta {
 	env: {
 		VITE_MODE: 'redirect' | 'popup' | 'native';
 		VITE_ISSUER: string;
 		VITE_SCOPES: string;
 		VITE_CLIENT_ID: string;
 		VITE_REDIRECT_URI: string;
+		VITE_AUDIENCES: string;
 	};
 }
 

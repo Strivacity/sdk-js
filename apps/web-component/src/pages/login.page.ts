@@ -6,7 +6,9 @@ export class LoginPage extends LitElement {
 	connectedCallback(): void {
 		super.connectedCallback();
 
-		void globalThis.sdk.login();
+		void globalThis.sdk.login({
+			audiences: import.meta.env?.VITE_AUDIENCES?.split(' '),
+		});
 	}
 
 	render() {

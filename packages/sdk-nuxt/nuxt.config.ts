@@ -2,6 +2,7 @@ import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
 	ssr: true,
+	telemetry: false,
 	modules: ['./src'],
 	strivacity: {
 		issuer: 'https://brandtegrity.io',

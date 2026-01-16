@@ -5,12 +5,16 @@ import { useRouter } from 'vue-router';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
 import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
-import { FallbackError, useStrivacity, type LoginFlowState } from '@strivacity/sdk-vue';
+import { FallbackError, useStrivacity, type ExtraRequestArgs, type LoginFlowState } from '@strivacity/sdk-vue';
 import { widgets } from '../components/widgets';
 
 const router = useRouter();
 const { sdk, register } = useStrivacity();
 const sessionId = ref<string | null>(null);
+const extraParams: ExtraRequestArgs = {
+	prompt: 'create',
+	audiences: import.meta.env.VITE_AUDIENCES?.split(' '),
+};
 
 if (window.location.search !== '') {
 	const url = new URL(window.location.href);
@@ -22,7 +26,7 @@ if (window.location.search !== '') {
 
 onMounted(async () => {
 	if (sdk.options.mode === 'redirect') {
-		await register();
+		await register(extraParams);
 
 		if (Capacitor.getPlatform() !== 'web') {
 			const params = (await sdk.options.callbackHandler!(sdk.options.redirectUri, sdk.options.responseMode || 'fragment')) as Record<string, string>;
@@ -30,7 +34,7 @@ onMounted(async () => {
 			await router.push('/profile');
 		}
 	} else if (sdk.options.mode === 'popup') {
-		await register();
+		await register(extraParams);
 		await router.push('/profile');
 	}
 });
@@ -129,7 +133,7 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 		<Suspense v-else-if="sdk.options.mode === 'native'">
 			<template #default>
 				<StyLoginRenderer
-					:params="{ prompt: 'create' }"
+					:params="extraParams"
 					:widgets="widgets"
 					:session-id="sessionId"
 					@fallback="onFallback"
