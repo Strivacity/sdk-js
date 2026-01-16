@@ -822,6 +822,16 @@ export type ExtraRequestArgs = {
 	 * @example ['en-US', 'fr-CA']
 	 */
 	uiLocales?: Array<string>;
+
+	/**
+	 * A list of audience values to specify the intended recipients of the token.
+	 *
+	 * This parameter allows requesting that the issued token is intended for specific audiences.
+	 *
+	 * @type {Array<string>}
+	 * @example ['https://api.example.com', 'https://service.example.com']
+	 */
+	audiences?: Array<string>;
 };
 
 /**
