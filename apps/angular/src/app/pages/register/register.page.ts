@@ -3,7 +3,8 @@
 import { Component, OnDestroy, OnInit, SkipSelf } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, PopupFlow, RedirectFlow, LoginFlowState } from '@strivacity/sdk-angular';
+import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
+import { type ImportMeta } from '../../app.config';
 import { widgets } from '../../components/widgets';
 
 @Component({
@@ -17,10 +18,17 @@ export class RegisterPage implements OnInit, OnDestroy {
 	readonly subscription = new Subscription();
 	sessionId: string | null = null;
 	options: SDKOptions;
+	extraParams: ExtraRequestArgs = {
+		prompt: 'create',
+		loginHint: (import.meta as unknown as ImportMeta).env.VITE_LOGIN_HINT,
+		acrValues: (import.meta as unknown as ImportMeta).env.VITE_ACR_VALUES ? (import.meta as unknown as ImportMeta).env.VITE_ACR_VALUES.split(' ') : undefined,
+		uiLocales: (import.meta as unknown as ImportMeta).env.VITE_UI_LOCALES ? (import.meta as unknown as ImportMeta).env.VITE_UI_LOCALES.split(' ') : undefined,
+		audiences: (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES ? (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES.split(' ') : undefined,
+	};
 
 	constructor(
 		protected router: Router,
-		@SkipSelf() protected strivacityAuthService: StrivacityAuthService<PopupFlow | RedirectFlow>,
+		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
 	) {
 		this.options = this.strivacityAuthService.options;
 
@@ -36,7 +44,7 @@ export class RegisterPage implements OnInit, OnDestroy {
 		if (this.options?.mode === 'redirect') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for register
-				this.strivacityAuthService.register().subscribe({
+				this.strivacityAuthService.register(this.extraParams).subscribe({
 					next: () => {},
 					error: (error: any) => this.onError(error),
 				}),
@@ -44,7 +52,7 @@ export class RegisterPage implements OnInit, OnDestroy {
 		} else if (this.options?.mode === 'popup') {
 			this.subscription.add(
 				// @ts-expect-error: Ignore SDK type mismatch for register
-				this.strivacityAuthService.register().subscribe({
+				this.strivacityAuthService.register(this.extraParams).subscribe({
 					next: () => {
 						void this.router.navigateByUrl('/profile');
 					},

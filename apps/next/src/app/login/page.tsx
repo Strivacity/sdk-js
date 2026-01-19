@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-next';
+import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-next';
 import { widgets } from '../../components/widgets';
 
 export default function Login() {
@@ -10,6 +10,13 @@ export default function Login() {
 	const { options, loading, login } = useStrivacity();
 	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+
+	const extraParams: ExtraRequestArgs = {
+		loginHint: process.env.LOGIN_HINT,
+		acrValues: process.env.ACR_VALUES ? process.env.ACR_VALUES.split(' ') : undefined,
+		uiLocales: process.env.UI_LOCALES ? process.env.UI_LOCALES.split(' ') : undefined,
+		audiences: process.env.AUDIENCES ? process.env.AUDIENCES.split(' ') : undefined,
+	};
 
 	useEffect(() => {
 		if (window.location.search !== '') {
@@ -27,9 +34,9 @@ export default function Login() {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (options.mode === 'redirect') {
-				await login();
+				await login(extraParams);
 			} else if (options.mode === 'popup') {
-				await login();
+				await login(extraParams);
 				router.push('/profile');
 			}
 		})();
@@ -74,6 +81,7 @@ export default function Login() {
 			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
+						params={extraParams}
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}
