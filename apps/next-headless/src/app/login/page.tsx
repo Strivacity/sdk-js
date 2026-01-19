@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { LoginFlowState, LoginFlowMessage, NativeContext, StaticWidget, SubmitWidget, MultiSelectWidget, InputWidget } from '@strivacity/sdk-next';
 import type { NativeFlowHandler } from 'packages/sdk-core/dist/utils/NativeFlowHandler';
 import { unflattenObject } from '@strivacity/sdk-core/utils/object';
-import { useStrivacity, FallbackError } from '@strivacity/sdk-next';
+import { useStrivacity, FallbackError, type ExtraRequestArgs } from '@strivacity/sdk-next';
 
 export default function Login() {
 	const router = useRouter();
@@ -17,6 +17,14 @@ export default function Login() {
 	const [state, setState] = useState<LoginFlowState>({});
 	const [formData, setFormData] = useState<Record<string, unknown>>({});
 	const [messages, setMessages] = useState<Record<string, Record<string, LoginFlowMessage>>>({});
+
+	const extraParams: ExtraRequestArgs = {
+		sdk: 'web-minimal',
+		loginHint: process.env.LOGIN_HINT,
+		acrValues: process.env.ACR_VALUES ? process.env.ACR_VALUES.split(' ') : undefined,
+		uiLocales: process.env.UI_LOCALES ? process.env.UI_LOCALES.split(' ') : undefined,
+		audiences: process.env.AUDIENCES ? process.env.AUDIENCES.split(' ') : undefined,
+	};
 
 	const handleMessages = (newMessages: Record<string, Record<string, LoginFlowMessage>> | undefined) => {
 		setMessages({});
@@ -75,7 +83,7 @@ export default function Login() {
 				window.history.replaceState({}, '', url.toString());
 			}
 
-			const loginHandler = sdk.login({ sdk: 'web-minimal' });
+			const loginHandler = sdk.login(extraParams);
 			setHandler(loginHandler);
 
 			const state = await loginHandler.startSession(sessionId);

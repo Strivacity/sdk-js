@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
 import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-react';
+import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-react';
 import { widgets } from '../components/widgets';
 
 export const Login = () => {
@@ -12,6 +12,13 @@ export const Login = () => {
 	const { sdk, options, login } = useStrivacity();
 	const [loading, setLoading] = useState<boolean>(true);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+
+	const extraParams: ExtraRequestArgs = {
+		loginHint: import.meta.env.VITE_LOGIN_HINT,
+		acrValues: import.meta.env.VITE_ACR_VALUES ? import.meta.env.VITE_ACR_VALUES.split(' ') : undefined,
+		uiLocales: import.meta.env.VITE_UI_LOCALES ? import.meta.env.VITE_UI_LOCALES.split(' ') : undefined,
+		audiences: import.meta.env.VITE_AUDIENCES ? import.meta.env.VITE_AUDIENCES.split(' ') : undefined,
+	};
 
 	useEffect(() => {
 		if (window.location.search !== '') {
@@ -29,7 +36,7 @@ export const Login = () => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			if (options.mode === 'redirect') {
-				await login();
+				await login(extraParams);
 
 				if (Capacitor.getPlatform() !== 'web') {
 					const params = (await options.callbackHandler!(options.redirectUri, options.responseMode || 'fragment')) as Record<string, string>;
@@ -37,7 +44,7 @@ export const Login = () => {
 					await navigate('/profile');
 				}
 			} else if (options.mode === 'popup') {
-				await login();
+				await login(extraParams);
 				await navigate('/profile');
 			}
 		})();
@@ -140,6 +147,7 @@ export const Login = () => {
 			{options.mode === 'native' && !loading && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer
+						params={extraParams}
 						widgets={widgets}
 						sessionId={sessionId}
 						onFallback={onFallback}

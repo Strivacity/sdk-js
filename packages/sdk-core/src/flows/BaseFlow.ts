@@ -493,14 +493,17 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		if (params.prompt) {
 			url.searchParams.append('prompt', params.prompt);
 		}
-		if (params.acrValues) {
+		if (params.acrValues?.length) {
 			url.searchParams.append('acr_values', params.acrValues.join(' '));
 		}
-		if (params.loginHint) {
+		if (params.loginHint?.length) {
 			url.searchParams.append('login_hint', params.loginHint);
 		}
-		if (params.uiLocales) {
+		if (params.uiLocales?.length) {
 			url.searchParams.append('ui_locales', params.uiLocales.join(' '));
+		}
+		if (params.audiences?.length) {
+			url.searchParams.append('audience', params.audiences.join(' '));
 		}
 
 		return url;

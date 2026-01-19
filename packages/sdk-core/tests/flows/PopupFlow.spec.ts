@@ -210,6 +210,7 @@ describe('PopupFlow', () => {
 					loginHint: 'hint',
 					acrValues: ['acr', 'value'],
 					uiLocales: ['hu-HU', 'en-US'],
+					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
 				spies.urlHandler.mockImplementation(
@@ -247,6 +248,7 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('login_hint')).toEqual(extraParams?.loginHint);
 				expect(url.searchParams.get('acr_values')).toEqual(extraParams?.acrValues?.join(' '));
 				expect(url.searchParams.get('ui_locales')).toEqual(extraParams?.uiLocales?.join(' '));
+				expect(url.searchParams.get('audience')).toEqual(extraParams?.audiences?.join(' '));
 
 				expect(spies.tokenExchange).toHaveBeenCalledOnce();
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
@@ -330,6 +332,7 @@ describe('PopupFlow', () => {
 					loginHint: 'hint',
 					acrValues: ['acr', 'value'],
 					uiLocales: ['hu-HU', 'en-US'],
+					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
 				spies.urlHandler.mockImplementation(
@@ -367,6 +370,7 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('login_hint')).toEqual(extraParams?.loginHint);
 				expect(url.searchParams.get('acr_values')).toEqual(extraParams?.acrValues?.join(' '));
 				expect(url.searchParams.get('ui_locales')).toEqual(extraParams?.uiLocales?.join(' '));
+				expect(url.searchParams.get('audience')).toEqual(extraParams?.audiences?.join(' '));
 
 				expect(spies.tokenExchange).toHaveBeenCalledOnce();
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
