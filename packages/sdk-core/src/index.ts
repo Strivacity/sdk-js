@@ -7,7 +7,7 @@ import { HttpClient } from './utils/HttpClient';
 
 export * from './utils/errors';
 export type * from './types';
-export { SDKStorage, SDKHttpClient } from './types';
+export { SDKStorage, SDKLogging, SDKHttpClient } from './types';
 
 /**
  * Initializes an authentication flow based on the specified mode.
@@ -23,11 +23,20 @@ export function initFlow(options: SDKOptions & { mode?: 'popup' | 'redirect' | '
 	const StorageClass = options.storage || LocalStorage;
 	const HttpClientClass = options.httpClient || HttpClient;
 
+	const storage = new StorageClass();
+	const httpClient = new HttpClientClass();
+	let logging;
+
+	if (options.logging) {
+		logging = new options.logging();
+		httpClient.logging = logging;
+	}
+
 	if (options.mode === 'popup') {
-		return new PopupFlow(options, new StorageClass(), new HttpClientClass());
+		return new PopupFlow(options, storage, httpClient, logging);
 	} else if (options.mode === 'native') {
-		return new NativeFlow(options, new StorageClass(), new HttpClientClass());
+		return new NativeFlow(options, storage, httpClient, logging);
 	} else {
-		return new RedirectFlow(options, new StorageClass(), new HttpClientClass());
+		return new RedirectFlow(options, storage, httpClient, logging);
 	}
 }

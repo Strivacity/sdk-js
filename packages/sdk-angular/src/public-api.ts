@@ -7,6 +7,7 @@ export * from '@strivacity/sdk-core';
 export type * from './lib/utils/types';
 
 export { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
+export { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 export { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 export { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
 export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';

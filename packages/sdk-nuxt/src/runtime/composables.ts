@@ -1,4 +1,5 @@
 import StorageClass from '#build/strivacity-sdk-storage';
+import LoggingClass from '#build/strivacity-sdk-logging';
 import { ref, useRuntimeConfig } from '#imports';
 import { initFlow, type IdTokenClaims, type SDKOptions } from '@strivacity/sdk-core';
 import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
@@ -42,7 +43,7 @@ const updateSession = async () => {
  */
 export const useStrivacity = () => {
 	if (!sdk) {
-		sdk = initFlow({ ...useRuntimeConfig().public.strivacity, storage: StorageClass });
+		sdk = initFlow({ ...useRuntimeConfig().public.strivacity, storage: StorageClass, logging: LoggingClass });
 		optionsRef.value = sdk.options;
 
 		sdk.subscribeToEvent('init', updateSession);

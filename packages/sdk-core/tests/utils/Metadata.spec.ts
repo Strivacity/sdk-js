@@ -3,6 +3,7 @@ import openidConfiguration from '@strivacity/testing/fixtures/openid-configurati
 import type { SDKOptions } from '../../src/types';
 import { Metadata } from '../../src/utils/Metadata';
 import { initFlow } from '../../src';
+import { DefaultLogging } from '../../src/utils/Logging';
 
 describe('Metadata', () => {
 	const options: SDKOptions = {
@@ -13,6 +14,7 @@ describe('Metadata', () => {
 		redirectUri: 'https://brandtegrity.io/app/callback/',
 		responseType: 'code',
 		responseMode: 'query',
+		logging: DefaultLogging,
 	};
 	const flow = initFlow(options);
 
@@ -28,6 +30,16 @@ describe('Metadata', () => {
 			expect(await metadata.revocationEndpoint).toEqual(openidConfiguration.revocation_endpoint);
 			expect(await metadata.jwksUri).toEqual(openidConfiguration.jwks_uri);
 			expect(fetchMetadataSpy).toHaveBeenCalledOnce();
+		});
+
+		test('should throw error when fetch fails', async () => {
+			const metadata = new Metadata(flow, 'https://brandtegrity.io/.well-known/openid-configuration');
+			const fetchError = new Error('Network error');
+			vi.spyOn(global, 'fetch').mockRejectedValueOnce(fetchError);
+			const loggingSpy = vi.spyOn(flow.logging!, 'error');
+
+			await expect(metadata.issuer).rejects.toThrow('Network error');
+			expect(loggingSpy).toHaveBeenCalledWith('Failed to fetch metadata', fetchError);
 		});
 	});
 });

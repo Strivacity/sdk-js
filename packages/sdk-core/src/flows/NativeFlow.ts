@@ -1,10 +1,10 @@
-import type { SDKOptions, NativeParams, SDKStorage, SDKHttpClient } from '../types';
+import type { SDKOptions, NativeParams, SDKStorage, SDKHttpClient, SDKLogging } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
 import { NativeFlowHandler } from '../utils/NativeFlowHandler';
 import { BaseFlow } from './BaseFlow';
 
 export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
-	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient) {
+	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient, logging?: SDKLogging) {
 		if (!options.urlHandler) {
 			options.urlHandler = redirectUrlHandler;
 		}
@@ -12,7 +12,7 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 			options.callbackHandler = redirectCallbackHandler;
 		}
 
-		super(options, storage, httpClient);
+		super(options, storage, httpClient, logging);
 	}
 
 	/**
@@ -41,6 +41,8 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 	 * Initiates the entry process via a redirect.
 	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
 	 * @returns {Promise<string>} A promise that resolves to the session ID.
+	 *
+	 * @throws {Error} Throws an error if the entry request fails or session ID is not found.
 	 */
 	async entry(url?: string): Promise<string> {
 		if (!url) {
@@ -69,16 +71,30 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 					}
 				}
 
-				throw new Error(message);
+				const error = new Error(message);
+				this.logging?.error('Entry request error', error);
+				throw error;
 			}
 
-			throw new Error(`Entry request failed with status ${response.status}`);
+			const error = new Error(`Entry request failed with status ${response.status}`);
+			this.logging?.error('Entry request error', error);
+			throw error;
 		}
 
-		const sessionId = new URL(await response.text()).searchParams.get('session_id');
+		let uri: URL;
+
+		try {
+			uri = new URL(await response.text());
+		} catch {
+			uri = new URL(response.url);
+		}
+
+		const sessionId = uri.searchParams.get('session_id');
 
 		if (!sessionId) {
-			throw new Error('Session ID not found in entry response');
+			const error = new Error('Session ID not found in entry response');
+			this.logging?.error('Entry response error', error);
+			throw error;
 		}
 
 		return sessionId;
@@ -88,10 +104,14 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 	 * Handles the callback after login or registration via a redirect.
 	 * @param {string} [url] The URL to handle the callback from. Defaults to the current window location.
 	 * @returns {Promise<void>} A promise that resolves when the callback is handled.
+	 *
+	 * @throws {Error} Throws an error if callback handler is not defined.
 	 */
 	async handleCallback(url?: string): Promise<void> {
 		if (typeof this.options.callbackHandler !== 'function') {
-			throw new Error('Callback handler is not defined. Please provide a valid callback handler function in the SDK options.');
+			const error = new Error('Missing option: callbackHandler');
+			this.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		if (!url) {

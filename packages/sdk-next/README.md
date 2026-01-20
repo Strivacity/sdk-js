@@ -418,6 +418,97 @@ Same as the profile page example in redirect/popup mode.
 
 Same as the logout page example in redirect/popup mode.
 
+## Logging
+
+The SDK supports optional logging to help you debug authentication flows and monitor SDK behavior. You can enable the built-in console logger or provide your own custom logger implementation.
+
+### Using the Default Logger
+
+Enable the default console logger by adding the `logging` option when creating the SDK:
+
+```tsx
+'use client';
+
+import { StyAuthProvider, type SDKOptions, DefaultLogging } from '@strivacity/sdk-next';
+
+const options: SDKOptions = {
+	mode: 'redirect',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+	logging: DefaultLogging, // Enable built-in console logging
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+	return (
+		<html lang="en">
+			<body>
+				<StyAuthProvider options={options}>{children}</StyAuthProvider>
+			</body>
+		</html>
+	);
+}
+```
+
+The default logger writes to the browser console and automatically prefixes messages with a correlation ID when available (via the `xEventId` property).
+
+### Creating a Custom Logger
+
+You can provide your own logger by implementing the `SDKLogging` interface with four methods: `debug`, `info`, `warn`, and `error`. An optional `xEventId` property is honored for log correlation.
+
+```typescript
+import type { SDKLogging } from '@strivacity/sdk-next';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// Send to your logging pipeline
+		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
+	}
+
+	info(message: string): void {
+		console.info(this.xEventId ? `[${this.xEventId}] ${message}` : message);
+	}
+
+	warn(message: string): void {
+		console.warn(this.xEventId ? `[${this.xEventId}] ${message}` : message);
+	}
+
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `[${this.xEventId}] ${message}` : message, error);
+	}
+}
+```
+
+Then register your custom logger when creating the SDK:
+
+```tsx
+import { StyAuthProvider } from '@strivacity/sdk-next';
+import { MyLogger } from './logging/MyLogger';
+
+const options: SDKOptions = {
+	mode: 'redirect',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+	logging: MyLogger, // Use your custom logger
+};
+```
+
+### Logger Interface
+
+The `SDKLogging` interface requires the following methods:
+
+- **`debug(message: string): void`** - Log debug-level messages
+- **`info(message: string): void`** - Log informational messages
+- **`warn(message: string): void`** - Log warning messages
+- **`error(message: string, error: Error): void`** - Log error messages with error objects
+
+The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
+
 ### API Documentation
 
 #### `useStrivacity` hook

@@ -583,10 +583,17 @@ export type SDKOptions = {
 	/**
 	 * The HTTP client used for making requests to the authorization server.
 	 *
-	 * @type {SDKHttpClient}
+	 * @type {SDKHttpClientType}
 	 * @default HttpClient
 	 */
 	httpClient?: SDKHttpClientType;
+
+	/**
+	 * The logging mechanism used for logging messages and errors.
+	 *
+	 * @type {SDKLoggingType}
+	 */
+	logging?: SDKLoggingType;
 
 	/**
 	 * Handles the URL redirection to the specified target.
@@ -637,10 +644,24 @@ export abstract class SDKStorage {
 	abstract set(key: string, value: string): Promise<void>;
 }
 
+export abstract class SDKLogging {
+	/*
+	 * Identifier for the login session - can be used to provide additional context for log messages
+	 */
+	xEventId: string | undefined;
+
+	abstract debug(message: string): void;
+	abstract info(message: string): void;
+	abstract warn(message: string): void;
+	abstract error(message: string, error: Error): void;
+}
+
 /**
  * Abstract class for HTTP client used in the SDK.
  */
 export abstract class SDKHttpClient {
+	logging?: SDKLogging;
+
 	/**
 	 * Makes an HTTP request to the specified URL with optional options.
 	 * @param {string} url - The URL to which the request is sent.
@@ -660,6 +681,12 @@ export type SDKStorageType = new (...args: Array<any>) => SDKStorage;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type SDKHttpClientType = new (...args: Array<any>) => SDKHttpClient;
+
+/**
+ * Type representing a constructor function for SDKHttpClient.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SDKLoggingType = new (...args: Array<any>) => SDKLogging;
 
 /**
  * Http client response type.

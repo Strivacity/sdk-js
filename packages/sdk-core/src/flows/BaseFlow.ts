@@ -1,4 +1,14 @@
-import type { IdTokenClaims, SDKOptions, SDKStorage, EventFunctions, ExtraRequestArgs, LogoutParams, SDKHttpClient, HttpClientResponse } from '../types';
+import type {
+	IdTokenClaims,
+	SDKOptions,
+	SDKStorage,
+	EventFunctions,
+	ExtraRequestArgs,
+	LogoutParams,
+	SDKHttpClient,
+	HttpClientResponse,
+	SDKLogging,
+} from '../types';
 import { jwt } from '../utils/jwt';
 import { timestamp } from '../utils/date';
 import { Metadata } from '../utils/Metadata';
@@ -56,6 +66,11 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	 * @type {SDKStorage}
 	 */
 	storage: SDKStorage;
+
+	/**
+	 * Logging utility for the SDK.
+	 */
+	logging?: SDKLogging;
 
 	/**
 	 * Metadata information about the authorization server.
@@ -162,27 +177,41 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	 *
 	 * @param {Options} options - Configuration options for the flow.
 	 * @param {SDKStorage} storage - Storage mechanism for session data.
+	 * @param {SDKHttpClient} httpClient - HTTP client for making requests.
+	 * @param {SDKLogging} [logging] - Optional logging utility.
 	 *
 	 * @throws {Error} Throws an error if required options are missing or invalid.
 	 */
-	constructor(options: Options, storage: SDKStorage, httpClient: SDKHttpClient) {
+	constructor(options: Options, storage: SDKStorage, httpClient: SDKHttpClient, logging?: SDKLogging) {
 		if (!options.issuer) {
-			throw new Error('Missing option: issuer');
+			const error = new Error('Missing option: issuer');
+			logging?.error('Required option missing', error);
+			throw error;
 		}
 		if (!options.clientId) {
-			throw new Error('Missing option: clientId');
+			const error = new Error('Missing option: clientId');
+			logging?.error('Required option missing', error);
+			throw error;
 		}
 		if (!options.redirectUri) {
-			throw new Error('Missing option: redirectUri');
+			const error = new Error('Missing option: redirectUri');
+			logging?.error('Required option missing', error);
+			throw error;
 		}
 		if (!options.urlHandler) {
-			throw new Error('Missing option: urlHandler');
+			const error = new Error('Missing option: urlHandler');
+			logging?.error('Required option missing', error);
+			throw error;
 		}
 		if (!options.callbackHandler) {
-			throw new Error('Missing option: callbackHandler');
+			const error = new Error('Missing option: callbackHandler');
+			logging?.error('Required option missing', error);
+			throw error;
 		}
 		if (options.scopes && !Array.isArray(options.scopes)) {
-			throw new Error('Invalid option: scopes');
+			const error = new Error('Invalid option: scopes');
+			logging?.error('Invalid option provided', error);
+			throw error;
 		}
 
 		if (!options.scopes) {
@@ -201,6 +230,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		this.options = options;
 		this.storage = storage;
 		this.httpClient = httpClient;
+		this.logging = logging;
 		this.metadata = new Metadata(this, new URL('/.well-known/openid-configuration', options.issuer).toString());
 
 		this.#initializationPromise = this.#init();
@@ -214,13 +244,20 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		this.session = Session.load(await this.storage.get(this.options.storageTokenName!));
 
 		this.dispatchEvent('init', []);
+		this.logging?.debug('SDK initialized');
+
+		if (!this.session) {
+			this.logging?.debug('No session found in storage');
+		}
 
 		if (this.session && this.accessToken && this.idTokenClaims) {
 			this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+			this.logging?.debug('Session loaded from storage');
 		}
 
 		if (this.accessToken && this.accessTokenExpired) {
 			this.dispatchEvent('accessTokenExpired', [{ accessToken: this.accessToken, refreshToken: this.refreshToken }]);
+			this.logging?.debug('Access token has expired');
 		}
 	}
 
@@ -234,7 +271,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		try {
 			await this.waitToInitialize();
 		} catch {
-			// Initialization failed
+			this.logging?.warn('Initialization failed');
 		}
 
 		// Attempt to refresh the token if it has expired
@@ -286,17 +323,24 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	 *
 	 * @param {URLHandlerParams & LogoutParams} [params] - Additional params for handling URLs during logout.
 	 * @returns {Promise<void>} - A promise that resolves when the logout process is complete.
+	 *
+	 * @throws {Error} Throws an error if URL handler is not defined.
 	 */
 	async logout(params?: URLHandlerParams & LogoutParams): Promise<void> {
 		if (typeof this.options.urlHandler !== 'function') {
-			throw new Error('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+			const error = new Error('Missing option: urlHandler');
+			this.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		await this.waitToInitialize();
 
+		this.logging?.debug('Attempting to logout');
+
 		const session = this.session;
 
 		if (!session?.id_token) {
+			this.logging?.debug('Logout called without session');
 			return;
 		}
 
@@ -312,36 +356,41 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		}
 
 		this.dispatchEvent('logoutInitiated', [{ idToken: session.id_token, claims: session.claims! }]);
+		this.logging?.debug('Logout initiated');
 
-		try {
-			await this.options.urlHandler(url.toString(), params as URLHandlerParams);
-		} catch {}
+		await this.options.urlHandler(url.toString(), params as URLHandlerParams);
 	}
 
 	/**
 	 * Refreshes the access token using the refresh token.
 	 *
 	 * @returns {Promise<void>} - A promise that resolves when the token refresh is complete.
-	 *
-	 * @throws {Error} Throws an error if the refresh fails.
 	 */
 	async refresh(): Promise<void> {
 		await this.waitToInitialize();
 
+		this.logging?.debug('Attempting to refresh session');
+
 		if (typeof this.session?.refresh_token !== 'string') {
+			this.logging?.debug('Session refresh not possible - session not found');
 			return;
 		}
 
 		const session = this.session;
 
 		try {
-			const request = await this.sendTokenRequest(await this.metadata.tokenEndpoint, {
+			const response = await this.sendTokenRequest<Session>(await this.metadata.tokenEndpoint, {
 				grant_type: 'refresh_token',
 				client_id: this.options.clientId,
 				refresh_token: this.session?.refresh_token,
 			});
 
-			Object.assign(this.session, await request.json());
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(`${data.error}: ${data.error_description}`);
+			}
+
+			Object.assign(this.session, await response.json());
 
 			if (this.session.id_token) {
 				this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
@@ -351,12 +400,14 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 
 			if (this.accessToken && this.refreshToken && this.idTokenClaims) {
 				this.dispatchEvent('tokenRefreshed', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+				this.logging?.info('Session refreshed successfully');
 			}
-		} catch {
+		} catch (error) {
 			this.session = null;
 			await this.storage.delete(this.options.storageTokenName!);
 
 			this.dispatchEvent('tokenRefreshFailed', [{ refreshToken: session.refresh_token! }]);
+			this.logging?.info(`Session refresh failed - ${error}`);
 		}
 	}
 
@@ -372,29 +423,49 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		let success = true;
 
 		try {
+			let response: HttpClientResponse<Record<string, string>> | undefined;
+
 			if (session?.refresh_token) {
-				await this.sendTokenRequest(await this.metadata.revocationEndpoint, {
+				this.logging?.debug('Attempting to revoke refresh token');
+
+				response = await this.sendTokenRequest(await this.metadata.revocationEndpoint, {
 					client_id: this.options.clientId,
 					token_type_hint: 'refresh_token',
 					token: session.refresh_token,
 				});
 			} else if (session?.access_token) {
-				await this.sendTokenRequest(await this.metadata.revocationEndpoint, {
+				this.logging?.debug('Attempting to revoke access token');
+
+				response = await this.sendTokenRequest(await this.metadata.revocationEndpoint, {
 					client_id: this.options.clientId,
 					token_type_hint: 'access_token',
 					token: session.access_token,
 				});
 			}
-		} catch {
+
+			if (response && !response.ok) {
+				const data = await response.json();
+				throw new Error(`${data.error}: ${data.error_description}`);
+			}
+		} catch (error) {
 			success = false;
+			this.logging?.info(`Token revocation failed - ${error}`);
 		} finally {
 			this.session = null;
 			await this.storage.delete(this.options.storageTokenName!);
 
 			if (session?.refresh_token) {
 				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.refresh_token, tokenTypeHint: 'refresh_token' }]);
+
+				if (success) {
+					this.logging?.info('Refresh token successfully revoked');
+				}
 			} else if (session?.access_token) {
 				this.dispatchEvent(success ? 'tokenRevoked' : 'tokenRevokeFailed', [{ token: session.access_token, tokenTypeHint: 'access_token' }]);
+
+				if (success) {
+					this.logging?.info('Access token successfully revoked');
+				}
 			}
 		}
 	}
@@ -410,15 +481,21 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	async tokenExchange(params: Record<string, string> = {}): Promise<void> {
 		await this.waitToInitialize();
 
+		this.logging?.debug('Exchanging authorization code for tokens');
+
 		this.session = new Session();
 
 		Object.assign(this.session, params);
 
 		if (this.session.error) {
-			throw new Error(`${this.session.error}: ${this.session.error_description}`);
+			const error = new Error(`${this.session.error}: ${this.session.error_description}`);
+			this.logging?.error('Authorization error', error);
+			throw error;
 		}
 		if (!this.session.code) {
-			throw new Error('Invalid or missing code');
+			const error = new Error('Invalid or missing code');
+			this.logging?.error('Authorization error', error);
+			throw error;
 		}
 
 		let state: State;
@@ -434,10 +511,12 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 
 			await this.storage.delete(`sty.${this.session.state}`);
 		} catch {
-			throw new Error('Invalid or missing state');
+			const error = new Error('Invalid or missing state');
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 
-		const request = await this.sendTokenRequest(await this.metadata.tokenEndpoint, {
+		const response = await this.sendTokenRequest<Session>(await this.metadata.tokenEndpoint, {
 			grant_type: 'authorization_code',
 			client_id: this.options.clientId,
 			redirect_uri: this.options.redirectUri,
@@ -445,32 +524,54 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			code: this.session.code,
 		});
 
-		Object.assign(this.session, await request.json());
+		if (!response.ok) {
+			const data = await response.json();
+			const error = new Error(`${data.error}: ${data.error_description}`);
+			this.logging?.error('Token exchange failed', error);
+			throw error;
+		}
+
+		Object.assign(this.session, await response.json());
 
 		if (this.session.id_token) {
 			this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
 		}
 
 		if (this.session.error) {
-			throw new Error(`${this.session.error}: ${this.session.error_description}`);
+			const error = new Error(`${this.session.error}: ${this.session.error_description}`);
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 		if (this.session.scope !== this.options.scopes?.join(' ')) {
-			throw new Error('Invalid scope');
+			const error = new Error('Invalid scope');
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 		if (this.session.claims?.nonce !== state.nonce) {
-			throw new Error('Invalid nonce');
+			const error = new Error('Invalid nonce');
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 		if (this.session.claims?.iss !== (await this.metadata.issuer)) {
-			throw new Error('Invalid iss');
+			const error = new Error('Invalid iss');
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 		if (Array.isArray(this.session.claims?.aud) ? this.session.claims?.aud[0] !== this.options.clientId : this.session.claims?.aud !== this.options.clientId) {
-			throw new Error('Invalid aud');
+			const error = new Error('Invalid aud');
+			this.logging?.error('Validation failed', error);
+			throw error;
 		}
 
 		await this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
 
 		if (this.accessToken && this.idTokenClaims) {
 			this.dispatchEvent('loggedIn', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
+
+			if (this.logging) {
+				this.logging.xEventId = undefined;
+				this.logging.info('Login successful');
+			}
 		}
 	}
 
@@ -479,6 +580,8 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	 *
 	 * @param {ExtraRequestArgs} [params={}] - Additional params to include in the authorization URL.
 	 * @returns {Promise<URL>} - A promise that resolves to the constructed authorization URL.
+	 *
+	 * @throws {Error} Throws an error if metadata retrieval fails.
 	 */
 	async getAuthorizationUrl(params: ExtraRequestArgs = {}): Promise<URL> {
 		const url = new URL(await this.metadata.authorizationEndpoint);
@@ -518,10 +621,10 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 	 *
 	 * @param {string} url - The URL to send the request to.
 	 * @param {Record<string, string>} [data={}] - The data to include in the request body.
-	 * @returns {Promise<HttpClientResponse<Session>>} - A promise that resolves to the response from the request.
+	 * @returns {Promise<HttpClientResponse<T>>} - A promise that resolves to the response from the request.
 	 */
-	async sendTokenRequest(url: string, data: Record<string, string> = {}): Promise<HttpClientResponse<Session>> {
-		return this.httpClient.request<Session>(url, {
+	async sendTokenRequest<T>(url: string, data: Record<string, string> = {}): Promise<HttpClientResponse<T>> {
+		return this.httpClient.request<T>(url, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: new URLSearchParams(data).toString(),

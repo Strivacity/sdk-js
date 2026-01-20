@@ -20,7 +20,6 @@ import { StyWidgetRenderer } from './widget-renderer.component';
 })
 export class StyLoginRenderer implements OnInit, OnDestroy {
 	private subscriptions = new Subscription();
-	private stateSub?: Subscription;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private createdComponentRefs: ComponentRef<any>[] = [];
 	loginHandler!: ReturnType<StrivacityAuthService<NativeFlow>['sdk']['login']>;
@@ -44,11 +43,15 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 		protected authService: StrivacityAuthService<NativeFlow>,
 		protected widgetService: StrivacityWidgetService,
 	) {
-		this.widgetService.triggerFallback = (hostedUrl?: string) => {
+		this.widgetService.triggerFallback = (hostedUrl?: string, message?: string) => {
 			const url = hostedUrl || this.widgetService.state$.value.hostedUrl;
 
+			this.authService.sdk.logging?.warn(message ? `Triggering fallback due to: ${message}` : 'Triggering fallback');
+
 			if (!url) {
-				throw new Error('No hosted URL provided');
+				const error = new Error('No hosted URL provided');
+				this.authService.sdk.logging?.error('Fallback error', error);
+				throw error;
 			}
 
 			this.onFallback.emit(new FallbackError(new URL(url)));
@@ -87,6 +90,8 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 
 						this.widgetService.forms$.next(forms);
 						this.widgetService.messages$.next(messages);
+					} else {
+						this.authService.sdk.logging?.info(`Updating screen: ${newState.screen}`);
 					}
 
 					Object.keys(newState.messages ?? {}).forEach((formId) => {
@@ -189,7 +194,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 			const component = this.widgets['layout'];
 
 			if (!component) {
-				return this.widgetService.triggerFallback();
+				this.widgetService.triggerFallback(undefined, 'No layout component provided');
 			}
 
 			const widgetRendererRef = this.$containerRef.createComponent(StyWidgetRenderer);

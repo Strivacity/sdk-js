@@ -31,8 +31,15 @@ export class NativeFlowHandler {
 	 *
 	 * @param {string} [sessionId] - The session ID to start the session with. If not provided, a new session will be created.
 	 * @returns {Promise<LoginFlowState | void>}
+	 *
+	 * @throws {Error} Throws an error if callback handler is not defined, redirect URI is invalid, authorization error occurs, or session ID is missing.
 	 */
 	async startSession(sessionId?: string | null): Promise<LoginFlowState | void> {
+		if (this.sdk.logging) {
+			this.sdk.logging.xEventId = undefined;
+			this.sdk.logging.info('Starting login flow session');
+		}
+
 		if (sessionId) {
 			this.sessionId = sessionId;
 			return this.submitForm();
@@ -49,30 +56,45 @@ export class NativeFlowHandler {
 		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), { method: 'GET', credentials: 'include' });
-		const redirectUri = new URL(await response.text());
 
-		if (redirectUri.searchParams.has('code')) {
+		let uri: URL;
+
+		try {
+			uri = new URL(await response.text());
+		} catch {
+			uri = new URL(response.url);
+		}
+
+		if (uri.searchParams.has('code')) {
 			if (typeof this.sdk.options.callbackHandler !== 'function') {
-				throw new Error('Callback handler is not defined. Please provide a valid callback handler function in the SDK options.');
+				const error = new Error('Missing option: callbackHandler');
+				this.sdk.logging?.error('Required option missing', error);
+				throw error;
 			}
-			if (!redirectUri.toString().startsWith(this.sdk.options.redirectUri)) {
-				throw new Error('Invalid redirect URI');
+			if (!uri.toString().startsWith(this.sdk.options.redirectUri)) {
+				const error = new Error('Invalid redirect URI');
+				this.sdk.logging?.error('Invalid redirect URI', error);
+				throw error;
 			}
 
 			return await this.sdk.tokenExchange(
-				(await this.sdk.options.callbackHandler(redirectUri.toString(), this.sdk.options.responseMode || 'fragment')) as Record<string, string>,
+				(await this.sdk.options.callbackHandler(uri.toString(), this.sdk.options.responseMode || 'fragment')) as Record<string, string>,
 			);
 		}
 
-		if (redirectUri.searchParams.has('error')) {
-			throw new Error(`${redirectUri.searchParams.get('error')}: ${redirectUri.searchParams.get('error_description')}`);
+		if (uri.searchParams.has('error')) {
+			const error = new Error(`${uri.searchParams.get('error')}: ${uri.searchParams.get('error_description')}`);
+			this.sdk.logging?.error('Authorization error', error);
+			throw error;
 		}
 
-		if (!redirectUri.searchParams.has('session_id')) {
-			throw new Error('Failed to start a session: "session_id" is missing');
+		if (!uri.searchParams.has('session_id')) {
+			const error = new Error('"session_id" is missing from the response');
+			this.sdk.logging?.error('Failed to start a session', error);
+			throw error;
 		}
 
-		this.sessionId = redirectUri.searchParams.get('session_id');
+		this.sessionId = uri.searchParams.get('session_id');
 
 		return this.submitForm();
 	}
@@ -81,8 +103,12 @@ export class NativeFlowHandler {
 	 * Finalizes the session using the provided [finalizeUrl].
 	 *
 	 * @param {string} finalizeUrl The URL to finalize the session.
+	 *
+	 * @throws {Error} Throws an error if callback handler is not defined or redirect URI is invalid.
 	 */
 	async finalizeSession(finalizeUrl: string): Promise<void> {
+		this.sdk.logging?.debug('Finalizing login flow session');
+
 		const response = await this.sdk.httpClient.request(finalizeUrl, {
 			method: 'GET',
 			headers: { Authorization: `Bearer ${this.sessionId}` },
@@ -91,11 +117,15 @@ export class NativeFlowHandler {
 		const redirectUri = new URL(await response.text());
 
 		if (typeof this.sdk.options.callbackHandler !== 'function') {
-			throw new Error('Callback handler is not defined. Please provide a valid callback handler function in the SDK options.');
+			const error = new Error('Missing option: callbackHandler');
+			this.sdk.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		if (!redirectUri.toString().startsWith(this.sdk.options.redirectUri)) {
-			throw new Error('Invalid redirect URI');
+			const error = new Error('Invalid redirect URI');
+			this.sdk.logging?.error('Finalize session error', error);
+			throw error;
 		}
 
 		await this.sdk.tokenExchange(
@@ -107,8 +137,15 @@ export class NativeFlowHandler {
 	 * Submits a form with the provided [formId] and [data].
 	 *
 	 * @returns {Promise<LoginFlowState>}
+	 *
+	 * @throws {Error} Throws an error if form submission fails.
+	 * @throws {FallbackError} Throws a fallback error if response indicates fallback is needed.
 	 */
 	async submitForm(formId?: string, body: Record<string, unknown> = {}): Promise<LoginFlowState> {
+		if (formId) {
+			this.sdk.logging?.debug(`Submitting form: ${formId}`);
+		}
+
 		const response = await this.sdk.httpClient.request<LoginFlowState>(
 			new URL(`/flow/api/v1/${formId ? `form/${formId}` : 'init'}`, this.sdk.options.issuer).toString(),
 			{
@@ -123,11 +160,14 @@ export class NativeFlowHandler {
 		if (!response.ok) {
 			if (response.status >= 400 && response.status < 500) {
 				if (response.status !== 403 && data?.hostedUrl && !data.messages) {
+					this.sdk.logging?.warn(`Triggering fallback due to: Received HTTP ${response.status} without messages`);
 					throw new FallbackError(new URL(data.hostedUrl));
 				}
 
 				if (response.status !== 400) {
-					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+					this.sdk.logging?.error(`Form submission error`, error);
+					throw error;
 				}
 			}
 		}
@@ -135,7 +175,10 @@ export class NativeFlowHandler {
 		if (data.finalizeUrl) {
 			await this.finalizeSession(data.finalizeUrl);
 		} else if (data.hostedUrl && !data.forms && !data.messages) {
+			this.sdk.logging?.warn(`Triggering fallback due to: No forms or messages in response`);
 			throw new FallbackError(new URL(data.hostedUrl));
+		} else if (data.screen) {
+			this.sdk.logging?.info(`Rendering screen: ${data.screen}`);
 		}
 
 		return data;

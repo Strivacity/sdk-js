@@ -1,4 +1,4 @@
-import type { SDKOptions, RedirectParams, SDKStorage, SDKHttpClient } from '../types';
+import type { SDKOptions, RedirectParams, SDKStorage, SDKHttpClient, SDKLogging } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
 import { State } from '../utils/State';
 import { BaseFlow } from './BaseFlow';
@@ -7,7 +7,7 @@ import { BaseFlow } from './BaseFlow';
  * Implements the Redirect flow for authentication using a full-page redirect.
  */
 export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
-	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient) {
+	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient, logging?: SDKLogging) {
 		if (!options.urlHandler) {
 			options.urlHandler = redirectUrlHandler;
 		}
@@ -15,17 +15,21 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 			options.callbackHandler = redirectCallbackHandler;
 		}
 
-		super(options, storage, httpClient);
+		super(options, storage, httpClient, logging);
 	}
 
 	/**
 	 * Initiates the login process via a redirect.
 	 * @param {RedirectParams} [params={}] Optional parameters for redirect configuration.
 	 * @returns {Promise<void>} A promise that resolves when the login process completes.
+	 *
+	 * @throws {Error} Throws an error if URL handler is not defined.
 	 */
 	async login(params: RedirectParams = {}): Promise<void> {
 		if (typeof this.options.urlHandler !== 'function') {
-			throw new Error('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+			const error = new Error('Missing option: urlHandler');
+			this.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		const state = await State.create();
@@ -38,6 +42,7 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
 		this.dispatchEvent('loginInitiated', []);
+		this.logging?.debug('Attempting to redirect for login');
 
 		await this.options.urlHandler(url.toString(), params);
 	}
@@ -57,10 +62,14 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 	 * Initiates the entry process via a redirect.
 	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
 	 * @returns {Promise<void>} A promise that resolves when the entry process completes.
+	 *
+	 * @throws {Error} Throws an error if URL handler is not defined.
 	 */
 	async entry(url?: string): Promise<void> {
 		if (typeof this.options.urlHandler !== 'function') {
-			throw new Error('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+			const error = new Error('Missing option: urlHandler');
+			this.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		if (!url) {
@@ -69,6 +78,8 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 
 		const entryUrl = new URL(url);
 
+		this.logging?.debug('Attempting to redirect for entry');
+
 		await this.options.urlHandler(`${this.options.issuer}/provider/entry?${entryUrl.searchParams.toString()}`);
 	}
 
@@ -76,10 +87,14 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 	 * Handles the callback after login or registration via a redirect.
 	 * @param {string} [url] The URL to handle the callback from. Defaults to the current window location.
 	 * @returns {Promise<void>} A promise that resolves when the callback is handled.
+	 *
+	 * @throws {Error} Throws an error if callback handler is not defined.
 	 */
 	async handleCallback(url?: string): Promise<void> {
 		if (typeof this.options.callbackHandler !== 'function') {
-			throw new Error('Callback handler is not defined. Please provide a valid callback handler function in the SDK options.');
+			const error = new Error('Missing option: callbackHandler');
+			this.logging?.error('Required option missing', error);
+			throw error;
 		}
 
 		if (!url) {
