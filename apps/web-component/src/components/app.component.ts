@@ -3,6 +3,7 @@ import { Router } from '@lit-labs/router';
 import { customElement } from 'lit/decorators.js';
 import { state } from 'lit/decorators/state.js';
 import { initFlow } from '@strivacity/sdk-core';
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 
 globalThis.sdk = initFlow({
 	mode: import.meta.env.VITE_MODE,
@@ -11,6 +12,7 @@ globalThis.sdk = initFlow({
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.web-component',
+	logging: DefaultLogging,
 });
 
 @customElement('app-main')

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-next';
+import { type SDKOptions, StyAuthProvider, DefaultLogging, useStrivacity } from '@strivacity/sdk-next';
 import './global.css';
 
 const options: SDKOptions = {
@@ -12,6 +12,7 @@ const options: SDKOptions = {
 	scopes: process.env.SCOPES?.split(' ') as Array<string>,
 	redirectUri: process.env.REDIRECT_URI as string,
 	storageTokenName: 'sty.session.next',
+	logging: DefaultLogging,
 };
 
 function App({ children }: { children: React.ReactElement }) {

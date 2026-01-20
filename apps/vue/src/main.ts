@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
 import { router } from './router';
-import { createStrivacitySDK } from '@strivacity/sdk-vue';
+import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
 import AppComponent from './components/app.component.vue';
 
 const app = createApp(AppComponent);
@@ -11,6 +11,7 @@ const sdk = createStrivacitySDK({
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.vue',
+	logging: DefaultLogging,
 });
 
 app.use(router);

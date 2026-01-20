@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-console */
+
 import { Component, OnDestroy, OnInit, SkipSelf } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -74,13 +74,15 @@ export class RegisterPage implements OnInit, OnDestroy {
 		if (error.url) {
 			location.href = error.url.toString();
 		} else {
-			console.error(`FallbackError without URL: ${error.message}`);
 			alert(error);
 		}
 	}
 
+	onClose() {
+		location.reload();
+	}
+
 	onError(error: any) {
-		console.error(`Error: ${error}`);
 		alert(error);
 	}
 
@@ -88,8 +90,7 @@ export class RegisterPage implements OnInit, OnDestroy {
 		alert(message);
 	}
 
-	onBlockReady({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) {
-		console.log('previousState', previousState);
-		console.log('state', state);
+	onBlockReady(_events: { previousState: LoginFlowState; state: LoginFlowState }) {
+		// You can handle block ready events here
 	}
 }

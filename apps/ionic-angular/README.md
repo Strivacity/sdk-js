@@ -333,6 +333,69 @@ export class ProfileComponent {
 }
 ```
 
+### 6. Logging
+
+You can enable SDK logging or plug in your own logger.
+
+- Enable default logging by adding `logging: DefaultLogging` to the SDK configuration in [src/app/app.config.ts](./src/app/app.config.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+
+```typescript
+import { ApplicationConfig } from '@angular/core';
+import { provideStrivacity } from '@strivacity/sdk-angular';
+import { DefaultLogging } from '@strivacity/sdk-core';
+
+export const appConfig: ApplicationConfig = {
+	providers: [
+		// ...other providers
+		provideStrivacity({
+			// ...other options
+			logging: DefaultLogging, // enable built-in console logging
+		}),
+	],
+};
+```
+
+- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+
+```ts
+import type { SDKLogging } from '@strivacity/sdk-angular';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// e.g., send to your logging pipeline
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	info(message: string): void {
+		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	warn(message: string): void {
+		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
+	}
+}
+```
+
+Then register your logger class in the SDK configuration:
+
+```typescript
+import { provideStrivacity } from '@strivacity/sdk-angular';
+import { MyLogger } from './logging/MyLogger';
+
+export const appConfig: ApplicationConfig = {
+	providers: [
+		// ...other providers
+		provideStrivacity({
+			// ...other options
+			logging: MyLogger,
+		}),
+	],
+};
+```
+
 ## Installation and Setup
 
 ### 1. Install Dependencies
@@ -405,43 +468,36 @@ export class AuthComponent {
 Brief, purpose-oriented descriptions of route components under src/app/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the AuthService.
 
 - src/app/pages/home/home.component.ts
-
   - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
   - Behavior: Displays user info when authenticated via AuthService observables.
   - Usage: Inject AuthService and subscribe to isAuthenticated$, loading$, idTokenClaims$.
 
 - src/app/pages/login/login.component.ts
-
   - Purpose: Login page / entry point for authentication flows.
   - Behavior: Calls AuthService.login() which may redirect or open InAppBrowser on mobile. For mobile, listen for InAppBrowser navigation events and forward callback params to AuthService for token exchange.
   - Usage: AuthService.login(); handle mobile fallback via Capacitor InAppBrowser and AuthService.handleCallback().
 
 - src/app/pages/register/register.component.ts
-
   - Purpose: Registration page (if supported).
   - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback like login.
   - Usage: AuthService.register() or custom form + AuthService calls.
 
 - src/app/pages/entry/entry.component.ts
-
   - Purpose: Entry component for link-driven flows (deep links or external links) that start server/SDK-driven operations.
   - Behavior: On init call AuthService.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
   - Usage: AuthService.entry().subscribe(...) or await in async init.
 
 - src/app/pages/callback/callback.component.ts
-
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
   - Behavior: Reads query params (code, state, session_id) from ActivatedRoute. Finalizes authentication via AuthService.handleCallback(params) (token exchange or session resume) then navigate to intended route (e.g., /profile).
   - Note: Keep this route unguarded so external providers and InAppBrowser flows can return.
 
 - src/app/pages/profile/profile.component.ts
-
   - Purpose: Protected user profile page.
   - Behavior: Guarded by an AuthGuard (canActivate) that consults AuthService.isAuthenticated$ (or resolver). Displays idTokenClaims and user data from AuthService.
   - Usage: Inject AuthService, show idTokenClaims$, provide logout button calling AuthService.logout().
 
 - src/app/pages/revoke/revoke.component.ts
-
   - Purpose: Revoke tokens or sessions (advanced session management).
   - Behavior: Calls AuthService.revoke() or server endpoint to invalidate refresh tokens/sessions. Surface success/errors and optionally log out or redirect.
   - Usage: AuthService.revoke().subscribe(...); after successful revoke call AuthService.logout() / Router.navigate(['/']).

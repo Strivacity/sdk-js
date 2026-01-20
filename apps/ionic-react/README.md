@@ -266,7 +266,60 @@ const RouteGuard = ({ children }: { children: React.ReactElement }) => {
 };
 ```
 
-### 4. React Router Integration
+### 4. Logging
+
+You can enable SDK logging or plug in your own logger.
+
+- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/main.tsx](./src/main.tsx). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+
+```tsx
+import { StyAuthProvider, type SDKOptions, DefaultLogging } from '@strivacity/sdk-react';
+
+const options: SDKOptions = {
+	// ...other options
+	logging: DefaultLogging, // enable built-in console logging
+};
+
+<StyAuthProvider options={options}>{/* Your app */}</StyAuthProvider>;
+```
+
+- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+
+```ts
+import type { SDKLogging } from '@strivacity/sdk-react';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// e.g., send to your logging pipeline
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	info(message: string): void {
+		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	warn(message: string): void {
+		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
+	}
+}
+```
+
+Then register your logger class in the SDK options:
+
+```tsx
+import { StyAuthProvider } from '@strivacity/sdk-react';
+import { MyLogger } from './logging/MyLogger';
+
+const options: SDKOptions = {
+	// ...other options
+	logging: MyLogger,
+};
+```
+
+### 5. React Router Integration
 
 The application uses React Router for client-side navigation with protected and public routes:
 
@@ -361,44 +414,37 @@ export function App() {
 Brief, purpose-oriented descriptions of route components under src/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the SDK and React hooks.
 
 - src/pages/Home.tsx
-
   - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
   - Behavior: Shows public content and, when authenticated, brief user info from useStrivacity(). Should be accessible without auth.
   - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); render conditional UI with loading/isAuthenticated.
 
 - src/pages/Login.tsx
-
   - Purpose: Login page / entry point for authentication flows.
   - Behavior: Triggers the SDK login flow (redirect/popup/native based on options). On web this usually redirects; on mobile open InAppBrowser and exchange tokens when callback is received.
   - Usage: useEffect(() => { await login(); /_ handle mobile token exchange if needed _/ }, []); use options.callbackHandler(...) and sdk.tokenExchange(params) for mobile flows. Use Capacitor.getPlatform() to detect mobile.
 
 - src/pages/Register.tsx
-
   - Purpose: Registration page (if supported).
   - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback similar to login.
   - Usage: call SDK registration API or backend, then call login() / navigate as appropriate.
 
 - src/pages/Entry.tsx
-
   - Purpose: Entry page used by deep links or external links to start server/SDK-driven operations.
   - Behavior: Calls SDK entry(); if a session_id is returned navigate to /callback?session_id=... otherwise fallback to home. Show loading/error states.
   - Usage: const { entry } = useStrivacity(); call entry() in useEffect, handle returned session_id and navigate.
 
 - src/pages/Callback.tsx
-
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
   - Behavior: Parses query params (code, state, session_id) from location, finalizes authentication via sdk.tokenExchange or provider-specific handler, then redirect to intended route (e.g., /profile).
   - Note: Keep this route unprotected so external providers and InAppBrowser flows can return.
   - Usage: useEffect(() => { const params = parseQuery(location.search); await sdk.tokenExchange(params); navigate('/profile'); }, []).
 
 - src/pages/Profile.tsx
-
   - Purpose: Protected user profile page.
   - Behavior: Require authentication (Route guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
   - Usage: const { idTokenClaims, logout } = useStrivacity(); provide logout button that calls logout(); protect route via guard or check isAuthenticated before render.
 
 - src/pages/Revoke.tsx
-
   - Purpose: Revoke tokens or sessions (advanced session management).
   - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
   - Usage: await sdk.revoke(params) or call backend endpoint, then call logout() / navigate('/') on success; show confirmations.

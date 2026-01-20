@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router';
 import { Link } from '@remix-run/react';
 import { ClientOnly } from 'remix-utils/client-only';
-import { type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-remix';
+import { type SDKOptions, StyAuthProvider, DefaultLogging, useStrivacity } from '@strivacity/sdk-remix';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import './App.css';
 
@@ -13,6 +13,7 @@ const options: SDKOptions = {
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.react',
+	logging: DefaultLogging,
 };
 
 export function AppHeader() {

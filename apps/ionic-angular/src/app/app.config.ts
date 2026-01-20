@@ -5,7 +5,7 @@ import { Preferences } from '@capacitor/preferences';
 import { Capacitor, CapacitorHttp, type PluginListenerHandle } from '@capacitor/core';
 import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
 import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
-import { provideStrivacity, SDKStorage, SDKHttpClient, LocalStorage, type HttpClientResponse } from '@strivacity/sdk-angular';
+import { provideStrivacity, SDKStorage, SDKHttpClient, LocalStorage, DefaultLogging, type HttpClientResponse } from '@strivacity/sdk-angular';
 import { routes } from './app.routes';
 
 export interface ImportMeta {
@@ -24,6 +24,10 @@ export interface ImportMeta {
 
 class CapacitorHttpClient extends SDKHttpClient {
 	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
+		const loggingUrl = new URL(url);
+
+		this.logging?.debug(`REQUEST [${options?.method || 'GET'}]: ${loggingUrl.origin}${loggingUrl.pathname}`);
+
 		const response = await CapacitorHttp.request({
 			url,
 			method: options?.method || 'GET',
@@ -31,6 +35,15 @@ class CapacitorHttpClient extends SDKHttpClient {
 			data: options?.body,
 			webFetchExtra: options,
 		});
+
+		if (this.logging && response.headers['x-event-id']) {
+			const xEventId = response.headers['x-event-id'];
+
+			if (this.logging.xEventId !== xEventId) {
+				this.logging.xEventId = xEventId;
+				this.logging.debug(`X-Event-ID updated: ${this.logging.xEventId}`);
+			}
+		}
 
 		return {
 			headers: new Headers(response.headers),
@@ -70,6 +83,7 @@ export const appConfig: ApplicationConfig = {
 			clientId: (import.meta as unknown as ImportMeta).env.VITE_CLIENT_ID,
 			redirectUri: (import.meta as unknown as ImportMeta).env.VITE_REDIRECT_URI,
 			storageTokenName: 'sty.session.angular',
+			logging: DefaultLogging,
 			httpClient: CapacitorHttpClient,
 			storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
 			async urlHandler(url, responseMode) {

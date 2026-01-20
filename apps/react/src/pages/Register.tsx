@@ -46,28 +46,19 @@ export const Register = () => {
 	};
 	const onFallback = (error: FallbackError) => {
 		if (error.url) {
-			// eslint-disable-next-line no-console
-			console.log(`Fallback: ${error.url}`);
 			window.location.href = error.url.toString();
 		} else {
-			// eslint-disable-next-line no-console
-			console.error(`FallbackError without URL: ${error.message}`);
 			alert(error);
 		}
 	};
 	const onError = (error: string) => {
-		// eslint-disable-next-line no-console
-		console.error(`Error: ${error}`);
 		alert(error);
 	};
 	const onGlobalMessage = (message: string) => {
 		alert(message);
 	};
-	const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
-		// eslint-disable-next-line no-console
-		console.log('previousState', previousState);
-		// eslint-disable-next-line no-console
-		console.log('state', state);
+	const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlowState }) => {
+		// You can handle block ready events here
 	};
 	const onClose = () => {
 		location.reload();
