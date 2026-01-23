@@ -13,7 +13,7 @@ const StyWidgetRenderer: React.FC<{
 	items: LayoutWidget['items'];
 	widgets: PartialRecord<WidgetType, React.ComponentType<any>>;
 	state: LoginFlowState;
-	triggerFallback: (hostedUrl?: string) => void;
+	triggerFallback: (hostedUrl?: string, message?: string) => void;
 }> = ({ items, widgets, state, triggerFallback }) => {
 	return (
 		<>
@@ -23,14 +23,14 @@ const StyWidgetRenderer: React.FC<{
 					const widget = form?.widgets.find((w) => w.id === item.widgetId);
 
 					if (!form || !widget) {
-						triggerFallback();
+						triggerFallback(undefined, `Unable to find form or widget for item: formId=${item.formId}, widgetId=${item.widgetId}`);
 						return null;
 					}
 
 					const WidgetComponent = widgets[widget.type];
 
 					if (!WidgetComponent) {
-						triggerFallback();
+						triggerFallback(undefined, `No component found for widget type ${widget.type}`);
 						return null;
 					}
 
@@ -39,7 +39,7 @@ const StyWidgetRenderer: React.FC<{
 					const LayoutComponent = widgets.layout;
 
 					if (!LayoutComponent) {
-						triggerFallback();
+						triggerFallback(undefined, 'No layout component provided');
 						return null;
 					}
 
@@ -49,7 +49,7 @@ const StyWidgetRenderer: React.FC<{
 						</LayoutComponent>
 					);
 				} else {
-					triggerFallback();
+					triggerFallback(undefined, 'Unknown item type in layout');
 					return null;
 				}
 			})}
@@ -83,11 +83,15 @@ export const StyLoginRenderer: React.FC<{
 	const [state, setState] = useState<LoginFlowState>({});
 
 	const triggerFallback = useCallback(
-		(hostedUrl?: string) => {
+		(hostedUrl?: string, message?: string) => {
 			const url = hostedUrl || state.hostedUrl;
 
+			sdk.logging?.warn(message ? `Triggering fallback due to: ${message}` : 'Triggering fallback');
+
 			if (!url) {
-				throw new Error('No hosted URL provided');
+				const error = new Error('No hosted URL provided');
+				sdk.logging?.error('Fallback error', error);
+				throw error;
 			}
 
 			onFallback?.(new FallbackError(new URL(url)));
@@ -171,9 +175,6 @@ export const StyLoginRenderer: React.FC<{
 					}, 1);
 				}
 			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error submitting form:', error);
-
 				if (error instanceof FallbackError) {
 					onFallback?.(error);
 				} else {
@@ -227,6 +228,8 @@ export const StyLoginRenderer: React.FC<{
 
 						setForms(newForms);
 						setMessages(newMessages);
+					} else {
+						sdk.logging?.info(`Updating screen: ${newState.screen}`);
 					}
 
 					Object.keys(newState.messages ?? {}).forEach((formId) => {

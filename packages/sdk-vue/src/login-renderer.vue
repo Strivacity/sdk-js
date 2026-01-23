@@ -50,21 +50,21 @@ const WidgetRenderer = defineComponent({
 				const widget = form?.widgets.find((widget) => widget.id === item.widgetId);
 
 				if (!form || !widget) {
-					triggerFallback();
+					triggerFallback(undefined, `Unable to find form or widget for item: formId=${item.formId}, widgetId=${item.widgetId}`);
 					return null;
 				}
 
 				const component = props.widgets[widget.type];
 
 				if (!component) {
-					triggerFallback();
+					triggerFallback(undefined, `No component found for widget type ${widget.type}`);
 					return null;
 				}
 
 				return h(component, { key: `${form.id}.${widget.id}`, formId: form.id, config: widget });
 			} else if (item.type === 'vertical' || item.type === 'horizontal') {
 				if (!props.widgets.layout) {
-					triggerFallback();
+					triggerFallback(undefined, 'No layout component provided');
 					return null;
 				}
 
@@ -72,7 +72,7 @@ const WidgetRenderer = defineComponent({
 					h(WidgetRenderer, { items: item.items, widgets: props.widgets }),
 				);
 			} else {
-				triggerFallback();
+				triggerFallback(undefined, 'Unknown item type in layout');
 				return null;
 			}
 		}),
@@ -112,11 +112,15 @@ onMounted(async () => {
 	}
 });
 
-function triggerFallback(hostedUrl?: string): void {
+function triggerFallback(hostedUrl?: string, message?: string): void {
 	const url = hostedUrl || state.value.hostedUrl;
 
+	sdk.logging?.warn(message ? `Triggering fallback due to: ${message}` : 'Triggering fallback');
+
 	if (!url) {
-		throw new Error('No hosted URL provided');
+		const error = new Error('No hosted URL provided');
+		sdk.logging?.error('Fallback error', error);
+		throw error;
 	}
 
 	emit('fallback', new FallbackError(new URL(url)));
@@ -186,6 +190,8 @@ async function handleResponse(data?: LoginFlowState) {
 				forms.value[form.id] = {};
 				messages.value[form.id] = {};
 			}
+		} else {
+			sdk.logging?.info(`Updating screen: ${newState.screen}`);
 		}
 
 		Object.keys(newState.messages ?? {}).forEach((formId) => {

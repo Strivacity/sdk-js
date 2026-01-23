@@ -42,8 +42,13 @@ export class StyWidgetRenderer implements OnChanges {
 				const widget = form?.widgets.find((w) => w.id === item.widgetId);
 				const component = widget ? this.widgets[widget.type] : undefined;
 
-				if (!form || !widget || !component) {
-					this.widgetService.triggerFallback();
+				if (!form || !widget) {
+					this.widgetService.triggerFallback(undefined, `Unable to find form or widget for item: formId=${item.formId}, widgetId=${item.widgetId}`);
+					continue;
+				}
+
+				if (!component) {
+					this.widgetService.triggerFallback(undefined, `No component found for widget type ${widget.type}`);
 					continue;
 				}
 
@@ -55,7 +60,7 @@ export class StyWidgetRenderer implements OnChanges {
 				const component = this.widgets.layout;
 
 				if (!component) {
-					this.widgetService.triggerFallback();
+					this.widgetService.triggerFallback(undefined, 'No layout component provided');
 					continue;
 				}
 
@@ -71,7 +76,7 @@ export class StyWidgetRenderer implements OnChanges {
 				layoutRef.setInput('type', item.type);
 				layoutRef.changeDetectorRef.detectChanges();
 			} else {
-				this.widgetService.triggerFallback();
+				this.widgetService.triggerFallback(undefined, 'Unknown item type in layout');
 			}
 		}
 	}

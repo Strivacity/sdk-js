@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideStrivacity } from '@strivacity/sdk-angular';
+import { provideStrivacity, DefaultLogging } from '@strivacity/sdk-angular';
 import { routes } from './app.routes';
 
 export interface ImportMeta {
@@ -28,6 +28,7 @@ export const appConfig: ApplicationConfig = {
 			clientId: (import.meta as unknown as ImportMeta).env.VITE_CLIENT_ID,
 			redirectUri: (import.meta as unknown as ImportMeta).env.VITE_REDIRECT_URI,
 			storageTokenName: 'sty.session.angular',
+			logging: DefaultLogging,
 		}),
 	],
 };

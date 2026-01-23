@@ -1,3 +1,4 @@
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 import { resolve } from 'node:path';
 import { defineNuxtConfig } from 'nuxt/config';
 
@@ -34,5 +35,6 @@ export default defineNuxtConfig({
 		clientId: process.env.VITE_CLIENT_ID,
 		redirectUri: process.env.VITE_REDIRECT_URI,
 		storageTokenName: 'sty.session.nuxt',
+		logging: DefaultLogging,
 	},
 });

@@ -122,6 +122,69 @@ export class ProfileComponent {
 }
 ```
 
+### 6. Logging
+
+You can enable SDK logging or plug in your own logger.
+
+- Enable default logging by adding `logging: DefaultLogging` to the SDK configuration in [src/app/app.config.ts](./src/app/app.config.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available.
+
+```typescript
+import { ApplicationConfig } from '@angular/core';
+import { provideStrivacity } from '@strivacity/sdk-angular';
+import { DefaultLogging } from '@strivacity/sdk-core';
+
+export const appConfig: ApplicationConfig = {
+	providers: [
+		// ...other providers
+		provideStrivacity({
+			// ...other options
+			logging: DefaultLogging, // enable built-in console logging
+		}),
+	],
+};
+```
+
+- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+
+```ts
+import type { SDKLogging } from '@strivacity/sdk-angular';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// e.g., send to your logging pipeline
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	info(message: string): void {
+		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	warn(message: string): void {
+		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
+	}
+}
+```
+
+Then register your logger class in the SDK configuration:
+
+```typescript
+import { provideStrivacity } from '@strivacity/sdk-angular';
+import { MyLogger } from './logging/MyLogger';
+
+export const appConfig: ApplicationConfig = {
+	providers: [
+		// ...other providers
+		provideStrivacity({
+			// ...other options
+			logging: MyLogger,
+		}),
+	],
+};
+```
+
 ## Installation and Setup
 
 ### 1. Install Dependencies
@@ -194,44 +257,37 @@ export class AuthComponent {
 Brief, purpose-oriented descriptions of the components under src/app/pages — what they do, expected behavior, and how they use the StrivacityService.
 
 - src/app/pages/home.component.ts
-
   - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
   - Behavior: Shows public content and, when authenticated, brief user info from StrivacityService.idTokenClaims(). Should be accessible without auth.
   - Usage: const strivacity = inject(StrivacityService); use strivacity.loading, strivacity.isAuthenticated() and strivacity.idTokenClaims() (or signal accessors) for conditional UI.
 
 - src/app/pages/login.component.ts
-
   - Purpose: Login page / entry point for authentication flows.
   - Behavior: Triggers the SDK login flow (redirect/popup depending on configuration). If already authenticated, typically navigate to /profile.
   - Usage: const strivacity = inject(StrivacityService); call strivacity.login(); check strivacity.isAuthenticated() and navigate when appropriate.
 
 - src/app/pages/register.component.ts
-
   - Purpose: Registration page (if supported).
   - Behavior: Initiates a registration flow via the SDK or backend. On success either sign-in or navigate to login.
   - Usage: inject(StrivacityService) or use a form + backend call, then call login/redirect as needed.
 
 - src/app/pages/entry.component.ts
-
   - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
   - Behavior: Calls StrivacityService.entry(); if a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading and error states.
   - Usage: const strivacity = inject(StrivacityService); run entry() in an effect/ngOnInit and handle the returned session ID and errors.
 
 - src/app/pages/callback.component.ts
-
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
   - Behavior: Processes query params (code, state, session_id), completes authentication via the SDK, then redirects to the intended route (e.g., /profile).
   - Note: Keep this route unprotected so external providers can return to it.
   - Usage: inject(StrivacityService); call the SDK callback/redirect handler (e.g., handleRedirect or the appropriate method) in an effect, then Router.navigate() on success.
 
 - src/app/pages/profile.component.ts
-
   - Purpose: Protected user profile page.
   - Behavior: Require authentication (route guard or component-level check). Displays idTokenClaims and other user data from StrivacityService; optionally fetch server data using the session.
   - Usage: const strivacity = inject(StrivacityService); use strivacity.idTokenClaims, provide a logout button that calls strivacity.logout().
 
 - src/app/pages/revoke.component.ts
-
   - Purpose: Revoke tokens or sessions (optional advanced session management page).
   - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
   - Usage: inject(StrivacityService); call the SDK revoke method (if available) and then call logout/redirect on success.

@@ -2,9 +2,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
-import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
-import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
 import { FallbackError, useStrivacity, type ExtraRequestArgs, type LoginFlowState } from '@strivacity/sdk-vue';
 import { widgets } from '../components/widgets';
 
@@ -30,12 +27,6 @@ if (window.location.search !== '') {
 onMounted(async () => {
 	if (sdk.options.mode === 'redirect') {
 		await register(extraParams);
-
-		if (Capacitor.getPlatform() !== 'web') {
-			const params = (await sdk.options.callbackHandler!(sdk.options.redirectUri, sdk.options.responseMode || 'fragment')) as Record<string, string>;
-			await sdk.tokenExchange(params);
-			await router.push('/profile');
-		}
 	} else if (sdk.options.mode === 'popup') {
 		await register(extraParams);
 		await router.push('/profile');
@@ -45,87 +36,24 @@ onMounted(async () => {
 const onLogin = async () => {
 	await router.push('/profile');
 };
-const onFallback = async (error: FallbackError) => {
+const onFallback = (error: FallbackError) => {
 	if (error.url) {
-		if (Capacitor.getPlatform() === 'web') {
-			return redirectUrlHandler(error.url.toString());
-		} else {
-			await InAppBrowser.openInWebView({ url: error.url.toString(), options: DefaultWebViewOptions });
-
-			const params = await new Promise<Record<string, string>>(async (resolve, reject) => {
-				let navigationListener: PluginListenerHandle | null = null;
-				let finishListener: PluginListenerHandle | null = null;
-				let userCancelled = true;
-
-				const cleanupListeners = async () => {
-					if (navigationListener) {
-						await navigationListener.remove();
-						navigationListener = null;
-					}
-
-					if (finishListener) {
-						await finishListener.remove();
-						finishListener = null;
-					}
-				};
-
-				try {
-					navigationListener = await InAppBrowser.addListener('browserPageNavigationCompleted', async (event) => {
-						const navigatedUrl = event.url;
-
-						if (navigatedUrl && navigatedUrl.startsWith(sdk.options.redirectUri)) {
-							try {
-								const urlInstance = new URL(navigatedUrl);
-								const dataString = sdk.options.responseMode === 'query' ? urlInstance.search : urlInstance.hash;
-								const params = Object.fromEntries(new URLSearchParams(dataString.slice(1)));
-
-								userCancelled = false;
-								await InAppBrowser.close();
-								resolve(params);
-							} catch (error) {
-								await InAppBrowser.close();
-								reject(error);
-							}
-						}
-					});
-					finishListener = await InAppBrowser.addListener('browserClosed', async () => {
-						await cleanupListeners();
-
-						if (userCancelled) {
-							reject(new Error('InAppBrowser flow cancelled by user.'));
-						}
-					});
-				} catch (error) {
-					reject(error);
-				}
-			});
-
-			if (params.session_id) {
-				await router.push(`/callback?session_id=${params.session_id}`);
-			} else {
-				await sdk.tokenExchange(params);
-				await router.push('/profile');
-			}
-		}
+		location.href = error.url.toString();
 	} else {
-		// eslint-disable-next-line no-console
-		console.error(`FallbackError without URL: ${error.message}`);
 		alert(error);
 	}
 };
+const onClose = () => {
+	location.reload();
+};
 const onError = (error: string) => {
-	// eslint-disable-next-line no-console
-	console.error(`Error: ${error}`);
 	alert(error);
 };
 const onGlobalMessage = (message: string) => {
 	alert(message);
 };
-const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
-	// eslint-disable-next-line no-console
-	console.log('previousState', previousState);
-	// eslint-disable-next-line no-console
-	console.log('state', state);
+const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlowState }) => {
+	// You can handle block ready events here
 };
 </script>
 
@@ -136,10 +64,11 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 		<Suspense v-else-if="sdk.options.mode === 'native'">
 			<template #default>
 				<StyLoginRenderer
-					:params="extraParams"
 					:widgets="widgets"
 					:session-id="sessionId"
+					:params="extraParams"
 					@fallback="onFallback"
+					@close="onClose"
 					@login="onLogin"
 					@error="onError"
 					@global-message="onGlobalMessage"

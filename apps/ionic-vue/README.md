@@ -257,7 +257,64 @@ const userName = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTo
 </template>
 ```
 
-### 4. Vue Router Integration
+### 4. Logging
+
+You can enable SDK logging or plug in your own logger.
+
+- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/main.ts](./src/main.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+
+```ts
+import { createApp } from 'vue';
+import { router } from './router';
+import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
+
+const app = createApp(AppComponent);
+const sdk = createStrivacitySDK({
+	// ...other options
+	logging: DefaultLogging, // enable built-in console logging
+});
+
+app.use(sdk);
+app.use(router);
+```
+
+- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+
+```ts
+import type { SDKLogging } from '@strivacity/sdk-vue';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// e.g., send to your logging pipeline
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	info(message: string): void {
+		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	warn(message: string): void {
+		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
+	}
+}
+```
+
+Then register your logger class in the SDK options:
+
+```ts
+import { createStrivacitySDK } from '@strivacity/sdk-vue';
+import { MyLogger } from './logging/MyLogger';
+
+const sdk = createStrivacitySDK({
+	// ...other options
+	logging: MyLogger,
+});
+```
+
+### 5. Vue Router Integration
 
 The application uses Vue Router for client-side navigation with route-based authentication guards (see [src/router/index.ts](./src/router/index.ts)):
 
@@ -326,44 +383,37 @@ const { loading, isAuthenticated, idTokenClaims, login, logout } = useStrivacity
 Brief, purpose-oriented descriptions of route components under src/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the SDK / composables.
 
 - src/pages/home.page.vue
-
   - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
   - Behavior: Displays public content and, when authenticated, brief user info from useStrivacity(). Should be fast and accessible without auth.
   - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); use computed refs and v-if for conditional UI.
 
 - src/pages/login.page.vue
-
   - Purpose: Login page / entry point for authentication flows.
   - Behavior: Triggers sdk.login() (redirect/popup depending on options). On web this usually redirects; on mobile open InAppBrowser and exchange tokens when the callback is received.
   - Usage: onMounted(async () => { await login(); /_ handle mobile token exchange if needed _/ }); use sdk.options.callbackHandler(...) and sdk.tokenExchange(params) for mobile flows.
 
 - src/pages/register.page.vue
-
   - Purpose: Registration page (if supported).
   - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback like login.
   - Usage: call registration API or sdk.register(), then login/redirect as appropriate.
 
 - src/pages/entry.page.vue
-
   - Purpose: Entry page for link-driven flows (deep links or external links) that start server/SDK-driven operations.
   - Behavior: Calls sdk.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
   - Usage: onMounted/async setup: const params = await sdk.entry(); handle returned session_id and router.push.
 
 - src/pages/callback.page.vue
-
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
   - Behavior: Reads query params (code, state, session_id) from the router, finalizes authentication via sdk.tokenExchange or sdk.handleCallback, then redirects to the intended route (e.g., /profile).
   - Note: Keep this route unprotected so external providers and InAppBrowser flows can return.
   - Usage: onMounted(async () => { const params = parseQuery(...) ; await sdk.tokenExchange(params); router.push('/profile'); });
 
 - src/pages/profile.page.vue
-
   - Purpose: Protected user profile page.
   - Behavior: Require authentication (router guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
   - Usage: const { idTokenClaims, logout } = useStrivacity(); show claims and provide logout button that calls logout().
 
 - src/pages/revoke.page.vue
-
   - Purpose: Revoke tokens or sessions (optional advanced session management).
   - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
   - Usage: await sdk.revoke(params) or call backend, then call logout() / router.push('/') on success.

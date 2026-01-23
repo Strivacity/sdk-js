@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable vue/require-default-prop */
 /* eslint-disable vue/one-component-per-file */
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { mount, VueWrapper } from '@vue/test-utils';
 import { defineComponent, h, nextTick } from 'vue';
 import type { Component } from 'vue';
 import type { LoginFlowState, PartialRecord, WidgetType } from '@strivacity/sdk-core';
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 import LoginRenderer from '../src/login-renderer.vue';
 
 const CheckboxWidget = defineComponent({
@@ -132,6 +133,7 @@ const mockSdk: any = {
 	},
 	_isAuthenticated: false,
 	idTokenClaims: null,
+	logging: new DefaultLogging(),
 };
 
 vi.mock('../src/composables', () => ({
@@ -260,11 +262,17 @@ const componentFactory = async (props = {}) => {
 
 describe('StyLoginRenderer', () => {
 	let component: VueWrapper<InstanceType<typeof LoginRenderer>>;
+	let loggingSpy: Record<string, MockInstance>;
 
 	beforeEach(() => {
 		mockSdk._isAuthenticated = false;
 		mockLoginHandler.startSession.mockResolvedValue(mockInitialState);
 		mockLoginHandler.submitForm.mockResolvedValue({});
+		loggingSpy = {
+			warn: vi.spyOn(mockSdk.logging, 'warn'),
+			error: vi.spyOn(mockSdk.logging, 'error'),
+			info: vi.spyOn(mockSdk.logging, 'info'),
+		};
 	});
 
 	afterEach(() => {
@@ -375,6 +383,7 @@ describe('StyLoginRenderer', () => {
 
 				component.vm.triggerFallback();
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith('Triggering fallback');
 				expect(component.emitted('fallback')).toHaveLength(1);
 				const fallbackError = component.emitted('fallback')![0][0] as any;
 				expect(fallbackError.url.href).toBe('https://brandtegrity.io/hostedUrl');
@@ -385,6 +394,7 @@ describe('StyLoginRenderer', () => {
 
 				component.vm.triggerFallback('http://custom.fallback.url');
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith('Triggering fallback');
 				expect(component.emitted('fallback')).toHaveLength(1);
 				const fallbackError = component.emitted('fallback')![0][0] as any;
 				expect(fallbackError.url.href).toBe('http://custom.fallback.url/');
@@ -394,6 +404,7 @@ describe('StyLoginRenderer', () => {
 				component.vm.state = {};
 
 				expect(() => component.vm.triggerFallback()).toThrow('No hosted URL provided');
+				expect(loggingSpy.error).toHaveBeenCalledWith('Fallback error', expect.any(Error));
 			});
 
 			test('triggers fallback when widget component is missing', async () => {
@@ -408,6 +419,9 @@ describe('StyLoginRenderer', () => {
 				component = await componentFactory();
 				await nextTick();
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith(
+					'Triggering fallback due to: Unable to find form or widget for item: formId=identifier, widgetId=nonexistent-widget',
+				);
 				expect(component.emitted('fallback')).toHaveLength(1);
 			});
 
@@ -423,6 +437,9 @@ describe('StyLoginRenderer', () => {
 				component = await componentFactory();
 				await nextTick();
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith(
+					'Triggering fallback due to: Unable to find form or widget for item: formId=nonexistent-form, widgetId=identifier',
+				);
 				expect(component.emitted('fallback')).toHaveLength(1);
 			});
 
@@ -435,6 +452,7 @@ describe('StyLoginRenderer', () => {
 				component = await componentFactory({ widgets: widgetsWithoutInput });
 				await nextTick();
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith('Triggering fallback due to: No component found for widget type input');
 				expect(component.emitted('fallback')).toHaveLength(1);
 			});
 
@@ -451,6 +469,7 @@ describe('StyLoginRenderer', () => {
 				component = await componentFactory();
 				await nextTick();
 
+				expect(loggingSpy.warn).toHaveBeenCalledWith('Triggering fallback due to: Unknown item type in layout');
 				expect(component.emitted('fallback')).toHaveLength(1);
 			});
 		});
@@ -564,6 +583,7 @@ describe('StyLoginRenderer', () => {
 			await component.vm.handleResponse({ screen: 'identification', forms: mockInitialState.forms });
 			await nextTick();
 
+			expect(loggingSpy.info).toHaveBeenCalledWith('Updating screen: identification');
 			expect(component.vm.forms['identifier']['w1']).toBe('testvalue');
 			expect(component.vm.messages['identifier']['w1']).toEqual({ text: 'test message' });
 		});

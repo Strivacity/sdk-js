@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
-import { type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-react';
+import { DefaultLogging, type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-react';
 import { App } from './components/App';
 import { Callback } from './pages/Callback';
 import { Home } from './pages/Home';
@@ -18,6 +18,7 @@ const options: SDKOptions = {
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.react',
+	logging: DefaultLogging,
 };
 
 const RouteGuard = ({ children }: { children: React.ReactElement }) => {

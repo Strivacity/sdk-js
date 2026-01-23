@@ -101,8 +101,13 @@ export class Metadata {
 	 * @returns {Promise<void>} A promise that resolves once the metadata is fetched.
 	 */
 	async fetchMetadata(): Promise<void> {
-		const response = await this.sdk.httpClient.request<MetadataOptions>(this.metadataUrl, { method: 'GET' });
-		this.data = await response.json();
+		try {
+			const response = await this.sdk.httpClient.request<MetadataOptions>(this.metadataUrl, { method: 'GET' });
+			this.data = await response.json();
+		} catch (error) {
+			this.sdk.logging?.error('Failed to fetch metadata', error);
+			throw error;
+		}
 	}
 
 	/**

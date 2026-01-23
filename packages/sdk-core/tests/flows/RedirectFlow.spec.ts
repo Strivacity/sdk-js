@@ -3,6 +3,7 @@ import { type Storage, mockLocalStorage, mockSessionStorage } from '@strivacity/
 import { type SDKOptions, type ExtraRequestArgs, type RedirectParams, type IdTokenClaims, initFlow } from '../../src';
 import { jwt } from '../../src/utils/jwt';
 import { SessionStorage } from '../../src/storages/SessionStorage';
+import { DefaultLogging } from '../../src/utils/Logging';
 
 describe('RedirectFlow', () => {
 	const options: SDKOptions = {
@@ -13,6 +14,7 @@ describe('RedirectFlow', () => {
 		redirectUri: 'https://brandtegrity.io/app/callback/',
 		responseType: 'code',
 		responseMode: 'query',
+		logging: DefaultLogging,
 	};
 	const spyInitFlow = (options: SDKOptions) => {
 		const flow = initFlow(options);
@@ -26,13 +28,21 @@ describe('RedirectFlow', () => {
 			// @ts-expect-error: Protected function
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
 		};
+		const loggingSpy = {
+			debug: vi.spyOn(flow.logging!, 'debug'),
+			info: vi.spyOn(flow.logging!, 'info'),
+			warn: vi.spyOn(flow.logging!, 'warn'),
+			error: vi.spyOn(flow.logging!, 'error'),
+			get xEventId() {
+				return flow.logging!.xEventId;
+			},
+		};
 
 		if (typeof options.urlHandler === 'function') {
-			// @ts-expect-error: Protected function
 			spies.urlHandler = vi.spyOn(flow.options, 'urlHandler').mockImplementation(() => Promise.resolve());
 		}
 
-		return { flow, spies };
+		return { flow, spies, loggingSpy };
 	};
 	let storage: Storage = mockLocalStorage();
 
@@ -139,6 +149,41 @@ describe('RedirectFlow', () => {
 				expect(promise1).toEqual(promise2);
 			});
 		});
+
+		describe('isAuthenticatedSync', () => {
+			test('should return false without session', () => {
+				const { flow } = spyInitFlow(options);
+
+				expect(flow.isAuthenticatedSync).toEqual(false);
+			});
+
+			test('should return false with session but without access token', () => {
+				const session = storage.generateSession();
+				const { flow } = spyInitFlow(options);
+
+				flow.session = { ...session, access_token: null, expires_in: 0 };
+
+				expect(flow.isAuthenticatedSync).toEqual(false);
+			});
+
+			test('should return false with expired access token', () => {
+				const session = storage.generateSession({ expires_at: 0 });
+				const { flow } = spyInitFlow(options);
+
+				flow.session = session;
+
+				expect(flow.isAuthenticatedSync).toEqual(false);
+			});
+
+			test('should return true with valid access token', () => {
+				const session = storage.generateSession();
+				const { flow } = spyInitFlow(options);
+
+				flow.session = session;
+
+				expect(flow.isAuthenticatedSync).toEqual(true);
+			});
+		});
 	});
 
 	describe('functions', () => {
@@ -156,7 +201,7 @@ describe('RedirectFlow', () => {
 
 		describe('login', () => {
 			test('should redirect correctly', async () => {
-				const { flow, spies } = spyInitFlow(options);
+				const { flow, spies, loggingSpy } = spyInitFlow(options);
 
 				await flow.login();
 
@@ -166,6 +211,7 @@ describe('RedirectFlow', () => {
 				expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state));
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(0);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loginInitiated', []);
+				expect(loggingSpy.debug).toHaveBeenCalledWith('Attempting to redirect for login');
 				expect(spies.urlHandler).toHaveBeenCalledOnce();
 				expect(url.origin).toEqual(options.issuer);
 				expect(url.pathname).toEqual('/oauth2/auth');
@@ -233,7 +279,7 @@ describe('RedirectFlow', () => {
 				// @ts-expect-error: Invalid options
 				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
 
-				await expect(() => flow.login()).rejects.toThrowError('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+				await expect(() => flow.login()).rejects.toThrowError('Missing option: urlHandler');
 			});
 		});
 
@@ -317,7 +363,7 @@ describe('RedirectFlow', () => {
 				// @ts-expect-error: Invalid options
 				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
 
-				await expect(() => flow.login()).rejects.toThrowError('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+				await expect(() => flow.login()).rejects.toThrowError('Missing option: urlHandler');
 			});
 		});
 
@@ -335,7 +381,7 @@ describe('RedirectFlow', () => {
 
 			test('should logout correctly w/o postLogoutRedirectUri', async () => {
 				const session = storage.generateSession();
-				const { flow, spies } = spyInitFlow(options);
+				const { flow, spies, loggingSpy } = spyInitFlow(options);
 
 				expect(await flow.isAuthenticated).toEqual(true);
 				expect(flow.accessTokenExpired).toEqual(false);
@@ -349,6 +395,7 @@ describe('RedirectFlow', () => {
 				expect(storage.spies.delete).toHaveBeenCalledWith('sty.session');
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(2);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('logoutInitiated', [{ idToken: session.id_token, claims: session.claims }]);
+				expect(loggingSpy.debug).toHaveBeenCalledWith('Attempting to logout');
 				expect(spies.urlHandler).toHaveBeenCalledOnce();
 
 				const url = new URL(spies.urlHandler.mock.calls[0][0]);
@@ -387,9 +434,10 @@ describe('RedirectFlow', () => {
 
 			test('should throw error w/o urlHandler', async () => {
 				// @ts-expect-error: Invalid options
-				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
+				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: 'invalid' });
 
-				await expect(() => flow.logout()).rejects.toThrowError('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+				await expect(() => flow.logout()).rejects.toThrowError('Missing option: urlHandler');
+				expect(loggingSpy.error).toHaveBeenCalledWith('Required option missing', expect.any(Error));
 			});
 		});
 
@@ -399,7 +447,7 @@ describe('RedirectFlow', () => {
 				const refreshedSession = storage.generateSession({}, null);
 				const { flow, spies } = spyInitFlow(options);
 
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => refreshedSession }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => refreshedSession }));
 
 				await vi.waitFor(() => expect(flow.session).not.toBeNull());
 
@@ -433,7 +481,7 @@ describe('RedirectFlow', () => {
 				const { flow, spies } = spyInitFlow(options);
 
 				spies.refresh = vi.spyOn(flow, 'refresh');
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => refreshedSession }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => refreshedSession }));
 
 				await vi.waitFor(() => expect(flow.session).not.toBeNull());
 
@@ -500,6 +548,34 @@ describe('RedirectFlow', () => {
 				expect(flow.accessTokenExpirationDate).toEqual(undefined);
 				expect(flow.accessToken).toEqual(undefined);
 				expect(flow.refreshToken).toEqual(undefined);
+			});
+
+			test('should handle error when refresh response is not ok', async () => {
+				const session = storage.generateSession({ expires_at: 0 });
+				const { flow, spies } = spyInitFlow(options);
+
+				spies.sendTokenRequest.mockImplementation(() =>
+					Promise.resolve({ ok: false, json: () => ({ error: 'invalid_grant', error_description: 'Token expired' }) }),
+				);
+				storage.spies.set.mockClear();
+
+				await vi.waitFor(() => expect(flow.session).not.toBeNull());
+
+				expect(flow.accessTokenExpired).toEqual(true);
+				expect(flow.accessToken).toEqual(session.access_token);
+				expect(flow.refreshToken).toEqual(session.refresh_token);
+
+				await flow.refresh();
+
+				expect(spies.sendTokenRequest).toHaveBeenCalledWith(`${options.issuer}/oauth2/token`, {
+					grant_type: 'refresh_token',
+					client_id: options.clientId,
+					refresh_token: session.refresh_token,
+				});
+				expect(storage.spies.set).not.toBeCalled();
+				expect(storage.spies.delete).toHaveBeenCalledWith('sty.session');
+				expect(spies.dispatchEvent).toHaveBeenCalledWith('tokenRefreshFailed', [{ refreshToken: session.refresh_token }]);
+				expect(flow.session).toBeNull();
 			});
 		});
 
@@ -636,19 +712,43 @@ describe('RedirectFlow', () => {
 				expect(flow.refreshToken).toEqual(undefined);
 				expect(flow.idTokenClaims).toEqual(undefined);
 			});
+
+			test('should handle error when revoke response is not ok', async () => {
+				const session = storage.generateSession();
+				const { flow, spies } = spyInitFlow(options);
+
+				spies.sendTokenRequest.mockImplementation(() =>
+					Promise.resolve({ ok: false, json: () => ({ error: 'invalid_token', error_description: 'Token is invalid' }) }),
+				);
+
+				expect(await flow.isAuthenticated).toEqual(true);
+
+				await flow.revoke();
+
+				expect(spies.sendTokenRequest).toHaveBeenCalledWith(`${options.issuer}/oauth2/revoke`, {
+					token_type_hint: 'refresh_token',
+					token: session.refresh_token,
+					client_id: options.clientId,
+				});
+				expect(storage.spies.delete).toHaveBeenCalledWith('sty.session');
+				expect(spies.dispatchEvent).toHaveBeenCalledWith('tokenRevokeFailed', [{ token: session.refresh_token, tokenTypeHint: 'refresh_token' }]);
+				expect(flow.session).toBeNull();
+			});
 		});
 
 		describe('entry', () => {
 			test('should throw error w/o urlHandler', async () => {
 				// @ts-expect-error: Invalid options
-				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
-				await expect(() => flow.entry()).rejects.toThrowError('URL handler is not defined. Please provide a valid URL handler function in the SDK options.');
+				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: 'invalid' });
+				await expect(() => flow.entry()).rejects.toThrowError('Missing option: urlHandler');
+				expect(loggingSpy.error).toHaveBeenCalledWith('Required option missing', expect.any(Error));
 			});
 
 			test('should call provider url correctly', async () => {
-				const { flow } = spyInitFlow({ ...options, urlHandler: vi.fn() });
+				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: vi.fn() });
 
 				await flow.entry('http://localhost:4200/entry?callback=abcd');
+				expect(loggingSpy.debug).toHaveBeenCalledWith('Attempting to redirect for entry');
 				expect(flow.options.urlHandler).toHaveBeenCalledWith(`${options.issuer}/provider/entry?callback=abcd`);
 			});
 		});
@@ -662,7 +762,7 @@ describe('RedirectFlow', () => {
 				session.claims = { ...(session.claims as IdTokenClaims), nonce: state.nonce, aud: [options.clientId] };
 				session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state.nonce, aud: [options.clientId] });
 				storage.spies.set.mockClear();
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				const url = new URL(options.redirectUri);
 				url.searchParams.append('code', 'code');
@@ -682,7 +782,7 @@ describe('RedirectFlow', () => {
 				const { flow } = spyInitFlow({ ...options, callbackHandler: 'invalid' });
 
 				await expect(() => flow.handleCallback('https://brandtegrity.io/app/callback/?code=code&state=state')).rejects.toThrowError(
-					'Callback handler is not defined. Please provide a valid callback handler function in the SDK options.',
+					'Missing option: callbackHandler',
 				);
 			});
 		});
@@ -696,7 +796,7 @@ describe('RedirectFlow', () => {
 				session.claims = { ...(session.claims as IdTokenClaims), nonce: state.nonce, aud: [options.clientId] };
 				session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state.nonce, aud: [options.clientId] });
 				storage.spies.set.mockClear();
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await flow.tokenExchange({ code: 'code', state: state.id });
 
@@ -731,7 +831,7 @@ describe('RedirectFlow', () => {
 				const session = storage.generateSession({ id_token: 'invalid' }, null);
 				const { flow, spies } = spyInitFlow(options);
 
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid JWT');
 			});
@@ -741,7 +841,7 @@ describe('RedirectFlow', () => {
 				const session = storage.generateSession({ scope: 'invalid' }, null);
 				const { flow, spies } = spyInitFlow(options);
 
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid scope');
 			});
@@ -751,7 +851,7 @@ describe('RedirectFlow', () => {
 				const session = storage.generateSession({}, null);
 				const { flow, spies } = spyInitFlow(options);
 
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid nonce');
 			});
@@ -762,7 +862,7 @@ describe('RedirectFlow', () => {
 				const { flow, spies } = spyInitFlow(options);
 
 				session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state.nonce, iss: 'invalid' });
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid iss');
 			});
@@ -773,9 +873,32 @@ describe('RedirectFlow', () => {
 				const { flow, spies } = spyInitFlow(options);
 
 				session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state.nonce, aud: ['invalid'] });
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ json: () => session }));
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid aud');
+			});
+
+			test('should throw error when token exchange response is not ok', async () => {
+				const state = await storage.generateState();
+				const { flow, spies } = spyInitFlow(options);
+
+				spies.sendTokenRequest.mockImplementation(() =>
+					Promise.resolve({ ok: false, json: () => ({ error: 'invalid_grant', error_description: 'Authorization code is invalid' }) }),
+				);
+
+				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('invalid_grant: Authorization code is invalid');
+			});
+
+			test('should throw error when response contains error after token exchange', async () => {
+				const state = await storage.generateState();
+				const session = storage.generateSession({}, null);
+				const { flow, spies } = spyInitFlow(options);
+
+				session.error = 'invalid_token';
+				session.error_description = 'Token validation failed';
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
+
+				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('invalid_token: Token validation failed');
 			});
 		});
 

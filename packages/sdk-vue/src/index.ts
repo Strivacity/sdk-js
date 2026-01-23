@@ -5,6 +5,7 @@ import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 import { type App, ref } from 'vue';
 import { initFlow } from '@strivacity/sdk-core';
 import { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 import { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 import { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
 import { STRIVACITY_SDK, useStrivacity } from './composables';
@@ -14,7 +15,7 @@ export * from '@strivacity/sdk-core';
 export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 export type * from './types';
 export type { PopupFlow, RedirectFlow, NativeFlow };
-export { HttpClient, LocalStorage, SessionStorage, useStrivacity };
+export { HttpClient, DefaultLogging, LocalStorage, SessionStorage, useStrivacity };
 
 /**
  * Checks if the user is authenticated.

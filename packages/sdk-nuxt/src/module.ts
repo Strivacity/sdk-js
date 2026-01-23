@@ -4,6 +4,7 @@ import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
 import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
 import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
 import { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 import { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
 import { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
 
@@ -19,7 +20,7 @@ export * from '@strivacity/sdk-core';
 export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
 export type * from './types';
 export type { PopupFlow, RedirectFlow, NativeFlow };
-export { HttpClient, LocalStorage, SessionStorage };
+export { HttpClient, DefaultLogging, LocalStorage, SessionStorage };
 
 export default defineNuxtModule<ModuleOptions>({
 	meta: {
@@ -48,6 +49,26 @@ declare class CustomStorage implements SDKStorage {
 }
 
 export default CustomStorage`,
+		});
+		addTemplate({
+			filename: 'strivacity-sdk-logging.mjs',
+			getContents: () => `export default ${options.logging?.toString()}`,
+		});
+		addTypeTemplate({
+			filename: 'strivacity-sdk-logging.d.ts',
+			getContents: () => `
+import type { SDKLogging } from '@strivacity/sdk-core';
+
+declare class CustomLogging implements SDKLogging {
+	xEventId: string | undefined;
+
+	debug(message: string): void;
+	info(message: string): void;
+	warn(message: string): void;
+	error(message: string, error: Error): void;
+}
+
+export default CustomLogging`,
 		});
 		addComponent({
 			name: 'StyLoginRenderer',

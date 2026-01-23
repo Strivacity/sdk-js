@@ -21,7 +21,7 @@ export class StrivacityWidgetService {
 	readonly messages$ = new BehaviorSubject<Record<string, Record<string, LoginFlowMessage>>>({});
 	readonly state$ = new BehaviorSubject<LoginFlowState>({});
 
-	triggerFallback!: (hostedUrl?: string) => void;
+	triggerFallback!: (hostedUrl?: string, message?: string) => void;
 	triggerClose!: () => void;
 	submitForm!: (formId: string) => Promise<void>;
 

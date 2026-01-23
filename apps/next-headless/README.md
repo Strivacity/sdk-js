@@ -215,7 +215,70 @@ function App({ children }: { children: React.ReactElement }) {
 }
 ```
 
-### 4. File-Based Routing
+### 4. Logging
+
+You can enable SDK logging or plug in your own logger.
+
+- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/app/layout.tsx](./src/app/layout.tsx). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+
+```tsx
+'use client';
+
+import { type SDKOptions, StyAuthProvider, DefaultLogging } from '@strivacity/sdk-next';
+
+const options: SDKOptions = {
+	// ...other options
+	logging: DefaultLogging, // enable built-in console logging
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+	return (
+		<html lang="en">
+			<body>
+				<StyAuthProvider options={options}>{children}</StyAuthProvider>
+			</body>
+		</html>
+	);
+}
+```
+
+- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+
+```ts
+import type { SDKLogging } from '@strivacity/sdk-next';
+
+export class MyLogger implements SDKLogging {
+	xEventId?: string;
+
+	debug(message: string): void {
+		// e.g., send to your logging pipeline
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	info(message: string): void {
+		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	warn(message: string): void {
+		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+	}
+	error(message: string, error: Error): void {
+		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
+	}
+}
+```
+
+Then register your logger class in the SDK options:
+
+```tsx
+import { StyAuthProvider } from '@strivacity/sdk-next';
+import { MyLogger } from './logging/MyLogger';
+
+const options: SDKOptions = {
+	// ...other options
+	logging: MyLogger,
+};
+```
+
+### 5. File-Based Routing
 
 The application uses Next.js file-based routing with pages for different authentication flows:
 
