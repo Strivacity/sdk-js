@@ -7,7 +7,7 @@ import { useStrivacity } from '@strivacity/sdk-next';
 export default function Callback() {
 	const query = globalThis?.window ? Object.fromEntries(new URLSearchParams(globalThis.window.location.search)) : {};
 	const router = useRouter();
-	const { handleCallback } = useStrivacity();
+	const { sdk, loading } = useStrivacity();
 
 	useEffect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -18,8 +18,12 @@ export default function Callback() {
 			if (sessionId) {
 				router.push(`/login?session_id=${sessionId}`);
 			} else {
+				if (loading) {
+					return;
+				}
+
 				try {
-					await handleCallback();
+					await sdk.handleCallback();
 					router.push('/profile');
 				} catch (error) {
 					// eslint-disable-next-line no-console
@@ -27,7 +31,7 @@ export default function Callback() {
 				}
 			}
 		})();
-	}, []);
+	}, [loading]);
 
 	if (query.error) {
 		return (

@@ -5,7 +5,7 @@ import { useStrivacity } from '@strivacity/sdk-react';
 export const Callback = () => {
 	const query = globalThis?.window ? Object.fromEntries(new URLSearchParams(globalThis.window.location.search)) : {};
 	const navigate = useNavigate();
-	const { handleCallback } = useStrivacity();
+	const { sdk, loading } = useStrivacity();
 
 	useEffect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -16,8 +16,12 @@ export const Callback = () => {
 			if (sessionId) {
 				await navigate(`/login?session_id=${sessionId}`);
 			} else {
+				if (loading) {
+					return;
+				}
+
 				try {
-					await handleCallback();
+					await sdk.handleCallback();
 					await navigate('/profile');
 				} catch (error) {
 					// eslint-disable-next-line no-console
@@ -25,7 +29,7 @@ export const Callback = () => {
 				}
 			}
 		})();
-	}, []);
+	}, [loading]);
 
 	if (query.error) {
 		return (
