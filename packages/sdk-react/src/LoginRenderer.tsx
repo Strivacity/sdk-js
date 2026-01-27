@@ -90,7 +90,7 @@ export const StyLoginRenderer: React.FC<{
 
 			if (!url) {
 				const error = new Error('No hosted URL provided');
-				sdk.logging?.error('No hosted URL provided', error);
+				sdk.logging?.error('Fallback error', error);
 				throw error;
 			}
 
