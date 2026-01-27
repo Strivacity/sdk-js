@@ -1,0 +1,46 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "sdk-svelte",
+  "projectType": "library",
+  "sourceRoot": "packages/sdk-svelte/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-core:build"],
+      "options": {
+        "command": "tsc --noEmit --project packages/sdk-remix/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/packages/sdk-svelte/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "packages/sdk-svelte"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "packages/sdk-svelte",
+        "command": "vitest"
+      }
+    }
+  }
+}
