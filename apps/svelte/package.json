@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "name": "@strivacity/app-svelte",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "dependencies": {
+    "@strivacity/sdk-svelte": "2.1.1"
+  }
+}

@@ -41,7 +41,7 @@ const updateSession = async () => {
  *
  * @returns {T} The Strivacity SDK context, typed as either PopupContext or RedirectContext or NativeContext.
  */
-export const useStrivacity = () => {
+export const useStrivacity = <T extends PopupContext | RedirectContext | NativeContext>() => {
 	if (!sdk) {
 		sdk = initFlow({ ...useRuntimeConfig().public.strivacity, storage: StorageClass, logging: LoggingClass });
 		optionsRef.value = sdk.options;
@@ -102,5 +102,5 @@ export const useStrivacity = () => {
 			await sdk.handleCallback(url);
 			await updateSession();
 		},
-	} as PopupContext | RedirectContext | NativeContext;
+	} as T;
 };

@@ -1,0 +1,62 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-svelte",
+  "projectType": "application",
+  "sourceRoot": "apps/svelte/src",
+  "targets": {
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/svelte",
+        "command": "svelte-kit sync"
+      },
+      "dependsOn": ["sdk-svelte:build"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/svelte",
+        "command": "vite dev"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/svelte",
+        "command": "vite build"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    }
+  }
+}

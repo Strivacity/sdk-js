@@ -12,6 +12,3 @@ export { createCredential, getCredential } from '@strivacity/sdk-core/utils/cred
 export { useStrivacity } from './composables';
 export { StyAuthProvider } from './AuthProvider';
 export { StyLoginRenderer, NativeFlowContext } from './LoginRenderer';
-
-export * from '@strivacity/sdk-core';
-export type * from './types';

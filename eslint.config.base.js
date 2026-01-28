@@ -3,6 +3,7 @@ import globals from 'globals';
 import pluginVue from 'eslint-plugin-vue';
 import tsEslint from 'typescript-eslint';
 import pluginReact from 'eslint-plugin-react';
+import pluginSvelte from 'eslint-plugin-svelte';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
 
@@ -38,7 +39,19 @@ export const baseConfig = {
 };
 
 export const ignoreConfig = {
-	ignores: ['.stylelintrc.js', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts', '**/dist', '**/reports', '**/android', '**/ios'],
+	ignores: [
+		'.stylelintrc.js',
+		'eslint.config.js',
+		'vite.config.ts',
+		'vitest.config.ts',
+		'**/.angular',
+		'**/.nuxt',
+		'**/.svelte-kit',
+		'**/dist',
+		'**/reports',
+		'**/android',
+		'**/ios',
+	],
 };
 
 export const defineTsConfig = (...configs) =>
@@ -75,6 +88,41 @@ export const defineReactConfig = (...configs) =>
 			},
 			rules: {
 				'react-hooks/exhaustive-deps': 'off',
+			},
+		},
+		...configs,
+	);
+
+export const defineSvelteConfig = (...configs) =>
+	tsEslint.config(
+		pluginJs.configs.recommended,
+		...tsEslint.configs.recommendedTypeChecked,
+		...pluginSvelte.configs.recommended,
+		{
+			languageOptions: {
+				globals: {
+					...globals.browser,
+					...globals.node,
+				},
+			},
+		},
+		ignoreConfig,
+		baseConfig,
+		{
+			files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+			languageOptions: {
+				ecmaVersion: 2022,
+				sourceType: 'module',
+				parserOptions: {
+					projectService: true,
+					tsconfigRootDir: import.meta.dirname,
+					extraFileExtensions: ['.svelte'],
+					parser: tsEslint.parser,
+				},
+				globals: {
+					...globals.browser,
+					...globals.node,
+				},
 			},
 		},
 		...configs,

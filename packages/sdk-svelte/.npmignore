@@ -1,0 +1,8 @@
+src/
+tests/
+.npmignore
+.stylelintrc.js
+*.config.*js
+*.config.*ts
+project.json
+tsconfig*.json

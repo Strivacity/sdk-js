@@ -2,14 +2,13 @@
 <script lang="ts" setup>
 import type { VNode, Component, PropType } from 'vue';
 import type { PartialRecord, NativeParams, WidgetType, LayoutWidget, LoginFlowState, Widget, IdTokenClaims, LoginFlowMessage } from '@strivacity/sdk-core';
-import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
-import type { NativeFlowContextValue } from '../types';
+import type { NativeContext, NativeFlowContextValue } from '../types';
 import { defineComponent, provide, ref, h, onMounted } from 'vue';
 import { FallbackError } from '@strivacity/sdk-core';
 import { unflattenObject } from '@strivacity/sdk-core/utils/object';
 import { useStrivacity } from './composables';
 
-const { sdk } = useStrivacity();
+const { sdk } = useStrivacity<NativeContext>();
 
 const props = withDefaults(
 	defineProps<{
@@ -79,7 +78,7 @@ const WidgetRenderer = defineComponent({
 		}),
 });
 
-const loginHandler = (sdk as NativeFlow).login(props.params);
+const loginHandler = sdk.login(props.params);
 const loading = ref<boolean>(false);
 const forms = ref<Record<string, Record<string, unknown>>>({});
 const messages = ref<Record<string, Record<string, LoginFlowMessage>>>({});
@@ -179,7 +178,7 @@ async function handleResponse(data?: LoginFlowState) {
 			screen: data?.screen ?? state.value.screen,
 			forms: data?.forms ?? state.value.forms,
 			layout: data?.layout ?? state.value.layout,
-			messages: data?.messages ?? state.value.messages,
+			messages: data?.messages ?? {},
 			branding: data?.branding ?? state.value.branding,
 		};
 

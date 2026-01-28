@@ -75,7 +75,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 						screen: data?.screen ?? this.widgetService.state$.value.screen,
 						forms: data?.forms ?? this.widgetService.state$.value.forms,
 						layout: data?.layout ?? this.widgetService.state$.value.layout,
-						messages: data?.messages ?? this.widgetService.state$.value.messages,
+						messages: data?.messages ?? {},
 						branding: data?.branding ?? this.widgetService.state$.value.branding,
 					};
 
@@ -144,7 +144,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 				screen: data?.screen ?? this.widgetService.state$.value.screen,
 				forms: data?.forms ?? this.widgetService.state$.value.forms,
 				layout: data?.layout ?? this.widgetService.state$.value.layout,
-				messages: data?.messages ?? this.widgetService.state$.value.messages,
+				messages: data?.messages ?? {},
 				branding: data?.branding ?? this.widgetService.state$.value.branding,
 			};
 
@@ -169,7 +169,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 						this.onGlobalMessage.emit(newState.messages?.global?.text ?? '');
 					} else {
 						const messages = { ...this.widgetService.messages$.value };
-						messages[formId] = newState.messages![formId];
+						messages[formId] = newState.messages[formId];
 
 						this.widgetService.messages$.next(messages);
 					}

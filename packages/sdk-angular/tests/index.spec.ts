@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest';
 import * as index from '../src/public-api';
 
 describe('imports', () => {
-	test('should import the correct things from client', () => {
+	test('should import the correct things from sdk', () => {
 		expect(Object.keys(index)).toHaveLength(17);
 		expect(index).toHaveProperty('LocalStorage');
 		expect(index).toHaveProperty('SessionStorage');

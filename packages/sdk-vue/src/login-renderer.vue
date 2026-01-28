@@ -178,7 +178,7 @@ async function handleResponse(data?: LoginFlowState) {
 			screen: data?.screen ?? state.value.screen,
 			forms: data?.forms ?? state.value.forms,
 			layout: data?.layout ?? state.value.layout,
-			messages: data?.messages ?? state.value.messages,
+			messages: data?.messages ?? {},
 			branding: data?.branding ?? state.value.branding,
 		};
 

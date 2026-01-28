@@ -139,7 +139,7 @@ export const StyLoginRenderer: React.FC<{
 						screen: data?.screen ?? state.screen,
 						forms: data?.forms ?? state.forms,
 						layout: data?.layout ?? state.layout,
-						messages: data?.messages ?? state.messages,
+						messages: data?.messages ?? {},
 						branding: data?.branding ?? state.branding,
 					};
 
@@ -210,7 +210,7 @@ export const StyLoginRenderer: React.FC<{
 					screen: data?.screen ?? state.screen,
 					forms: data?.forms ?? state.forms,
 					layout: data?.layout ?? state.layout,
-					messages: data?.messages ?? state.messages,
+					messages: data?.messages ?? {},
 					branding: data?.branding ?? state.branding,
 				};
 

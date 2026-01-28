@@ -90,7 +90,7 @@ export const StyLoginRenderer: React.FC<{
 
 			if (!url) {
 				const error = new Error('No hosted URL provided');
-				sdk.logging?.error('No hosted URL provided', error);
+				sdk.logging?.error('Fallback error', error);
 				throw error;
 			}
 
@@ -139,7 +139,7 @@ export const StyLoginRenderer: React.FC<{
 						screen: data?.screen ?? state.screen,
 						forms: data?.forms ?? state.forms,
 						layout: data?.layout ?? state.layout,
-						messages: data?.messages ?? state.messages,
+						messages: data?.messages ?? {},
 						branding: data?.branding ?? state.branding,
 					};
 
@@ -212,7 +212,7 @@ export const StyLoginRenderer: React.FC<{
 					screen: data?.screen ?? state.screen,
 					forms: data?.forms ?? state.forms,
 					layout: data?.layout ?? state.layout,
-					messages: data?.messages ?? state.messages,
+					messages: data?.messages ?? {},
 					branding: data?.branding ?? state.branding,
 				};
 

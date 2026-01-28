@@ -6,6 +6,7 @@
 .nuxt/
 .nx/
 .output/
+.svelte-kit/
 .pnpm-store/
 apps/remix/build/
 out/
