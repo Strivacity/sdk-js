@@ -237,6 +237,7 @@ const mockInitialState: LoginFlowState = {
 			},
 		],
 	},
+	messages: {},
 };
 
 const componentFactory = async (props = {}) => {
