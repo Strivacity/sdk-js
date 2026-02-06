@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-svelte",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "license": "MIT",
   "description": "Strivacity Svelte SDK client",
   "author": "strivacity <opensource@strivacity.com>",
