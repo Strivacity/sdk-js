@@ -1,3 +1,14 @@
+## 2.2.0 (2026-02-06)
+
+### 🚀 Features
+
+- logging implemented ([032dc8a](https://github.com/Strivacity/sdk-js/commit/032dc8a))
+- audience extra OIDC param handling added ([4456905](https://github.com/Strivacity/sdk-js/commit/4456905))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 2.2.0
+
 ## 2.1.2 (2026-01-13)
 
 ### 🩹 Fixes

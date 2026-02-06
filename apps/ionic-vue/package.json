@@ -9,6 +9,6 @@
     "@capacitor/app": "^7.0.1",
     "@capacitor/inappbrowser": "2.2.0",
     "@capacitor/preferences": "^7.0.1",
-    "@strivacity/sdk-vue": "2.1.1"
+    "@strivacity/sdk-vue": "2.2.0"
   }
 }

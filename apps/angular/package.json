@@ -6,6 +6,6 @@
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-angular": "2.1.0"
+    "@strivacity/sdk-angular": "2.2.0"
   }
 }
