@@ -6,6 +6,6 @@
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-vue": "2.1.1"
+    "@strivacity/sdk-vue": "2.2.0"
   }
 }

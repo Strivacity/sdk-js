@@ -6,6 +6,6 @@
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-remix": "2.1.1"
+    "@strivacity/sdk-remix": "2.2.0"
   }
 }

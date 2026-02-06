@@ -6,6 +6,6 @@
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-svelte": "2.1.1"
+    "@strivacity/sdk-svelte": "2.2.0"
   }
 }

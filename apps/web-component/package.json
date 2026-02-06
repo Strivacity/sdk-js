@@ -6,6 +6,6 @@
   "license": "MIT",
   "author": "strivacity<opensource@strivacity.com>",
   "dependencies": {
-    "@strivacity/sdk-core": "2.1.1"
+    "@strivacity/sdk-core": "2.2.0"
   }
 }

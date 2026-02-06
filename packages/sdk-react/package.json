@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-react",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "license": "MIT",
   "description": "Strivacity React SDK client",
   "author": "strivacity <opensource@strivacity.com>",
@@ -9,7 +9,7 @@
     "url": "https://github.com/Strivacity/sdk-js"
   },
   "dependencies": {
-    "@strivacity/sdk-core": "2.1.2"
+    "@strivacity/sdk-core": "2.2.0"
   },
   "peerDependencies": {
     "react": ">=18"
