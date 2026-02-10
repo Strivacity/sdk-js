@@ -1,3 +1,13 @@
+## 2.3.0 (2026-02-10)
+
+### 🚀 Features
+
+- popupUrlHandler checkOrigin option added ([3d1d197](https://github.com/Strivacity/sdk-js/commit/3d1d197))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 2.2.0
+
 ## 2.2.0 (2026-02-06)
 
 ### 🚀 Features

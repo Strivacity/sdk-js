@@ -1,3 +1,9 @@
+## 2.3.0 (2026-02-10)
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 2.3.0
+
 ## 2.2.0 (2026-02-06)
 
 ### 🧱 Updated Dependencies
