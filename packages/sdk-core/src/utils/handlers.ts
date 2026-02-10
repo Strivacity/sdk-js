@@ -39,10 +39,11 @@ function redirectCallbackHandler(url: string = globalThis.window?.location.href,
  *
  * @param {string} url The URL to redirect to in the popup.
  * @param {PopupParams} [params] Optional parameters for the popup, including window features and target.
+ * @param {{ checkOrigin: boolean }} [options] Optional settings for the popup handler.
  * @returns {Promise<Record<string, string>>} A promise that resolves to the data received from the popup window.
  * @throws {Error} If the popup window is blocked or closed by the user.
  */
-async function popupUrlHandler(url: string, params?: PopupParams): Promise<Record<string, string>> {
+async function popupUrlHandler(url: string, params?: PopupParams, options: { checkOrigin: boolean } = { checkOrigin: true }): Promise<Record<string, string>> {
 	const disposables = new Set<() => void>();
 	const closeWindow = (): void => {
 		if (popupWindow) {
@@ -99,7 +100,7 @@ async function popupUrlHandler(url: string, params?: PopupParams): Promise<Recor
 
 	const data = await new Promise<Record<string, string>>((resolve, reject) => {
 		const listener = (event: MessageEvent<Record<string, string>>) => {
-			if (event.origin === window.location.origin && event.source === popupWindow && event.data) {
+			if ((!options.checkOrigin || event.origin === window.location.origin) && event.source === popupWindow && event.data) {
 				resolve(event.data);
 			}
 		};
