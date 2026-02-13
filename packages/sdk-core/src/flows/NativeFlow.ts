@@ -44,7 +44,7 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 	 *
 	 * @throws {Error} Throws an error if the entry request fails or session ID is not found.
 	 */
-	async entry(url?: string): Promise<string> {
+	async entry(url?: string): Promise<Record<string, string>> {
 		if (!url) {
 			url = globalThis.window?.location.href;
 		}
@@ -97,7 +97,7 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 			throw error;
 		}
 
-		return sessionId;
+		return { session_id: sessionId };
 	}
 
 	/**

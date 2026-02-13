@@ -39,7 +39,6 @@ The `initFlow` function initializes and returns an instance of either `PopupFlow
   **Type:** `SDKOptions & { mode?: 'popup' | 'redirect' | 'native' }`
 
   **Properties:**
-
   - `issuer` (string): The issuer URL of the OpenID Provider.
   - `clientId` (string): The client identifier for the application.
   - `redirectUri` (string): The URI to redirect to after authentication.
@@ -50,7 +49,6 @@ The `initFlow` function initializes and returns an instance of either `PopupFlow
   - `storage` (SDKStorageType): A custom storage implementation.
 
   **Mode:**
-
   - `popup`: Uses a popup window for authentication. Returns an instance of `PopupFlow`.
   - `redirect`: Uses a full-page redirect for authentication. Returns an instance of `RedirectFlow`.
   - `native`: Uses a native flow for authentication. Returns an instance of `NativeFlow`.
@@ -174,3 +172,9 @@ Subscribe to SDK events to handle authentication state changes.
 
 - `eventType` (string): The type of event to listen for
 - `callback` (function): The function to call when the event is fired
+
+## Migrating to v3.0
+
+### Entry API Major Changes
+
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.
