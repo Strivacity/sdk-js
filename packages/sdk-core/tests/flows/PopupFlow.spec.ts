@@ -24,7 +24,6 @@ describe('PopupFlow', () => {
 			fetchMetadata: vi.spyOn(flow.metadata, 'fetchMetadata'),
 			// @ts-expect-error: Protected function
 			dispatchEvent: vi.spyOn(flow, 'dispatchEvent'),
-			// @ts-expect-error: Protected function
 			waitToInitialize: vi.spyOn(flow, 'waitToInitialize'),
 			// @ts-expect-error: Protected function
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
