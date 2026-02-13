@@ -106,10 +106,10 @@ export class NativeFlowHandler {
 	 *
 	 * @throws {Error} Throws an error if callback handler is not defined or redirect URI is invalid.
 	 */
-	async finalizeSession(finalizeUrl: string): Promise<void> {
+	async finalizeSession(finalizeUrl: URL | string): Promise<void> {
 		this.sdk.logging?.debug('Finalizing login flow session');
 
-		const response = await this.sdk.httpClient.request(finalizeUrl, {
+		const response = await this.sdk.httpClient.request(finalizeUrl.toString(), {
 			method: 'GET',
 			headers: { Authorization: `Bearer ${this.sessionId}` },
 			credentials: 'include',
