@@ -36,6 +36,17 @@ section {
 	padding: 1rem;
 }
 
+section:has(sty-login) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+sty-language-selector {
+	margin-block-start: 1rem;
+}
+
 .login-renderer {
 	margin: 0 auto;
 	width: 360px;

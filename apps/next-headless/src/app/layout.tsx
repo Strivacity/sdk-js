@@ -15,7 +15,7 @@ const options: SDKOptions = {
 	logging: DefaultLogging,
 };
 
-function App({ children }: { children: React.ReactElement }) {
+function App({ children }: { children: React.ReactNode }) {
 	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
 	const [email, setEmail] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ function App({ children }: { children: React.ReactElement }) {
 	);
 }
 
-export default function RootLayout({ children }: { children: React.ReactElement }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
 			<head>

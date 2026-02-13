@@ -62,6 +62,13 @@ export function AppHeader() {
 	);
 }
 
+function WebComponentLoader() {
+	useEffect(() => {
+		void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+	}, []);
+	return null;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
@@ -75,13 +82,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<div id="app">
 					<ClientOnly>
 						{() => (
-							<BrowserRouter>
-								<StyAuthProvider options={options}>
-									<AppHeader></AppHeader>
-									{children}
-									<ScrollRestoration />
-								</StyAuthProvider>
-							</BrowserRouter>
+							<>
+								<WebComponentLoader />
+								<BrowserRouter>
+									<StyAuthProvider options={options}>
+										<AppHeader></AppHeader>
+										{children}
+										<ScrollRestoration />
+									</StyAuthProvider>
+								</BrowserRouter>
+							</>
 						)}
 					</ClientOnly>
 				</div>

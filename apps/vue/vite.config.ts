@@ -17,7 +17,15 @@ export default defineConfig({
 			'top-level-await': true,
 		},
 	},
-	plugins: [vuePlugin()],
+	plugins: [
+		vuePlugin({
+			template: {
+				compilerOptions: {
+					isCustomElement: (tag) => tag.includes('sty-'),
+				},
+			},
+		}),
+	],
 	server: {
 		port: 4200,
 		host: 'localhost',

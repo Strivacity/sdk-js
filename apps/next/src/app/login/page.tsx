@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-next';
 import { widgets } from '../../components/widgets';
@@ -9,7 +10,9 @@ export default function Login() {
 	const router = useRouter();
 	const { options, loading, login } = useStrivacity();
 	const [urlHandled, setUrlHandled] = useState<boolean>(false);
+	const [shortAppId, setShortAppId] = useState<string | null>(null);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+	const loginRef = useRef<(HTMLElement & { __cleanup: () => void }) | null>(null);
 
 	const extraParams: ExtraRequestArgs = {
 		loginHint: process.env.LOGIN_HINT,
@@ -21,7 +24,9 @@ export default function Login() {
 	useEffect(() => {
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
+			const sAppId = url.searchParams.get('short_app_id');
 			const sid = url.searchParams.get('session_id');
+			setShortAppId(sAppId);
 			setSessionId(sid);
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
@@ -64,11 +69,50 @@ export default function Login() {
 	const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlowState }) => {
 		// You can handle block ready events here
 	};
+	const loginRefCallback = (element: (HTMLElement & { __cleanup: () => void }) | null) => {
+		if (loginRef.current) {
+			const prev = loginRef.current;
+			if (prev.__cleanup) {
+				prev.__cleanup();
+			}
+		}
+
+		loginRef.current = element;
+
+		if (element) {
+			const handleClose = () => onClose();
+			const handleLogin = () => void onLogin();
+			const handleError = (event: Event) => onError((event as CustomEvent).detail);
+			const handleBlockReady = (event: Event) => onBlockReady((event as CustomEvent).detail);
+
+			element.addEventListener('close', handleClose);
+			element.addEventListener('login', handleLogin);
+			element.addEventListener('error', handleError);
+			element.addEventListener('block-ready', handleBlockReady);
+
+			element.__cleanup = () => {
+				element.removeEventListener('close', handleClose);
+				element.removeEventListener('login', handleLogin);
+				element.removeEventListener('error', handleError);
+				element.removeEventListener('block-ready', handleBlockReady);
+			};
+		}
+	};
 
 	return (
 		<section>
 			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
 			{options.mode === 'popup' && <h1>Loading...</h1>}
+			{options.mode === 'embedded' && !loading && urlHandled && (
+				<>
+					{/* @ts-ignore */}
+					<sty-notifications></sty-notifications>
+					{/* @ts-ignore */}
+					<sty-login ref={loginRefCallback} shortAppId={shortAppId} sessionId={sessionId} params={extraParams}></sty-login>
+					{/* @ts-ignore */}
+					<sty-language-selector></sty-language-selector>
+				</>
+			)}
 			{options.mode === 'native' && !loading && urlHandled && (
 				<Suspense fallback={<span>Loading...</span>}>
 					<StyLoginRenderer

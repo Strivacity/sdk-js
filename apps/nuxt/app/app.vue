@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 
-const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+const { loading, sdk, isAuthenticated, idTokenClaims } = useStrivacity();
 const name = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`);
+
+void import(/* @vite-ignore */ `${sdk.options.issuer}/assets/components/bundle.js`);
 </script>
 
 <template>
@@ -67,5 +69,16 @@ header {
 
 section {
 	padding: 1rem;
+}
+
+section:has(sty-login) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+sty-language-selector {
+	margin-block-start: 1rem;
 }
 </style>

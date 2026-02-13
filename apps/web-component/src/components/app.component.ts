@@ -5,6 +5,8 @@ import { state } from 'lit/decorators/state.js';
 import { initFlow } from '@strivacity/sdk-core';
 import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 
+void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
 globalThis.sdk = initFlow({
 	mode: import.meta.env.VITE_MODE,
 	issuer: import.meta.env.VITE_ISSUER,

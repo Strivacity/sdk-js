@@ -2,10 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { LoginFlowState, LoginFlowMessage, NativeContext, StaticWidget, SubmitWidget, MultiSelectWidget, InputWidget } from '@strivacity/sdk-next';
+import type {
+	LoginFlowState,
+	LoginFlowMessage,
+	NativeContext,
+	StaticWidget,
+	SubmitWidget,
+	MultiSelectWidget,
+	InputWidget,
+	NativeParams,
+} from '@strivacity/sdk-next';
 import type { NativeFlowHandler } from 'packages/sdk-core/dist/utils/NativeFlowHandler';
 import { unflattenObject } from '@strivacity/sdk-core/utils/object';
-import { useStrivacity, FallbackError, type ExtraRequestArgs } from '@strivacity/sdk-next';
+import { useStrivacity, FallbackError } from '@strivacity/sdk-next';
 
 export default function Login() {
 	const router = useRouter();
@@ -18,7 +27,7 @@ export default function Login() {
 	const [formData, setFormData] = useState<Record<string, unknown>>({});
 	const [messages, setMessages] = useState<Record<string, Record<string, LoginFlowMessage>>>({});
 
-	const extraParams: ExtraRequestArgs = {
+	const extraParams: NativeParams = {
 		sdk: 'web-minimal',
 		loginHint: process.env.LOGIN_HINT,
 		acrValues: process.env.ACR_VALUES ? process.env.ACR_VALUES.split(' ') : undefined,

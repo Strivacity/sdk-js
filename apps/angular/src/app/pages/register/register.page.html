@@ -3,6 +3,18 @@
 	<h1>Redirecting...</h1>
 	} @else if (options?.mode === 'popup') {
 	<h1>Loading...</h1>
+	} @else if (options?.mode === 'embedded') {
+	<sty-notifications></sty-notifications>
+	<sty-login
+		[params]="extraParams"
+		[shortAppId]="shortAppId"
+		[sessionId]="sessionId"
+		(close)="onClose($event.detail)"
+		(login)="onLogin()"
+		(error)="onError($event.detail)"
+		(blockReady)="onBlockReady($event.detail)"
+	/>
+	<sty-language-selector></sty-language-selector>
 	} @else if (options?.mode === 'native') {
 	<sty-login-renderer
 		[params]="extraParams"
