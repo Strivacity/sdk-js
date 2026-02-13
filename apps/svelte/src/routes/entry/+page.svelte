@@ -13,10 +13,11 @@
 		}
 
 		try {
-			const sessionId = await entry();
+			const data = await entry();
 
-			if (sessionId) {
-				await goto(resolve('/callback?session_id=' + sessionId));
+			if (data && Object.keys(data).length > 0) {
+				// eslint-disable-next-line svelte/no-navigation-without-resolve
+				await goto(`${resolve('/login')}?${new URLSearchParams(data).toString()}`);
 			} else {
 				await goto(resolve('/'));
 			}

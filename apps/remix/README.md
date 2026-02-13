@@ -297,8 +297,8 @@ Brief, purpose-oriented descriptions of files under app/routes — what they do,
 
 - app/routes/entry.tsx
   - Purpose: Entry route used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls entry() from the SDK (client or action). If a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading/error states.
-  - Usage: Use ClientOnly or an action to call entry() and then redirect based on the returned session identifier.
+  - Behavior: Calls entry() from the SDK (client or action). It returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading/error states.
+  - Usage: Use ClientOnly or an action to call entry() and redirect based on the returned params.
 
 - app/routes/callback.tsx
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.

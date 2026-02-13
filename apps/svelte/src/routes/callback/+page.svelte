@@ -14,10 +14,10 @@
 		}
 
 		const url = new URL(location.href);
-		const sessionId = url.searchParams.get('session_id');
 
-		if (sessionId) {
-			await goto(resolve(`/login?session_id=${sessionId}`));
+		if (url.searchParams.has('session_id')) {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto(`${resolve('/login')}?${url.searchParams}`);
 		} else {
 			try {
 				await handleCallback();

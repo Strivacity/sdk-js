@@ -430,8 +430,8 @@ Brief, purpose-oriented descriptions of route components under src/pages — wha
 
 - src/pages/Entry.tsx
   - Purpose: Entry page used by deep links or external links to start server/SDK-driven operations.
-  - Behavior: Calls SDK entry(); if a session_id is returned navigate to /callback?session_id=... otherwise fallback to home. Show loading/error states.
-  - Usage: const { entry } = useStrivacity(); call entry() in useEffect, handle returned session_id and navigate.
+  - Behavior: Calls SDK entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading/error states.
+  - Usage: const { entry } = useStrivacity(); call entry() in `useEffect`, handle returned params and navigate.
 
 - src/pages/Callback.tsx
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.

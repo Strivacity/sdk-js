@@ -20,11 +20,10 @@ export class CallbackPage {
 	) {}
 
 	ngOnInit(): void {
-		const url = new URL(window.location.href);
-		const sessionId = url.searchParams.get('session_id');
+		const url = new URL(location.href);
 
-		if (sessionId) {
-			void this.router.navigate(['/login'], { queryParams: { session_id: sessionId } });
+		if (url.searchParams.has('session_id')) {
+			void this.router.navigate(['/login'], { queryParams: url.searchParams });
 			return;
 		}
 

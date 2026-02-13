@@ -15,11 +15,9 @@ export class EntryPage {
 
 	ngOnInit() {
 		this.strivacityAuthService.entry().subscribe({
-			next: (sessionId) => {
-				if (sessionId) {
-					void this.router.navigate([`/callback`], {
-						queryParams: { session_id: sessionId },
-					});
+			next: (data) => {
+				if (data && Object.keys(data).length > 0) {
+					void this.router.navigate([`/callback`], { queryParams: new URLSearchParams(data) });
 				} else {
 					void this.router.navigate(['/']);
 				}

@@ -484,7 +484,7 @@ Brief, purpose-oriented descriptions of route components under src/app/pages —
 
 - src/app/pages/entry/entry.component.ts
   - Purpose: Entry component for link-driven flows (deep links or external links) that start server/SDK-driven operations.
-  - Behavior: On init call AuthService.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
+  - Behavior: On init call AuthService.entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise navigate to home. Show loading and error states.
   - Usage: AuthService.entry().subscribe(...) or await in async init.
 
 - src/app/pages/callback/callback.component.ts

@@ -273,8 +273,8 @@ Brief, purpose-oriented descriptions of the components under src/app/pages — w
 
 - src/app/pages/entry.component.ts
   - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls StrivacityService.entry(); if a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading and error states.
-  - Usage: const strivacity = inject(StrivacityService); run entry() in an effect/ngOnInit and handle the returned session ID and errors.
+  - Behavior: Calls StrivacityService.entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading and error states.
+  - Usage: const strivacity = inject(StrivacityService); run entry() in an effect/ngOnInit and handle the returned params and errors.
 
 - src/app/pages/callback.component.ts
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.

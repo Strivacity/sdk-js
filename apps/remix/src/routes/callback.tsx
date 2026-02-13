@@ -11,10 +11,9 @@ export default function Callback() {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			const url = new URL(location.href);
-			const sessionId = url.searchParams.get('session_id');
 
-			if (sessionId) {
-				navigate(`/login?session_id=${sessionId}`);
+			if (url.searchParams.has('session_id')) {
+				navigate(`/login?${url.searchParams}`);
 			} else {
 				if (loading) {
 					return;

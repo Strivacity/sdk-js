@@ -10,10 +10,10 @@ export const Entry = () => {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
-				const sessionId = await entry();
+				const data = await entry();
 
-				if (sessionId) {
-					await navigate(`/callback?session_id=${sessionId}`);
+				if (data && Object.keys(data).length > 0) {
+					await navigate(`/callback?${new URLSearchParams(data).toString()}`);
 				} else {
 					await navigate('/');
 				}

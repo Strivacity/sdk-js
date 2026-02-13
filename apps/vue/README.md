@@ -207,7 +207,7 @@ Brief, purpose-oriented descriptions of files under src/pages — what they do, 
 
 - src/pages/entry.vue
   - Purpose: Page-level entry component that initiates different operations via links. It is used to start an entry flow (for example when a link or external action should trigger a server-side or SDK-driven operation).
-  - Behavior: On mount it calls the composable's entry() method (useStrivacity().entry()). If the call returns a session id the page redirects to /callback with that session_id as a query parameter; otherwise it redirects to the home page. Basic error handling shows a message and redirects to home on failure.
+  - Behavior: On mount it calls the composable's entry() method (useStrivacity().entry()). The call returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise redirect to the home page. Basic error handling shows a message and redirects to home on failure.
   - Usage: const { entry } = useStrivacity(); — useful for link-driven flows where the entry endpoint decides the next step (redirect to callback or fallback to home).
 
 - src/pages/revoke.vue
