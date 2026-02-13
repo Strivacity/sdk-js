@@ -1,11 +1,13 @@
 import { test, expect } from 'vitest';
-import * as expectedImports from '../src/index';
+import * as index from '../src/index';
 
 test('should export the correct things', () => {
-	expect(Object.keys(expectedImports)).toHaveLength(5);
-	expect(expectedImports).toHaveProperty('SDKStorage');
-	expect(expectedImports).toHaveProperty('SDKHttpClient');
-	expect(expectedImports).toHaveProperty('SDKLogging');
-	expect(expectedImports).toHaveProperty('initFlow');
-	expect(expectedImports).toHaveProperty('FallbackError');
+	expect(Object.keys(index)).toHaveLength(7);
+	expect(index).toHaveProperty('SDKStorage');
+	expect(index).toHaveProperty('SDKHttpClient');
+	expect(index).toHaveProperty('SDKLogging');
+	expect(index).toHaveProperty('initFlow');
+	expect(index).toHaveProperty('FallbackError');
+	expect(index).toHaveProperty('PopupBlockedError');
+	expect(index).toHaveProperty('PopupClosedError');
 });

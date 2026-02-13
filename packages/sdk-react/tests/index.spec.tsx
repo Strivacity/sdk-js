@@ -3,7 +3,7 @@ import * as index from '../src/index';
 
 describe('imports', () => {
 	it('should import the correct things from sdk', () => {
-		expect(Object.keys(index)).toHaveLength(15);
+		expect(Object.keys(index)).toHaveLength(17);
 		expect(index).toHaveProperty('LocalStorage');
 		expect(index).toHaveProperty('SessionStorage');
 		expect(index).toHaveProperty('useStrivacity');
@@ -11,6 +11,8 @@ describe('imports', () => {
 		expect(index).toHaveProperty('StyLoginRenderer');
 		expect(index).toHaveProperty('NativeFlowContext');
 		expect(index).toHaveProperty('FallbackError');
+		expect(index).toHaveProperty('PopupBlockedError');
+		expect(index).toHaveProperty('PopupClosedError');
 		expect(index).toHaveProperty('HttpClient');
 		expect(index).toHaveProperty('SDKStorage');
 		expect(index).toHaveProperty('SDKHttpClient');

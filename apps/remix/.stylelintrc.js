@@ -1,4 +1,4 @@
 export default {
 	extends: ['../../.stylelintrc.js'],
-	ignoreFiles: ['!**/*', './dist/**'],
+	ignoreFiles: ['!**/*', './build/**'],
 };
