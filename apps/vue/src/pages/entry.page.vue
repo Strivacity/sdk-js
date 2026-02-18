@@ -8,10 +8,10 @@ const { entry } = useStrivacity();
 
 onMounted(async () => {
 	try {
-		const sessionId = await entry();
+		const data = await entry();
 
-		if (sessionId) {
-			await router.push(`/callback?session_id=${sessionId}`);
+		if (data && Object.keys(data).length > 0) {
+			await router.push(`/callback?${new URLSearchParams(data).toString()}`);
 		} else {
 			await router.push('/');
 		}

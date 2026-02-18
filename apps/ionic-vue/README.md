@@ -399,8 +399,8 @@ Brief, purpose-oriented descriptions of route components under src/pages — wha
 
 - src/pages/entry.page.vue
   - Purpose: Entry page for link-driven flows (deep links or external links) that start server/SDK-driven operations.
-  - Behavior: Calls sdk.entry(); if a session_id is returned navigate to /callback?session_id=... otherwise navigate to home. Show loading and error states.
-  - Usage: onMounted/async setup: const params = await sdk.entry(); handle returned session_id and router.push.
+  - Behavior: Calls sdk.entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise navigate to home. Show loading and error states.
+  - Usage: onMounted/async setup: const data = await sdk.entry(); handle returned params and `router.push`.
 
 - src/pages/callback.page.vue
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.

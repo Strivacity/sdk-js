@@ -10,8 +10,8 @@ import { widgets } from '../components/widgets';
 
 const router = useRouter();
 const { sdk, login } = useStrivacity();
+const shortAppId = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
-
 const extraParams: ExtraRequestArgs = {
 	loginHint: import.meta.env.VITE_LOGIN_HINT,
 	acrValues: import.meta.env.VITE_ACR_VALUES ? import.meta.env.VITE_ACR_VALUES.split(' ') : undefined,
@@ -21,6 +21,7 @@ const extraParams: ExtraRequestArgs = {
 
 if (location.search !== '') {
 	const url = new URL(window.location.href);
+	shortAppId.value = url.searchParams.get('short_app_id');
 	sessionId.value = url.searchParams.get('session_id');
 
 	url.search = '';
@@ -129,6 +130,19 @@ const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlow
 	<section>
 		<h1 v-if="sdk.options.mode === 'redirect'">Redirecting...</h1>
 		<h1 v-else-if="sdk.options.mode === 'popup'">Loading...</h1>
+		<template v-else-if="sdk.options.mode === 'embedded'">
+			<sty-notifications></sty-notifications>
+			<sty-login
+				:shortAppId="shortAppId"
+				:sessionId="sessionId"
+				:params.prop="extraParams"
+				@close="onClose"
+				@login="onLogin"
+				@error="onError($event.detail)"
+				@block-ready="onBlockReady($event.detail)"
+			></sty-login>
+			<sty-language-selector></sty-language-selector>
+		</template>
 		<Suspense v-else-if="sdk.options.mode === 'native'">
 			<template #default>
 				<StyLoginRenderer
@@ -151,6 +165,17 @@ const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlow
 </template>
 
 <style lang="scss">
+section:has(sty-login) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+sty-language-selector {
+	margin-block-start: 1rem;
+}
+
 .login-renderer {
 	margin: 0 auto;
 	width: 360px;

@@ -11,6 +11,8 @@ import { Register } from './pages/Register';
 import { Revoke } from './pages/Revoke';
 import { Entry } from './pages/Entry';
 
+void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
 const options: SDKOptions = {
 	mode: import.meta.env.VITE_MODE,
 	issuer: import.meta.env.VITE_ISSUER,

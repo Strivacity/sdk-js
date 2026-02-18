@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@strivacity/testing",
-  "version": "2.2.0",
+  "version": "3.0.0-rc.0",
   "type": "module",
   "license": "UNLICENSED",
   "author": "strivacity<opensource@strivacity.com>",

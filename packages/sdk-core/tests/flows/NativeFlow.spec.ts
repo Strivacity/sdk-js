@@ -30,7 +30,6 @@ describe('NativeFlow', () => {
 			fetchMetadata: vi.spyOn(flow.metadata, 'fetchMetadata'),
 			// @ts-expect-error: Protected function
 			dispatchEvent: vi.spyOn(flow, 'dispatchEvent'),
-			// @ts-expect-error: Protected function
 			waitToInitialize: vi.spyOn(flow, 'waitToInitialize'),
 			// @ts-expect-error: Protected function
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
@@ -735,12 +734,12 @@ describe('NativeFlow', () => {
 					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234'),
 				});
 
-				const sessionId = await flow.entry('http://localhost:4200/entry');
+				const data = await flow.entry('http://localhost:4200/entry');
 
 				expect(flow.httpClient.request).toHaveBeenCalledWith(
 					`${flow.options.issuer}/provider/flow/entry?sdk=web&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
 				);
-				expect(sessionId).toEqual('abcd1234');
+				expect(data).toEqual({ session_id: 'abcd1234' });
 			});
 
 			test('should get back session_id from response.url when text() throws', async () => {
@@ -753,9 +752,9 @@ describe('NativeFlow', () => {
 					text: () => Promise.reject(new Error('Invalid text')),
 				});
 
-				const sessionId = await flow.entry('http://localhost:4200/entry');
+				const data = await flow.entry('http://localhost:4200/entry');
 
-				expect(sessionId).toEqual('xyz789');
+				expect(data).toEqual({ session_id: 'xyz789' });
 			});
 
 			test('should throw error on failed request with status 400 and error object', async () => {

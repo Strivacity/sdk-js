@@ -612,7 +612,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		return url;
 	}
 
-	protected async waitToInitialize(): Promise<void> {
+	async waitToInitialize(): Promise<void> {
 		await this.#initializationPromise;
 	}
 

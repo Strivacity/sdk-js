@@ -223,8 +223,8 @@ Brief, purpose-oriented descriptions of files under src/pages — what they do, 
 
 - src/pages/Entry.tsx
   - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls the hook's entry() method; if a session_id is returned, redirect to /callback?session_id=... otherwise fallback to home. Show loading/error states.
-  - Usage: const { entry } = useStrivacity(); handle returned session IDs and errors with clear UX.
+  - Behavior: Calls the hook's entry() method; it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading/error states.
+  - Usage: const { entry } = useStrivacity(); handle the returned params and errors with clear UX.
 
 - src/pages/Callback.tsx
   - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { type SDKOptions, StyAuthProvider, DefaultLogging, useStrivacity } from '@strivacity/sdk-next';
 import './global.css';
 
@@ -15,7 +16,7 @@ const options: SDKOptions = {
 	logging: DefaultLogging,
 };
 
-function App({ children }: { children: React.ReactElement }) {
+function App({ children }: { children: React.ReactNode }) {
 	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
 	const [name, setName] = useState<string | null>(null);
 
@@ -68,12 +69,13 @@ function App({ children }: { children: React.ReactElement }) {
 	);
 }
 
-export default function RootLayout({ children }: { children: React.ReactElement }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
 			<head>
 				<meta charSet="utf-8" />
 				<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+				<Script src={`${process.env.ISSUER}/assets/components/bundle.js`} type="module" strategy="lazyOnload" />
 			</head>
 			<body>
 				<div id="app">

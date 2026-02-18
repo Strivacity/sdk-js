@@ -9,6 +9,7 @@
 	import { widgets } from '../../components/widgets';
 
 	const { sdk, login } = useStrivacity();
+	let shortAppId = $state<string | null>(null);
 	let sessionId = $state<string | null>(null);
 	const extraParams: ExtraRequestArgs = {
 		loginHint: import.meta.env.VITE_LOGIN_HINT,
@@ -18,6 +19,7 @@
 	};
 
 	if (browser && window.location.search !== '') {
+		shortAppId = $page.url.searchParams.get('short_app_id');
 		sessionId = $page.url.searchParams.get('session_id');
 
 		history.replaceState({}, '', $page.url.pathname);
@@ -70,6 +72,18 @@
 		<h1>Redirecting...</h1>
 	{:else if sdk.options.mode === 'popup'}
 		<h1>Loading...</h1>
+	{:else if sdk.options.mode === 'embedded'}
+		<sty-notifications></sty-notifications>
+		<sty-login
+			params={extraParams}
+			{shortAppId}
+			{sessionId}
+			onclose={onClose}
+			onlogin={onLogin}
+			onerror={(event: CustomEvent) => onError(event.detail)}
+			onblockready={(event: CustomEvent) => onBlockReady(event.detail)}
+		></sty-login>
+		<sty-language-selector></sty-language-selector>
 	{:else if sdk.options.mode === 'native'}
 		<StyLoginRenderer
 			params={extraParams}

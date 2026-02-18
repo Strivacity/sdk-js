@@ -1,9 +1,9 @@
-import type { SDKOptions, NativeParams, SDKStorage, SDKHttpClient, SDKLogging } from '../types';
+import type { SDKOptions, SDKStorage, SDKHttpClient, SDKLogging, ExtraRequestArgs } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
-import { NativeFlowHandler } from '../utils/NativeFlowHandler';
+import { EmbeddedFlowHandler } from '../utils/EmbeddedFlowHandler';
 import { BaseFlow } from './BaseFlow';
 
-export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
+export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {
 	constructor(options: SDKOptions, storage: SDKStorage, httpClient: SDKHttpClient, logging?: SDKLogging) {
 		if (!options.urlHandler) {
 			options.urlHandler = redirectUrlHandler;
@@ -13,44 +13,39 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 		}
 
 		super(options, storage, httpClient, logging);
+
+		if (!globalThis.sty) {
+			globalThis.sty = {};
+		}
+
+		// NOTE: Register the OIDC service instance globally for use in the login component
+		globalThis.sty.oidcService = this;
 	}
 
 	/**
-	 * Initiates the login process via native UI.
-	 * @param {NativeParams} [params={}] Optional parameters for native configuration.
-	 * @returns {NativeFlowHandler} Returns with a native login handler.
+	 * Initiates the login process via embedded UI.
+	 * @param {ExtraRequestArgs} [params={}] Optional parameters for the login request.
+	 * @returns {EmbeddedFlowHandler} Returns with an embedded login handler.
 	 */
-	login(params: NativeParams = {}): NativeFlowHandler {
+	override login(params: ExtraRequestArgs = {}): EmbeddedFlowHandler {
 		this.dispatchEvent('loginInitiated', []);
 
-		return new NativeFlowHandler(this, params);
+		return new EmbeddedFlowHandler(this, params);
 	}
 
-	/**
-	 * Initiates the registration process via native UI.
-	 * @param {NativeParams} [params={}] Optional parameters for native configuration.
-	 * @returns {NativeFlowHandler} Returns with a native login handler.
-	 */
-	register(params: NativeParams = {}): NativeFlowHandler {
+	override register(params: ExtraRequestArgs = {}) {
 		params.prompt = 'create';
 
 		return this.login(params);
 	}
 
-	/**
-	 * Initiates the entry process via a redirect.
-	 * @param {string} url Optional URL to use for the entry process. If not provided, the current window location will be used.
-	 * @returns {Promise<string>} A promise that resolves to the session ID.
-	 *
-	 * @throws {Error} Throws an error if the entry request fails or session ID is not found.
-	 */
-	async entry(url?: string): Promise<Record<string, string>> {
+	override async entry(url?: string) {
 		if (!url) {
 			url = globalThis.window?.location.href;
 		}
 
 		const entryUrl = new URL(url);
-		entryUrl.searchParams.append('sdk', 'web');
+		entryUrl.searchParams.append('sdk', 'web-embedded');
 		entryUrl.searchParams.append('client_id', this.options.clientId);
 		entryUrl.searchParams.append('redirect_uri', this.options.redirectUri);
 
@@ -89,15 +84,21 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 			uri = new URL(response.url);
 		}
 
+		const shortAppId = uri.searchParams.get('short_app_id');
 		const sessionId = uri.searchParams.get('session_id');
 
+		if (!shortAppId) {
+			const error = new Error('"short_app_id" is missing from the response');
+			this.logging?.error('Entry response error', error);
+			throw error;
+		}
 		if (!sessionId) {
-			const error = new Error('Session ID not found in entry response');
+			const error = new Error('"session_id" is missing from the response');
 			this.logging?.error('Entry response error', error);
 			throw error;
 		}
 
-		return { session_id: sessionId };
+		return { session_id: sessionId, short_app_id: shortAppId };
 	}
 
 	/**

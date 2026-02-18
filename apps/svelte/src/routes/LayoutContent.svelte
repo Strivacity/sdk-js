@@ -75,4 +75,21 @@
 	main {
 		padding: 1rem;
 	}
+
+	:global {
+		section {
+			padding: 1rem;
+		}
+
+		section:has(sty-login) {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+		}
+
+		sty-language-selector {
+			margin-block-start: 1rem;
+		}
+	}
 </style>

@@ -8,6 +8,8 @@ import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-cor
 import { createStrivacitySDK, SDKStorage, SDKHttpClient, LocalStorage, DefaultLogging, type HttpClientResponse } from '@strivacity/sdk-vue';
 import AppComponent from './components/app.component.vue';
 
+void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
 class CapacitorHttpClient extends SDKHttpClient {
 	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
 		const loggingUrl = new URL(url);

@@ -3,7 +3,7 @@ import * as index from '../src/public-api';
 
 describe('imports', () => {
 	test('should import the correct things from sdk', () => {
-		expect(Object.keys(index)).toHaveLength(17);
+		expect(Object.keys(index)).toHaveLength(19);
 		expect(index).toHaveProperty('LocalStorage');
 		expect(index).toHaveProperty('SessionStorage');
 		expect(index).toHaveProperty('StyLoginRenderer');
@@ -13,6 +13,8 @@ describe('imports', () => {
 		expect(index).toHaveProperty('provideStrivacity');
 		expect(index).toHaveProperty('StrivacityAuthModule');
 		expect(index).toHaveProperty('FallbackError');
+		expect(index).toHaveProperty('PopupBlockedError');
+		expect(index).toHaveProperty('PopupClosedError');
 		expect(index).toHaveProperty('HttpClient');
 		expect(index).toHaveProperty('SDKStorage');
 		expect(index).toHaveProperty('SDKHttpClient');

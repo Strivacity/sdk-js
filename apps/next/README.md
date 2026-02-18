@@ -253,7 +253,7 @@ Brief, purpose-oriented descriptions of files under src/app — what they do, ex
 
 - src/app/entry/page.tsx
   - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls the provider/hook entry() method; if a session_id is returned, redirect to /callback?session_id=...; otherwise fallback to home. Show loading and error states.
+  - Behavior: Calls the provider/hook entry() method; it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading and error states.
   - Usage: const { entry } = useStrivacity(); handle network errors and timeouts gracefully.
 
 - src/app/callback/page.tsx

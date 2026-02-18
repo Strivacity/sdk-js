@@ -616,3 +616,9 @@ Each widget component receives props specific to its type and function within th
 ### Links
 
 [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react)
+
+## Migrating to v3.0
+
+### Entry API Major Changes
+
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.

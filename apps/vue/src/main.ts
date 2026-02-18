@@ -3,6 +3,8 @@ import { router } from './router';
 import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
 import AppComponent from './components/app.component.vue';
 
+void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
 const app = createApp(AppComponent);
 const sdk = createStrivacitySDK({
 	mode: import.meta.env.VITE_MODE,

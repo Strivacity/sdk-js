@@ -1,4 +1,5 @@
 import type { RedirectParams, ResponseMode, PopupParams, PopupWindowFeatures } from '../types';
+import { PopupBlockedError, PopupClosedError } from './errors';
 
 let popupWindow: WindowProxy | null = null;
 
@@ -43,7 +44,10 @@ function redirectCallbackHandler(url: string = globalThis.window?.location.href,
  * @returns {Promise<Record<string, string>>} A promise that resolves to the data received from the popup window.
  * @throws {Error} If the popup window is blocked or closed by the user.
  */
-async function popupUrlHandler(url: string, params?: PopupParams, options: { checkOrigin: boolean } = { checkOrigin: true }): Promise<Record<string, string>> {
+async function popupUrlHandler(
+	popupHandlerOrUrl: string | ((popupWindow: Window) => void | Promise<void>),
+	params?: PopupParams,
+): Promise<Record<string, string>> {
 	const disposables = new Set<() => void>();
 	const closeWindow = (): void => {
 		if (popupWindow) {
@@ -92,15 +96,20 @@ async function popupUrlHandler(url: string, params?: PopupParams, options: { che
 	);
 
 	if (!popupWindow) {
-		throw new Error('Popup window blocked');
+		throw new PopupBlockedError();
 	}
 
 	popupWindow.focus();
-	popupWindow.location.replace(url);
+
+	if (typeof popupHandlerOrUrl === 'function') {
+		await popupHandlerOrUrl(popupWindow);
+	} else {
+		popupWindow.location.replace(popupHandlerOrUrl);
+	}
 
 	const data = await new Promise<Record<string, string>>((resolve, reject) => {
 		const listener = (event: MessageEvent<Record<string, string>>) => {
-			if ((!options.checkOrigin || event.origin === window.location.origin) && event.source === popupWindow && event.data) {
+			if ((!params?.checkOrigin || event.origin === window.location.origin) && event.source === popupWindow && event.data) {
 				resolve(event.data);
 			}
 		};
@@ -108,7 +117,7 @@ async function popupUrlHandler(url: string, params?: PopupParams, options: { che
 		const timer = setInterval(() => {
 			if (popupWindow?.closed) {
 				clearInterval(timer);
-				reject(Error('Popup closed by user'));
+				reject(new PopupClosedError());
 			}
 		}, 500);
 

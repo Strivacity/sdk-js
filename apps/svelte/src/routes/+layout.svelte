@@ -2,6 +2,8 @@
 	import { StyAuthProvider, DefaultLogging, type SDKOptions } from '@strivacity/sdk-svelte';
 	import LayoutContent from './LayoutContent.svelte';
 
+	void import(/* @vite-ignore */`${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
 	let { children } = $props();
 
 	const options: SDKOptions = {

@@ -12,10 +12,10 @@ export default function Entry() {
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
-				const sessionId = await entry();
+				const data = await entry();
 
-				if (sessionId) {
-					router.push(`/callback?session_id=${sessionId}`);
+				if (data && Object.keys(data).length > 0) {
+					router.push(`/callback?${new URLSearchParams(data).toString()}`);
 				} else {
 					router.push('/');
 				}

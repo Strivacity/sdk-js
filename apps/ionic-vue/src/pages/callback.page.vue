@@ -8,10 +8,9 @@ const { handleCallback } = useStrivacity();
 
 onMounted(async () => {
 	const url = new URL(location.href);
-	const sessionId = url.searchParams.get('session_id');
 
-	if (sessionId) {
-		await router.push(`/login?session_id=${sessionId}`);
+	if (url.searchParams.has('session_id')) {
+		await router.push(`/login?${url.searchParams}`);
 	} else {
 		try {
 			await handleCallback();

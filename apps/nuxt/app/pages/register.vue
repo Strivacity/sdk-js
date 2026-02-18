@@ -6,6 +6,7 @@ import { FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@stri
 const runtimeConfig = useRuntimeConfig();
 const router = useRouter();
 const { sdk, register } = useStrivacity();
+const shortAppId = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
 const extraParams: ExtraRequestArgs = {
 	prompt: 'create',
@@ -17,6 +18,7 @@ const extraParams: ExtraRequestArgs = {
 
 if (window.location.search !== '') {
 	const url = new URL(window.location.href);
+	shortAppId.value = url.searchParams.get('short_app_id');
 	sessionId.value = url.searchParams.get('session_id');
 
 	url.search = '';
@@ -60,6 +62,19 @@ const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlow
 	<section>
 		<h1 v-if="sdk.options.mode === 'redirect'">Redirecting...</h1>
 		<h1 v-else-if="sdk.options.mode === 'popup'">Loading...</h1>
+		<template v-else-if="sdk.options.mode === 'embedded'">
+			<sty-notifications></sty-notifications>
+			<sty-login
+				:shortAppId="shortAppId"
+				:sessionId="sessionId"
+				:params.prop="extraParams"
+				@close="onClose"
+				@login="onLogin"
+				@error="onError($event.detail)"
+				@block-ready="onBlockReady($event.detail)"
+			></sty-login>
+			<sty-language-selector></sty-language-selector>
+		</template>
 		<Suspense v-else-if="sdk.options.mode === 'native'">
 			<template #default>
 				<StyLoginRenderer

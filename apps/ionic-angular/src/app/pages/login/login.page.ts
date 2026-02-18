@@ -18,6 +18,7 @@ import { widgets } from '../../components/widgets';
 export class LoginPage implements OnInit, OnDestroy {
 	readonly widgets = widgets;
 	readonly subscription = new Subscription();
+	shortAppId: string | null = null;
 	sessionId: string | null = null;
 	options: SDKOptions;
 	extraParams: ExtraRequestArgs = {
@@ -35,6 +36,7 @@ export class LoginPage implements OnInit, OnDestroy {
 
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
+			this.shortAppId = url.searchParams.get('short_app_id');
 			this.sessionId = url.searchParams.get('session_id');
 			url.search = '';
 			history.replaceState({}, '', url.toString());

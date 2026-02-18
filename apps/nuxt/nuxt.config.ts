@@ -28,6 +28,9 @@ export default defineNuxtConfig({
 			AUDIENCES: process.env.VITE_AUDIENCES,
 		},
 	},
+	vue: {
+		compilerOptions: { isCustomElement: (tag) => tag.startsWith('sty-') },
+	},
 	strivacity: {
 		mode: process.env.VITE_MODE as 'redirect' | 'popup' | 'native',
 		issuer: process.env.VITE_ISSUER,

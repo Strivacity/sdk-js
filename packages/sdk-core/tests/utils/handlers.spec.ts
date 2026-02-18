@@ -139,6 +139,35 @@ describe('popupUrlHandler', () => {
 
 		await expect(() => popupUrlHandler(url)).rejects.toThrowError('Popup window blocked');
 	});
+
+	test('should handle callback function correctly', async () => {
+		const popupWindow = {
+			closed: false,
+			close: vi.fn(),
+			focus: vi.fn(),
+			location: { replace: vi.fn() },
+		};
+		// @ts-expect-error: Override window.open
+		const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => {
+			setTimeout(() => {
+				window.dispatchEvent(
+					// @ts-expect-error: Override event.source
+					new MessageEvent('message', { source: popupWindow, origin: window.location.origin, data: { test: 'value' } }),
+				);
+			});
+
+			return popupWindow;
+		});
+
+		const callbackFn = vi.fn();
+		await popupUrlHandler(callbackFn);
+
+		expect(windowOpenSpy).toHaveBeenCalledWith(undefined, '_blank', expect.stringMatching(/\w+/));
+		expect(callbackFn).toHaveBeenCalledWith(popupWindow);
+		expect(popupWindow.focus).toHaveBeenCalled();
+		expect(popupWindow.location.replace).not.toHaveBeenCalled();
+		expect(popupWindow.close).toHaveBeenCalled();
+	});
 });
 
 describe('popupCallbackHandler', () => {

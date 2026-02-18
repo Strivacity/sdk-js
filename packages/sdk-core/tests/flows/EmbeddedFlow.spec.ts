@@ -1,14 +1,19 @@
 import { type MockInstance, vi, describe, beforeEach, afterEach, test, expect } from 'vitest';
 import { type Storage, mockLocalStorage, mockSessionStorage } from '@strivacity/testing/mocks/storages';
-import { type SDKOptions, type ExtraRequestArgs, type RedirectParams, type IdTokenClaims, initFlow } from '../../src';
-import type { State } from '../../src/utils/State';
+import { type SDKOptions, type ExtraRequestArgs, type IdTokenClaims, initFlow } from '../../src';
+import type { EmbeddedFlow } from '../../src/flows/EmbeddedFlow';
 import { jwt } from '../../src/utils/jwt';
+import { redirectUrlHandler, redirectCallbackHandler } from '../../src/utils/handlers';
+import { LocalStorage } from '../../src/storages/LocalStorage';
 import { SessionStorage } from '../../src/storages/SessionStorage';
 import { DefaultLogging } from '../../src/utils/Logging';
+import { HttpClient } from '../../src/utils/HttpClient';
 
-describe('PopupFlow', () => {
+class CustomHttpClient extends HttpClient {}
+
+describe('EmbeddedFlow', () => {
 	const options: SDKOptions = {
-		mode: 'popup',
+		mode: 'embedded',
 		issuer: 'https://brandtegrity.io',
 		scopes: ['openid', 'profile'],
 		clientId: '2202c596c06e4774b42804af00c66df9',
@@ -17,9 +22,10 @@ describe('PopupFlow', () => {
 		responseMode: 'query',
 		logging: DefaultLogging,
 	};
-	const spyInitFlow = (options: SDKOptions) => {
-		const flow = initFlow(options);
+	const spyInitFlow = (options: SDKOptions, spyOptions?: Partial<{ mockLoginRequests: boolean }>) => {
+		const flow = initFlow(options) as EmbeddedFlow;
 		const spies: Record<string, MockInstance> = {
+			httpClient: vi.spyOn(flow.httpClient, 'request'),
 			tokenExchange: vi.spyOn(flow, 'tokenExchange'),
 			fetchMetadata: vi.spyOn(flow.metadata, 'fetchMetadata'),
 			// @ts-expect-error: Protected function
@@ -29,10 +35,10 @@ describe('PopupFlow', () => {
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
 		};
 		const loggingSpy = {
-			debug: vi.spyOn(flow.logging!, 'debug'),
-			info: vi.spyOn(flow.logging!, 'info'),
-			warn: vi.spyOn(flow.logging!, 'warn'),
-			error: vi.spyOn(flow.logging!, 'error'),
+			debug: vi.spyOn(flow.logging, 'debug'),
+			info: vi.spyOn(flow.logging, 'info'),
+			warn: vi.spyOn(flow.logging, 'warn'),
+			error: vi.spyOn(flow.logging, 'error'),
 			get xEventId() {
 				return flow.logging!.xEventId;
 			},
@@ -40,6 +46,21 @@ describe('PopupFlow', () => {
 
 		if (typeof options.urlHandler === 'function') {
 			spies.urlHandler = vi.spyOn(flow.options, 'urlHandler').mockImplementation(() => Promise.resolve());
+		}
+
+		if (spyOptions?.mockLoginRequests) {
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ authorization_endpoint: `${options.issuer}/oauth2/auth` }),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				text: () => Promise.resolve(`${options.redirectUri}?session_id=sessionId&short_app_id=shortAppId`),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ forms: [] }),
+			});
 		}
 
 		return { flow, spies, loggingSpy };
@@ -53,14 +74,14 @@ describe('PopupFlow', () => {
 
 		test('should throw error w/o required params', () => {
 			// @ts-expect-error: Missing options
-			expect(() => initFlow({ mode: 'popup' })).toThrowError('Missing option: issuer');
+			expect(() => initFlow({ mode: 'embedded' })).toThrowError('Missing option: issuer');
 			// @ts-expect-error: Missing options
-			expect(() => initFlow({ mode: 'popup', issuer: options.issuer })).toThrowError('Missing option: clientId');
+			expect(() => initFlow({ mode: 'embedded', issuer: options.issuer })).toThrowError('Missing option: clientId');
 			// @ts-expect-error: Missing options
-			expect(() => initFlow({ mode: 'popup', issuer: options.issuer, clientId: options.clientId })).toThrowError('Missing option: redirectUri');
+			expect(() => initFlow({ mode: 'embedded', issuer: options.issuer, clientId: options.clientId })).toThrowError('Missing option: redirectUri');
 			// @ts-expect-error: Invalid option
 			expect(() => initFlow({ ...options, scopes: 'invalid' })).toThrowError('Invalid option: scopes');
-			expect(() => initFlow({ mode: 'popup', issuer: options.issuer, clientId: options.clientId, redirectUri: options.redirectUri })).not.toThrowError();
+			expect(() => initFlow({ mode: 'embedded', issuer: options.issuer, clientId: options.clientId, redirectUri: options.redirectUri })).not.toThrowError();
 		});
 
 		test('should set non-required params correctly', () => {
@@ -70,16 +91,44 @@ describe('PopupFlow', () => {
 			expect(flow.options.responseType).toEqual('code');
 			expect(flow.options.responseMode).toEqual('query');
 			expect(flow.options.storageTokenName).toEqual('sty.session');
+			expect(flow.options.urlHandler).toBe(redirectUrlHandler);
+			expect(flow.options.callbackHandler).toBe(redirectCallbackHandler);
+			expect(flow.storage).toBeInstanceOf(LocalStorage);
+			expect(flow.httpClient).toBeInstanceOf(HttpClient);
+			expect(flow.logging).toBeUndefined();
 
-			flow = initFlow({ ...options, scopes: ['custom', 'scope'], responseType: 'id_token', responseMode: 'fragment', storageTokenName: 'custom' });
+			flow = initFlow({
+				...options,
+				scopes: ['custom', 'scope'],
+				responseType: 'id_token',
+				responseMode: 'fragment',
+				storageTokenName: 'custom',
+				storage: SessionStorage,
+				httpClient: CustomHttpClient,
+				logging: DefaultLogging,
+				urlHandler: () => Promise.resolve(),
+				callbackHandler: () => Promise.resolve(),
+			});
 
 			expect(flow.options.scopes).toEqual(['custom', 'scope']);
 			expect(flow.options.responseType).toEqual('id_token');
 			expect(flow.options.responseMode).toEqual('fragment');
 			expect(flow.options.storageTokenName).toEqual('custom');
+			expect(flow.options.urlHandler).not.toBe(redirectUrlHandler);
+			expect(flow.options.callbackHandler).not.toBe(redirectCallbackHandler);
+			expect(flow.storage).toBeInstanceOf(SessionStorage);
+			expect(flow.httpClient).toBeInstanceOf(CustomHttpClient);
+			expect(flow.logging).toBeInstanceOf(DefaultLogging);
 		});
 
-		describe('should dispatch init() events correctly', () => {
+		test('should register global oidcService', () => {
+			const { flow } = spyInitFlow(options);
+
+			expect(globalThis.sty).toBeDefined();
+			expect(globalThis.sty.oidcService).toBe(flow);
+		});
+
+		describe('should dispatch constructor events correctly', () => {
 			beforeEach(() => {
 				vi.useFakeTimers();
 			});
@@ -129,11 +178,9 @@ describe('PopupFlow', () => {
 		test('should use another storage correctly', async () => {
 			storage = mockSessionStorage();
 
-			const { flow, spies } = spyInitFlow({ ...options, storage: SessionStorage });
+			const { flow } = spyInitFlow({ ...options, storage: SessionStorage }, { mockLoginRequests: true });
 
-			spies.tokenExchange.mockImplementation(() => Promise.resolve());
-			await flow.login();
-
+			await flow.login().startSession();
 			const state = storage.getLastState();
 
 			await vi.waitFor(() => expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state)));
@@ -192,41 +239,17 @@ describe('PopupFlow', () => {
 			storage = mockLocalStorage();
 		});
 
-		test('should throw error on metadata url error', async () => {
-			const { flow, spies } = spyInitFlow(options);
-
-			spies.fetchMetadata.mockImplementation(() => Promise.reject());
-
-			await expect(() => flow.login()).rejects.toThrowError();
-		});
-
 		describe('login', () => {
-			test('should handle popup correctly', async () => {
-				let state: State | undefined;
-				const session = storage.generateSession({}, null);
-				const { flow, spies } = spyInitFlow(options);
+			test('should return EmbeddedFlowHandler', async () => {
+				const { flow, spies } = spyInitFlow(options, { mockLoginRequests: true });
 
-				spies.urlHandler.mockImplementation(
-					() =>
-						new Promise((resolve) => {
-							state = storage.getLastState();
-
-							session.claims = { ...(session.claims as IdTokenClaims), nonce: state?.nonce, aud: [options.clientId] };
-							session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state?.nonce, aud: [options.clientId] });
-
-							resolve({ code: 'code', state: state?.id });
-						}),
-				);
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
-
-				await flow.login();
-
-				const url = new URL(spies.urlHandler.mock.calls[0][0]);
+				await flow.login().startSession();
+				const state = storage.getLastState();
+				const url = new URL(spies.httpClient.mock.calls[1][0]);
 
 				expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state));
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loginInitiated', []);
-				expect(spies.urlHandler).toHaveBeenCalledOnce();
 				expect(url.origin).toEqual(options.issuer);
 				expect(url.pathname).toEqual('/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toEqual(options.clientId);
@@ -238,17 +261,11 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('state')).toEqual(state?.id);
 				expect(url.searchParams.get('code_challenge')).toEqual(state?.codeChallenge);
 				expect(url.searchParams.get('nonce')).toEqual(state?.nonce);
-
-				expect(spies.tokenExchange).toHaveBeenCalledOnce();
-				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
-					{ accessToken: session.access_token, refreshToken: session.refresh_token, claims: session.claims },
-				]);
+				expect(spies.httpClient).toHaveBeenCalledTimes(2);
 			});
 
-			test('should handle popup correctly w/ extra params', async () => {
-				let state: State | undefined;
-				const session = storage.generateSession({}, null);
-				const { flow, spies } = spyInitFlow(options);
+			test('should return EmbeddedFlowHandler w/ extra params', async () => {
+				const { flow, spies } = spyInitFlow(options, { mockLoginRequests: true });
 				const extraParams: ExtraRequestArgs = {
 					prompt: 'login',
 					loginHint: 'hint',
@@ -257,26 +274,13 @@ describe('PopupFlow', () => {
 					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
-				spies.urlHandler.mockImplementation(
-					() =>
-						new Promise((resolve) => {
-							state = storage.getLastState();
-
-							session.claims = { ...(session.claims as IdTokenClaims), nonce: state?.nonce, aud: [options.clientId] };
-							session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state?.nonce, aud: [options.clientId] });
-
-							resolve({ code: 'code', state: state?.id });
-						}),
-				);
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
-
-				await flow.login(extraParams);
-
-				const url = new URL(spies.urlHandler.mock.calls[0][0]);
+				await flow.login(extraParams).startSession();
+				const state = storage.getLastState();
+				const url = new URL(spies.httpClient.mock.calls[1][0]);
 
 				expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state));
+				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loginInitiated', []);
-				expect(spies.urlHandler).toHaveBeenCalledOnce();
 				expect(url.origin).toEqual(options.issuer);
 				expect(url.pathname).toEqual('/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toEqual(options.clientId);
@@ -293,61 +297,21 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('acr_values')).toEqual(extraParams?.acrValues?.join(' '));
 				expect(url.searchParams.get('ui_locales')).toEqual(extraParams?.uiLocales?.join(' '));
 				expect(url.searchParams.get('audience')).toEqual(extraParams?.audiences?.join(' '));
-
-				expect(spies.tokenExchange).toHaveBeenCalledOnce();
-				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
-					{ accessToken: session.access_token, refreshToken: session.refresh_token, claims: session.claims },
-				]);
-			});
-
-			test('should handle popup correctly w/ redirect params', async () => {
-				const { flow, spies } = spyInitFlow(options);
-				const extraParams: RedirectParams = {
-					targetWindow: 'top',
-					locationMethod: 'replace',
-				};
-
-				spies.tokenExchange.mockImplementation(() => Promise.resolve());
-				await flow.login(extraParams);
-
-				expect(spies.urlHandler.mock.calls[0][1]).toEqual({ locationMethod: 'replace', targetWindow: 'top' });
-			});
-
-			test('should throw error w/o urlHandler', async () => {
-				// @ts-expect-error: Invalid options
-				const { flow } = spyInitFlow({ ...options, urlHandler: 'invalid' });
-
-				await expect(() => flow.login()).rejects.toThrowError('Missing option: urlHandler');
+				expect(spies.httpClient).toHaveBeenCalledTimes(2);
 			});
 		});
 
 		describe('register', () => {
-			test('should handle popup correctly', async () => {
-				let state: State | undefined;
-				const session = storage.generateSession({}, null);
-				const { flow, spies } = spyInitFlow(options);
+			test('should return EmbeddedFlowHandler', async () => {
+				const { flow, spies } = spyInitFlow(options, { mockLoginRequests: true });
 
-				spies.urlHandler.mockImplementation(
-					() =>
-						new Promise((resolve) => {
-							state = storage.getLastState();
-
-							session.claims = { ...(session.claims as IdTokenClaims), nonce: state?.nonce, aud: [options.clientId] };
-							session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state?.nonce, aud: [options.clientId] });
-
-							resolve({ code: 'code', state: state?.id });
-						}),
-				);
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
-
-				await flow.register();
-
-				const url = new URL(spies.urlHandler.mock.calls[0][0]);
+				await flow.register().startSession();
+				const state = storage.getLastState();
+				const url = new URL(spies.httpClient.mock.calls[1][0]);
 
 				expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state));
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loginInitiated', []);
-				expect(spies.urlHandler).toHaveBeenCalledOnce();
 				expect(url.origin).toEqual(options.issuer);
 				expect(url.pathname).toEqual('/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toEqual(options.clientId);
@@ -360,45 +324,24 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('code_challenge')).toEqual(state?.codeChallenge);
 				expect(url.searchParams.get('nonce')).toEqual(state?.nonce);
 				expect(url.searchParams.get('prompt')).toEqual('create');
-
-				expect(spies.tokenExchange).toHaveBeenCalledOnce();
-				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
-					{ accessToken: session.access_token, refreshToken: session.refresh_token, claims: session.claims },
-				]);
 			});
 
-			test('should handle popup correctly w/ extra params', async () => {
-				let state: State | undefined;
-				const session = storage.generateSession({}, null);
-				const { flow, spies } = spyInitFlow(options);
+			test('should return EmbeddedFlowHandler w/ extra params', async () => {
+				const { flow, spies } = spyInitFlow(options, { mockLoginRequests: true });
 				const extraParams: ExtraRequestArgs = {
-					prompt: 'create',
 					loginHint: 'hint',
 					acrValues: ['acr', 'value'],
 					uiLocales: ['hu-HU', 'en-US'],
 					audiences: ['https://api.example.com', 'https://service.example.com'],
 				};
 
-				spies.urlHandler.mockImplementation(
-					() =>
-						new Promise((resolve) => {
-							state = storage.getLastState();
-
-							session.claims = { ...(session.claims as IdTokenClaims), nonce: state?.nonce, aud: [options.clientId] };
-							session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state?.nonce, aud: [options.clientId] });
-
-							resolve({ code: 'code', state: state?.id });
-						}),
-				);
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
-
-				await flow.register(extraParams);
-
-				const url = new URL(spies.urlHandler.mock.calls[0][0]);
+				await flow.register(extraParams).startSession();
+				const state = storage.getLastState();
+				const url = new URL(spies.httpClient.mock.calls[1][0]);
 
 				expect(storage.spies.set).toHaveBeenCalledWith(`sty.${state?.id}`, JSON.stringify(state));
+				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('loginInitiated', []);
-				expect(spies.urlHandler).toHaveBeenCalledOnce();
 				expect(url.origin).toEqual(options.issuer);
 				expect(url.pathname).toEqual('/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toEqual(options.clientId);
@@ -410,37 +353,12 @@ describe('PopupFlow', () => {
 				expect(url.searchParams.get('state')).toEqual(state?.id);
 				expect(url.searchParams.get('code_challenge')).toEqual(state?.codeChallenge);
 				expect(url.searchParams.get('nonce')).toEqual(state?.nonce);
-				expect(url.searchParams.get('prompt')).toEqual(extraParams?.prompt);
+				expect(url.searchParams.get('prompt')).toEqual('create');
 				expect(url.searchParams.get('login_hint')).toEqual(extraParams?.loginHint);
 				expect(url.searchParams.get('acr_values')).toEqual(extraParams?.acrValues?.join(' '));
 				expect(url.searchParams.get('ui_locales')).toEqual(extraParams?.uiLocales?.join(' '));
 				expect(url.searchParams.get('audience')).toEqual(extraParams?.audiences?.join(' '));
-
-				expect(spies.tokenExchange).toHaveBeenCalledOnce();
-				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
-					{ accessToken: session.access_token, refreshToken: session.refresh_token, claims: session.claims },
-				]);
-			});
-
-			test('should handle popup correctly w/ redirect params', async () => {
-				const { flow, spies } = spyInitFlow(options);
-				const extraParams: RedirectParams = {
-					targetWindow: 'top',
-					locationMethod: 'replace',
-				};
-
-				spies.tokenExchange.mockImplementation(() => Promise.resolve());
-				await flow.register(extraParams);
-
-				expect(spies.urlHandler.mock.calls[0][1]).toEqual({ prompt: 'create', locationMethod: 'replace', targetWindow: 'top' });
-			});
-
-			test('should throw error w/o urlHandler', async () => {
-				// @ts-expect-error: Invalid options
-				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: 'invalid' });
-
-				await expect(() => flow.register()).rejects.toThrowError('Missing option: urlHandler');
-				expect(loggingSpy.error).toHaveBeenCalledWith('Required option missing', expect.any(Error));
+				expect(spies.httpClient).toHaveBeenCalledTimes(2);
 			});
 		});
 
@@ -542,7 +460,6 @@ describe('PopupFlow', () => {
 					refresh_token: session.refresh_token,
 				});
 				expect(storage.spies.set).toHaveBeenCalledWith('sty.session', JSON.stringify(refreshedSession));
-				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('tokenRefreshed', [
 					{ accessToken: refreshedSession.access_token, refreshToken: refreshedSession.refresh_token, claims: refreshedSession.claims },
 				]);
@@ -619,7 +536,6 @@ describe('PopupFlow', () => {
 				});
 				expect(storage.spies.set).not.toBeCalled();
 				expect(storage.spies.delete).toHaveBeenCalledWith('sty.session');
-				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).not.toHaveBeenCalledWith('tokenRefreshed', expect.anything());
 				expect(spies.dispatchEvent).toHaveBeenCalledWith('tokenRefreshFailed', [{ refreshToken: session.refresh_token }]);
 				expect(await flow.isAuthenticated).toEqual(false);
@@ -816,30 +732,146 @@ describe('PopupFlow', () => {
 		});
 
 		describe('entry', () => {
-			test('should throw error w/o urlHandler', async () => {
-				// @ts-expect-error: Invalid options
-				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: 'invalid' });
-				await expect(() => flow.entry()).rejects.toThrowError('Missing option: urlHandler');
-				expect(loggingSpy.error).toHaveBeenCalledWith('Required option missing', expect.any(Error));
+			test('should get back session_id and short_app_id correctly', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234&short_app_id=short123'),
+				});
+
+				const data = await flow.entry('http://localhost:4200/entry');
+
+				expect(flow.httpClient.request).toHaveBeenCalledWith(
+					`${flow.options.issuer}/provider/flow/entry?sdk=web-embedded&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
+				);
+				expect(data).toEqual({ session_id: 'abcd1234', short_app_id: 'short123' });
 			});
 
-			test('should call provider url correctly', async () => {
-				const { flow, loggingSpy } = spyInitFlow({ ...options, urlHandler: vi.fn() });
+			test('should get back session_id and short_app_id from response.url when text() throws', async () => {
+				const { flow } = spyInitFlow({ ...options });
 
-				await flow.entry('http://localhost:4200/entry?callback=abcd');
-				expect(loggingSpy.debug).toHaveBeenCalledWith('Attempting to redirect for entry');
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(`${options.issuer}/provider/entry?callback=abcd`);
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					url: 'https://brandtegrity.io/entry?session_id=xyz789&short_app_id=short456',
+					text: () => Promise.reject(new Error('Invalid text')),
+				});
+
+				const data = await flow.entry('http://localhost:4200/entry');
+
+				expect(data).toEqual({ session_id: 'xyz789', short_app_id: 'short456' });
+			});
+
+			test('should throw error on failed request with status 400 and error object', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: false,
+					status: 400,
+					text: () => Promise.resolve(''),
+					json: () => Promise.resolve({ error: 'invalid_request', error_description: 'description' }),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('invalid_request: description');
+			});
+
+			test('should throw error on failed request with status 400 and errorKey', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: false,
+					status: 400,
+					text: () => Promise.resolve(''),
+					json: () => Promise.resolve({ errorKey: 'custom_error_key' }),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('custom_error_key');
+			});
+
+			test('should throw error on failed request with status 400 and no specific error', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: false,
+					status: 400,
+					text: () => Promise.resolve(''),
+					json: () => Promise.resolve({}),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('Entry request failed with status 400');
+			});
+
+			test('should throw error on failed request with non-400 status', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: false,
+					status: 500,
+					text: () => Promise.resolve(''),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('Entry request failed with status 500');
+			});
+
+			test('should throw error on missing session_id', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve('https://brandtegrity.io/entry?short_app_id=short123'),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('"session_id" is missing from the response');
+			});
+
+			test('should throw error on missing session_id', async () => {
+				const { flow } = spyInitFlow({ ...options });
+
+				flow.httpClient.request = vi.fn().mockResolvedValue({
+					ok: true,
+					status: 200,
+					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234'),
+				});
+
+				await expect(() => flow.entry('http://localhost:4200/entry')).rejects.toThrowError('"short_app_id" is missing from the response');
 			});
 		});
 
 		describe('handleCallback', () => {
+			test('should handle correctly', async () => {
+				const state = await storage.generateState();
+				const session = storage.generateSession({ state: JSON.stringify(state) }, null);
+				const { flow, spies } = spyInitFlow(options);
+
+				session.claims = { ...(session.claims as IdTokenClaims), nonce: state.nonce, aud: [options.clientId] };
+				session.id_token = jwt.generateUnsigned({}, { ...session.claims, nonce: state.nonce, aud: [options.clientId] });
+				storage.spies.set.mockClear();
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
+
+				const url = new URL(options.redirectUri);
+				url.searchParams.append('code', 'code');
+				url.searchParams.append('state', state.id);
+
+				await flow.handleCallback(url.toString());
+
+				expect(storage.spies.delete).toHaveBeenCalledWith(`sty.${state.id}`);
+				expect(storage.spies.set).toHaveBeenCalledWith('sty.session', JSON.stringify(session));
+				expect(spies.dispatchEvent).toHaveBeenCalledWith('loggedIn', [
+					{ accessToken: session.access_token, refreshToken: session.refresh_token, claims: session.claims },
+				]);
+			});
+
 			test('should throw error w/o callbackHandler', async () => {
 				// @ts-expect-error: Invalid options
-				const { flow } = spyInitFlow({ ...options, callbackHandler: 'invalid' });
+				const { flow, loggingSpy } = spyInitFlow({ ...options, callbackHandler: 'invalid' });
 
 				await expect(() => flow.handleCallback('https://brandtegrity.io/app/callback/?code=code&state=state')).rejects.toThrowError(
 					'Missing option: callbackHandler',
 				);
+				expect(loggingSpy.error).toHaveBeenCalledWith('Required option missing', expect.any(Error));
 			});
 		});
 

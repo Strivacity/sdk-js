@@ -512,7 +512,7 @@ export type SDKOptions = {
 	 * @type {'popup' | 'redirect'}
 	 * @default 'redirect'
 	 */
-	mode?: 'popup' | 'redirect' | 'native';
+	mode?: 'popup' | 'redirect' | 'native' | 'embedded';
 
 	/**
 	 * The issuer of the tokens, typically the URL of the authorization server.
@@ -1019,6 +1019,17 @@ export type PopupParams = ExtraRequestArgs & {
 	 * @example '_blank' | '_self' | '_parent' | '_top'
 	 */
 	popupWindowTarget?: string;
+
+	/**
+	 * Whether to check the origin of messages received from the popup window.
+	 *
+	 * If set to `true`, the SDK will verify that messages received from the popup window originate from the expected domain.
+	 * This is a security measure to prevent malicious scripts from sending unauthorized messages to the application.
+	 *
+	 * @type {boolean}
+	 * @default true
+	 */
+	checkOrigin?: boolean;
 };
 
 /**
@@ -1331,5 +1342,40 @@ export type AttestationCredentialData = {
 		transports: Array<string>;
 	};
 };
+
+export declare class LanguageSelectorComponent extends HTMLElement {}
+
+export declare class NotificationComponent extends HTMLElement {
+	devMode: boolean;
+}
+
+export declare class LandingComponent extends HTMLElement {
+	activeBlock: string;
+	baseUrl: string;
+	lazy: boolean;
+	lang: string;
+	debug: boolean;
+	initialized?: boolean;
+}
+
+export declare class LoginComponent extends HTMLElement {
+	mode?: string;
+	baseUrl?: string;
+	sessionId?: string;
+	lazy: boolean;
+	params: ExtraRequestArgs;
+	lang: string;
+	debug: boolean;
+	initialized?: boolean;
+}
+
+declare global {
+	interface HTMLElementTagNameMap {
+		'sty-language-selector': LanguageSelectorComponent;
+		'sty-notifications': NotificationComponent;
+		'sty-landing': LandingComponent;
+		'sty-login': LoginComponent;
+	}
+}
 
 // endregion

@@ -1,54 +1,59 @@
-import type { NativeParams, LoginFlowState } from '../types';
-import type { BaseFlow } from '../flows/BaseFlow';
-import { State } from './State';
-import { FallbackError } from './errors';
+import type { ExtraRequestArgs } from '../types';
+import type { EmbeddedFlow } from '../flows/EmbeddedFlow';
+import { State } from '../utils/State';
 
-export class NativeFlowHandler {
+/**
+ * Handler for the embedded login flow, managing the session and interactions with the SDK.
+ */
+export class EmbeddedFlowHandler {
+	/**
+	 * The short app ID associated with the session.
+	 *
+	 * @type {string | null}
+	 */
+	shortAppId: string | undefined;
 	/**
 	 * The session ID.
 	 *
 	 * @type {string | null}
 	 */
-	protected sessionId: string | null = null;
+	sessionId: string | undefined;
 
 	constructor(
 		/**
 		 * The SDK instance.
 		 *
-		 * @type {SDKStorage}
+		 * @type {EmbeddedFlow}
 		 */
-		protected sdk: BaseFlow,
+		protected sdk: EmbeddedFlow,
 		/**
 		 * Optional parameters for native configuration.
 		 *
 		 * @type {NativeParams} [options={}]
 		 */
-		protected params: NativeParams = {},
+		protected params: ExtraRequestArgs = {},
 	) {}
 
 	/**
 	 * Starts a new session.
 	 *
 	 * @param {string} [sessionId] - The session ID to start the session with. If not provided, a new session will be created.
-	 * @returns {Promise<LoginFlowState | void>}
+	 * @returns {Promise<void>}
 	 *
 	 * @throws {Error} Throws an error if callback handler is not defined, redirect URI is invalid, authorization error occurs, or session ID is missing.
 	 */
-	async startSession(sessionId?: string | null): Promise<LoginFlowState | void> {
+	async startSession(): Promise<void> {
+		await this.sdk.waitToInitialize();
+
 		if (this.sdk.logging) {
 			this.sdk.logging.xEventId = undefined;
 			this.sdk.logging.info('Starting login flow session');
 		}
 
-		if (sessionId) {
-			this.sessionId = sessionId;
-			return this.submitForm();
-		}
-
 		const state = await State.create();
 		const authorizationUrl = await this.sdk.getAuthorizationUrl(this.params);
 
-		authorizationUrl.searchParams.append('sdk', this.params.sdk || 'web');
+		authorizationUrl.searchParams.append('sdk', 'web-embedded');
 		authorizationUrl.searchParams.append('state', state.id);
 		authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
 		authorizationUrl.searchParams.append('nonce', state.nonce);
@@ -88,15 +93,19 @@ export class NativeFlowHandler {
 			throw error;
 		}
 
-		if (!uri.searchParams.has('session_id')) {
+		this.shortAppId = uri.searchParams.get('short_app_id') || undefined;
+		this.sessionId = uri.searchParams.get('session_id') || undefined;
+
+		if (!this.shortAppId) {
+			const error = new Error('"short_app_id" is missing from the response');
+			this.sdk.logging?.error('Failed to start a session', error);
+			throw error;
+		}
+		if (!this.sessionId) {
 			const error = new Error('"session_id" is missing from the response');
 			this.sdk.logging?.error('Failed to start a session', error);
 			throw error;
 		}
-
-		this.sessionId = uri.searchParams.get('session_id');
-
-		return this.submitForm();
 	}
 
 	/**
@@ -131,56 +140,5 @@ export class NativeFlowHandler {
 		await this.sdk.tokenExchange(
 			(await this.sdk.options.callbackHandler(redirectUri.toString(), this.sdk.options.responseMode || 'fragment')) as Record<string, string>,
 		);
-	}
-
-	/**
-	 * Submits a form with the provided [formId] and [data].
-	 *
-	 * @returns {Promise<LoginFlowState>}
-	 *
-	 * @throws {Error} Throws an error if form submission fails.
-	 * @throws {FallbackError} Throws a fallback error if response indicates fallback is needed.
-	 */
-	async submitForm(formId?: string, body: Record<string, unknown> = {}): Promise<LoginFlowState> {
-		if (formId) {
-			this.sdk.logging?.debug(`Submitting form: ${formId}`);
-		}
-
-		const response = await this.sdk.httpClient.request<LoginFlowState>(
-			new URL(`/flow/api/v1/${formId ? `form/${formId}` : 'init'}`, this.sdk.options.issuer).toString(),
-			{
-				method: 'POST',
-				headers: { Authorization: `Bearer ${this.sessionId}`, 'Content-Type': 'application/json' },
-				body: JSON.stringify(body),
-				credentials: 'include',
-			},
-		);
-		const data = await response.json();
-
-		if (!response.ok) {
-			if (response.status >= 400 && response.status < 500) {
-				if (response.status !== 403 && data?.hostedUrl && !data.messages) {
-					this.sdk.logging?.warn(`Triggering fallback due to: Received HTTP ${response.status} without messages`);
-					throw new FallbackError(new URL(data.hostedUrl));
-				}
-
-				if (response.status !== 400) {
-					const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-					this.sdk.logging?.error(`Form submission error`, error);
-					throw error;
-				}
-			}
-		}
-
-		if (data.finalizeUrl) {
-			await this.finalizeSession(data.finalizeUrl);
-		} else if (data.hostedUrl && !data.forms && !data.messages) {
-			this.sdk.logging?.warn(`Triggering fallback due to: No forms or messages in response`);
-			throw new FallbackError(new URL(data.hostedUrl));
-		} else if (data.screen) {
-			this.sdk.logging?.info(`Rendering screen: ${data.screen}`);
-		}
-
-		return data;
 	}
 }
