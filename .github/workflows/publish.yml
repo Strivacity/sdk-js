@@ -30,5 +30,16 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Detect version type
+        id: version
+        run: |
+          VERSION=$(node -p "require('./packages/sdk-core/package.json').version")
+          if [[ "$VERSION" =~ -rc\.|alpha\.|beta\. ]]; then
+            echo "tag=next" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+          echo "Version: $VERSION, Tag: $(cat $GITHUB_OUTPUT)"
+
       - name: Publish
-        run: pnpm nx release publish --access=public
+        run: pnpm nx release publish --access=public --tag=${{ steps.version.outputs.tag }}
