@@ -4,9 +4,11 @@ import { useStrivacity } from '@strivacity/sdk-react';
 
 export const Entry = () => {
 	const navigate = useNavigate();
-	const { entry } = useStrivacity();
+	const { loading, entry } = useStrivacity();
 
 	useEffect(() => {
+		if (loading) return;
+
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
@@ -22,7 +24,7 @@ export const Entry = () => {
 				await navigate('/');
 			}
 		})();
-	}, []);
+	}, [loading]);
 
 	return (
 		<section>

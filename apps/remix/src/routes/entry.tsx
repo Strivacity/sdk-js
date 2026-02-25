@@ -4,9 +4,11 @@ import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Entry() {
 	const navigate = useNavigate();
-	const { entry } = useStrivacity();
+	const { loading, entry } = useStrivacity();
 
 	useEffect(() => {
+		if (loading) return;
+
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
@@ -22,7 +24,7 @@ export default function Entry() {
 				navigate('/');
 			}
 		})();
-	}, []);
+	}, [loading]);
 
 	return (
 		<section>
