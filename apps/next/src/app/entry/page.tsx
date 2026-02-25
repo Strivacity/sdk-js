@@ -6,9 +6,11 @@ import { useStrivacity } from '@strivacity/sdk-next';
 
 export default function Entry() {
 	const router = useRouter();
-	const { entry } = useStrivacity();
+	const { loading, entry } = useStrivacity();
 
 	useEffect(() => {
+		if (loading) return;
+
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		(async () => {
 			try {
@@ -24,7 +26,7 @@ export default function Entry() {
 				router.push('/');
 			}
 		})();
-	}, []);
+	}, [loading]);
 
 	return (
 		<section>
