@@ -144,6 +144,22 @@ describe('EmbeddedFlowHandler', () => {
 			});
 		});
 
+		test('should throw error on error response', async () => {
+			const { handler, spies, loggingSpy } = spyInitFlow(options);
+
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ authorization_endpoint: `${options.issuer}/oauth2/auth` }),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: false,
+				status: 500,
+			});
+
+			await expect(() => handler.startSession()).rejects.toThrowError('Authorization request failed with status 500');
+			expect(loggingSpy.error).toHaveBeenCalledWith('Authorization request error', expect.any(Error));
+		});
+
 		test('should throw error on OIDC error', async () => {
 			const { handler, spies, loggingSpy } = spyInitFlow(options);
 
