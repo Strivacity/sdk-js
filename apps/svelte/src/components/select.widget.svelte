@@ -9,6 +9,11 @@
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
 
+	// svelte-ignore state_referenced_locally
+	if (config.value) {
+		context.setFormValue(formId, config.id, config.value);
+	}
+
 	function onChange(event: Event) {
 		if (disabled) {
 			return;
@@ -19,7 +24,7 @@
 </script>
 
 <div data-widget="select" data-form-id={formId} data-widget-id={config.id}>
-	{#if config.render.type === 'radio'}
+	{#if config.render?.type === 'radio'}
 		{#each config.options as option (option.label)}
 			<div class="group">
 				{#if option.type === 'group'}

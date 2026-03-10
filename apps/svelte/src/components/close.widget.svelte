@@ -16,7 +16,7 @@
 	}
 </script>
 
-{#if config.render.type === 'button'}
+{#if config.render?.type === 'button'}
 	<button
 		disabled={disabled}
 		style:background-color={config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? `#5d21ab` : `#ffffff`)}

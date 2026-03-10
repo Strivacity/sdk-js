@@ -36,7 +36,11 @@ export class SelectWidget {
 		return this.config.validator;
 	}
 
-	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+	constructor(protected readonly widgetService: StrivacityWidgetService) {
+		if (this.config.value) {
+			this.widgetService.setFormValue(this.formId, this.config.id, this.config.value);
+		}
+	}
 
 	onChange(event: Event) {
 		if (this.disabled) {

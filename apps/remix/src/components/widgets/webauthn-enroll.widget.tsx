@@ -25,7 +25,7 @@ export function WebAuthnEnrollWidget({ formId, config }: { formId: string; confi
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button
 					type="button"
 					disabled={disabled}

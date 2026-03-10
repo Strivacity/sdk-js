@@ -25,7 +25,7 @@ export function SubmitWidget({ formId, config }: { formId: string; config: Submi
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button
 					type="submit"
 					disabled={disabled}

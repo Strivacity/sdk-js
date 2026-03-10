@@ -32,7 +32,11 @@ export class MultiSelectWidget {
 		return this.widgetService.messages$.value[this.formId]?.[this.config.id]?.text;
 	}
 
-	constructor(protected readonly widgetService: StrivacityWidgetService) {}
+	constructor(protected readonly widgetService: StrivacityWidgetService) {
+		if (this.config.value?.length) {
+			this.widgetService.setFormValue(this.formId, this.config.id, this.config.value);
+		}
+	}
 
 	onChange(event: Event) {
 		if (this.disabled) {

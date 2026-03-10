@@ -201,7 +201,7 @@ import { SubmitWidget } from '@strivacity/sdk-remix';
  * For more context, please check the example widget file.
  */
 export default function CustomSubmitWidget({ formId, config }: { formId: string; config: SubmitWidget }) {
-	if (config.render.type === 'button') {
+	if (config.render?.type === 'button') {
 		if (formId === 'identifier') {
 			return (
 				<>
@@ -218,7 +218,7 @@ export default function CustomSubmitWidget({ formId, config }: { formId: string;
 				</button>
 			);
 		}
-	} else if (config.render.type === 'link') {
+	} else if (config.render?.type === 'link') {
 		// Custom text for registration submit link
 		const linkText = formId === 'additionalActions/registration' && config.id === 'submit' ? 'Register now' : config.label;
 
@@ -686,7 +686,7 @@ export function CustomPasskeyLoginWidget({ formId, config }: { formId: string; c
 	if (formId === 'identifier') {
 		return (
 			<div>
-				{config.render.type === 'button' ? (
+				{config.render?.type === 'button' ? (
 					<button type="button" disabled={disabled} onClick={() => void onClick()}>
 						{config.label}
 					</button>
@@ -702,7 +702,7 @@ export function CustomPasskeyLoginWidget({ formId, config }: { formId: string; c
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button type="button" disabled={disabled} onClick={() => void onClick()}>
 					{config.label}
 				</button>
@@ -760,7 +760,7 @@ export function CustomPasskeyEnrollWidget({ formId, config }: { formId: string; 
 	if (formId === 'identifier') {
 		return (
 			<div>
-				{config.render.type === 'button' ? (
+				{config.render?.type === 'button' ? (
 					<button type="button" disabled={disabled} onClick={() => void onClick()}>
 						{config.label}
 					</button>
@@ -776,7 +776,7 @@ export function CustomPasskeyEnrollWidget({ formId, config }: { formId: string; 
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button type="button" disabled={disabled} onClick={() => void onClick()}>
 					{config.label}
 				</button>
@@ -834,7 +834,7 @@ export function CustomWebAuthnLoginWidget({ formId, config }: { formId: string; 
 	if (formId === 'identifier') {
 		return (
 			<div>
-				{config.render.type === 'button' ? (
+				{config.render?.type === 'button' ? (
 					<button type="button" disabled={disabled} onClick={() => void onClick()}>
 						{config.label}
 					</button>
@@ -850,7 +850,7 @@ export function CustomWebAuthnLoginWidget({ formId, config }: { formId: string; 
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button type="button" disabled={disabled} onClick={() => void onClick()}>
 					{config.label}
 				</button>
@@ -908,7 +908,7 @@ export function CustomWebAuthnEnrollWidget({ formId, config }: { formId: string;
 	if (formId === 'identifier') {
 		return (
 			<div>
-				{config.render.type === 'button' ? (
+				{config.render?.type === 'button' ? (
 					<button type="button" disabled={disabled} onClick={() => void onClick()}>
 						{config.label}
 					</button>
@@ -924,7 +924,7 @@ export function CustomWebAuthnEnrollWidget({ formId, config }: { formId: string;
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button type="button" disabled={disabled} onClick={() => void onClick()}>
 					{config.label}
 				</button>

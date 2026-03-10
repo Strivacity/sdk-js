@@ -12,7 +12,7 @@ import { StrivacityWidgetService, createCredential } from '@strivacity/sdk-angul
 	styleUrls: ['./passkey-enroll.widget.scss'],
 	host: {
 		'data-widget': 'passkeyEnroll',
-		'[attr.data-type]': 'config.render.type',
+		'[attr.data-type]': 'config.render?.type',
 		'[attr.data-form-id]': 'formId',
 		'[attr.data-widget-id]': 'config.id',
 	},

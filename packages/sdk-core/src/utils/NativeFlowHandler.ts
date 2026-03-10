@@ -57,6 +57,12 @@ export class NativeFlowHandler {
 
 		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), { method: 'GET', credentials: 'include' });
 
+		if (!response.ok) {
+			const error = new Error(`Authorization request failed with status ${response.status}`);
+			this.sdk.logging?.error('Authorization request error', error);
+			throw error;
+		}
+
 		let uri: URL;
 
 		try {

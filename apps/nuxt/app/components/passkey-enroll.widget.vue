@@ -25,7 +25,7 @@ async function onClick() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="button"
 		:disabled="disabled"
 		data-widget="passkeyEnroll"

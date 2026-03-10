@@ -4,7 +4,7 @@
 	let { formId, config }: { formId: string; config: StaticWidget } = $props();
 </script>
 
-{#if config.render.type === 'html'}
+{#if config.render?.type === 'html'}
 	<div data-widget="static" data-form-id={formId} data-widget-id={config.id}>
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html config.value}

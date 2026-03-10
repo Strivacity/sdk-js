@@ -7,6 +7,10 @@ const disabled = computed(() => !!context?.loading.value || !!props.config.reado
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
 
+if (props.config.value) {
+	context?.setFormValue(props.formId, props.config.id, props.config.value);
+}
+
 function onChange(event: Event) {
 	if (disabled.value) {
 		return;
@@ -18,7 +22,7 @@ function onChange(event: Event) {
 
 <template>
 	<div data-widget="select" :data-form-id="formId" :data-widget-id="config.id">
-		<template v-if="config.render.type === 'radio'">
+		<template v-if="config.render?.type === 'radio'">
 			<div v-for="option in config.options" :key="option.label" class="group">
 				<template v-if="option.type === 'group'">
 					<p>{{ option.label }}</p>

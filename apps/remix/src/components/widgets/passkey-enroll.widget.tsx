@@ -25,7 +25,7 @@ export function PasskeyEnrollWidget({ formId, config }: { formId: string; config
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button
 					type="button"
 					disabled={disabled}

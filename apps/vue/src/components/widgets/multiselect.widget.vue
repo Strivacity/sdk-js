@@ -8,6 +8,10 @@ const context = inject<NativeFlowContextValue>('nativeFlowContext');
 const disabled = computed(() => !!context?.loading.value || !!props.config.readonly);
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 
+if (props.config.value?.length) {
+	context?.setFormValue(props.formId, props.config.id, props.config.value);
+}
+
 function onChange(event: Event) {
 	if (disabled.value) {
 		return;

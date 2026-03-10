@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import type { SelectWidget } from '@strivacity/sdk-core';
 import { NativeFlowContext } from '@strivacity/sdk-next';
 import './select.widget.scss';
@@ -9,6 +9,12 @@ export function SelectWidget({ formId, config }: { formId: string; config: Selec
 	const errorMessage = context?.messages[formId]?.[config.id]?.text;
 	const value = context?.forms[formId]?.[config.id] as string | undefined;
 
+	useEffect(() => {
+		if (config.value) {
+			context?.setFormValue(formId, config.id, config.value);
+		}
+	}, []);
+
 	const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		if (disabled) {
 			return;
@@ -17,7 +23,7 @@ export function SelectWidget({ formId, config }: { formId: string; config: Selec
 		context?.setFormValue(formId, config.id, event.target.value);
 	};
 
-	if (config.render.type === 'radio') {
+	if (config.render?.type === 'radio') {
 		return (
 			<div data-widget="select" data-form-id={formId} data-widget-id={config.id}>
 				{config.options.map((option) =>

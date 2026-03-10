@@ -22,7 +22,7 @@ async function onSubmit(event: Event) {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="submit"
 		:disabled="disabled"
 		:style="{

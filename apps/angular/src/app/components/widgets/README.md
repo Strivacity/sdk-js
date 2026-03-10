@@ -139,7 +139,7 @@ export class CustomInputWidget {
 @Component({
 	selector: 'custom-submit-widget',
 	template: `
-		<ng-container *ngIf="config.render.type === 'button'; else linkSubmit">
+		<ng-container *ngIf="config.render?.type === 'button'; else linkSubmit">
 			<ng-container *ngIf="formId === 'identifier'; else defaultButton">
 				<button [id]="config.id" [style.color]="config.render.textColor" [style.backgroundColor]="config.render.bgColor">
 					{{ config.label }}
@@ -480,7 +480,7 @@ The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn c
 	template: `
 		<ng-container *ngIf="formId === 'identifier'; else defaultPasskeyLogin">
 			<button
-				*ngIf="config.render.type === 'button'; else linkPasskeyLogin"
+				*ngIf="config.render?.type === 'button'; else linkPasskeyLogin"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -498,7 +498,7 @@ The Passkey Login Widget allows users to authenticate using passkeys (WebAuthn c
 		</ng-container>
 		<ng-template #defaultPasskeyLogin>
 			<button
-				*ngIf="config.render.type === 'button'; else linkPasskeyLoginDefault"
+				*ngIf="config.render?.type === 'button'; else linkPasskeyLoginDefault"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -571,7 +571,7 @@ The Passkey Enroll Widget allows users to register new passkeys. It uses the `cr
 	template: `
 		<ng-container *ngIf="formId === 'identifier'; else defaultPasskeyEnroll">
 			<button
-				*ngIf="config.render.type === 'button'; else linkPasskeyEnroll"
+				*ngIf="config.render?.type === 'button'; else linkPasskeyEnroll"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -589,7 +589,7 @@ The Passkey Enroll Widget allows users to register new passkeys. It uses the `cr
 		</ng-container>
 		<ng-template #defaultPasskeyEnroll>
 			<button
-				*ngIf="config.render.type === 'button'; else linkPasskeyEnrollDefault"
+				*ngIf="config.render?.type === 'button'; else linkPasskeyEnrollDefault"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -662,7 +662,7 @@ The WebAuthn Login Widget provides WebAuthn-based authentication functionality, 
 	template: `
 		<ng-container *ngIf="formId === 'identifier'; else defaultWebAuthnLogin">
 			<button
-				*ngIf="config.render.type === 'button'; else linkWebAuthnLogin"
+				*ngIf="config.render?.type === 'button'; else linkWebAuthnLogin"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -680,7 +680,7 @@ The WebAuthn Login Widget provides WebAuthn-based authentication functionality, 
 		</ng-container>
 		<ng-template #defaultWebAuthnLogin>
 			<button
-				*ngIf="config.render.type === 'button'; else linkWebAuthnLoginDefault"
+				*ngIf="config.render?.type === 'button'; else linkWebAuthnLoginDefault"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -753,7 +753,7 @@ The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, si
 	template: `
 		<ng-container *ngIf="formId === 'identifier'; else defaultWebAuthnEnroll">
 			<button
-				*ngIf="config.render.type === 'button'; else linkWebAuthnEnroll"
+				*ngIf="config.render?.type === 'button'; else linkWebAuthnEnroll"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
@@ -771,7 +771,7 @@ The WebAuthn Enroll Widget allows users to register new WebAuthn credentials, si
 		</ng-container>
 		<ng-template #defaultWebAuthnEnroll>
 			<button
-				*ngIf="config.render.type === 'button'; else linkWebAuthnEnrollDefault"
+				*ngIf="config.render?.type === 'button'; else linkWebAuthnEnrollDefault"
 				type="button"
 				[id]="config.id"
 				[disabled]="disabled"
