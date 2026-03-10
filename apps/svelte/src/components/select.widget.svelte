@@ -9,6 +9,11 @@
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
 
+	// svelte-ignore state_referenced_locally
+	if (config.value) {
+		context.setFormValue(formId, config.id, config.value);
+	}
+
 	function onChange(event: Event) {
 		if (disabled) {
 			return;

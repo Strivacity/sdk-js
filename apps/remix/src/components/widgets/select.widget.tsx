@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import type { SelectWidget } from '@strivacity/sdk-core';
 import { NativeFlowContext } from '@strivacity/sdk-remix';
 import './select.widget.scss';
@@ -8,6 +8,12 @@ export function SelectWidget({ formId, config }: { formId: string; config: Selec
 	const disabled = useMemo(() => !!context?.loading || !!config.readonly, [context?.loading, config.readonly]);
 	const errorMessage = context?.messages[formId]?.[config.id]?.text;
 	const value = context?.forms[formId]?.[config.id] as string | undefined;
+
+	useEffect(() => {
+		if (config.value) {
+			context?.setFormValue(formId, config.id, config.value);
+		}
+	}, []);
 
 	const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		if (disabled) {

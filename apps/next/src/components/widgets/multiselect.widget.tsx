@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import type { MultiSelectWidget } from '@strivacity/sdk-core';
 import { NativeFlowContext } from '@strivacity/sdk-next';
 import './multiselect.widget.scss';
@@ -8,6 +8,12 @@ export function MultiSelectWidget({ formId, config }: { formId: string; config: 
 	const disabled = useMemo(() => !!context?.loading || !!config.readonly, [context?.loading, config.readonly]);
 	const errorMessage = context?.messages[formId]?.[config.id]?.text;
 	const values = (context?.forms[formId]?.[config.id] as Array<string>) || [];
+
+	useEffect(() => {
+		if (config.value?.length) {
+			context?.setFormValue(formId, config.id, config.value);
+		}
+	}, []);
 
 	const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (disabled) {

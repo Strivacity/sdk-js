@@ -1161,7 +1161,7 @@ export type SelectWidget = {
 	type: 'select';
 	label?: string;
 	readonly?: boolean;
-	values?: Array<string>;
+	value?: string;
 	render?: {
 		type: 'dropdown' | 'radio';
 	};
@@ -1175,7 +1175,7 @@ export type MultiSelectWidget = {
 	type: 'multiSelect';
 	label?: string;
 	readonly?: boolean;
-	values?: Array<string>;
+	value?: Array<string>;
 	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
 	validator?: {
 		minSelectable?: number;

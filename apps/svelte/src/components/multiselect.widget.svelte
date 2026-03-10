@@ -8,6 +8,11 @@
 	const disabled = $derived(context.loading || !!config.readonly);
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 
+	// svelte-ignore state_referenced_locally
+	if (config.value?.length) {
+		context.setFormValue(formId, config.id, config.value);
+	}
+
 	function onChange(event: Event) {
 		if (disabled) {
 			return;

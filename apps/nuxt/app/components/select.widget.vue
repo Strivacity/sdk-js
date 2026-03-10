@@ -7,6 +7,10 @@ const disabled = computed(() => !!context?.loading.value || !!props.config.reado
 const errorMessage = computed(() => context?.messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
 
+if (props.config.value) {
+	context?.setFormValue(props.formId, props.config.id, props.config.value);
+}
+
 function onChange(event: Event) {
 	if (disabled.value) {
 		return;
