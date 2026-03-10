@@ -22,7 +22,7 @@
 	}
 </script>
 
-{#if config.render.type === 'button'}
+{#if config.render?.type === 'button'}
 	<button
 		type="submit"
 		disabled={disabled}

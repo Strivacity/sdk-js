@@ -17,7 +17,7 @@ function onClose() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		:disabled="disabled"
 		:style="{
 			backgroundColor: config.render.bgColor ?? (config.render.hint?.variant === 'primary' ? `#5d21ab` : `#ffffff`),

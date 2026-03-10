@@ -1,5 +1,5 @@
 <div>
-	@if (config.render.type === 'radio') { @for (option of config.options; track option.value) {
+	@if (config.render?.type === 'radio') { @for (option of config.options; track option.value) {
 	<div class="group">
 		@if (option.type === 'group') {
 		<p>{{ option.label }}</p>

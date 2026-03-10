@@ -19,7 +19,7 @@
 </script>
 
 <div data-widget="select" data-form-id={formId} data-widget-id={config.id}>
-	{#if config.render.type === 'radio'}
+	{#if config.render?.type === 'radio'}
 		{#each config.options as option (option.label)}
 			<div class="group">
 				{#if option.type === 'group'}

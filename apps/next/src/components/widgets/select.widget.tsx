@@ -17,7 +17,7 @@ export function SelectWidget({ formId, config }: { formId: string; config: Selec
 		context?.setFormValue(formId, config.id, event.target.value);
 	};
 
-	if (config.render.type === 'radio') {
+	if (config.render?.type === 'radio') {
 		return (
 			<div data-widget="select" data-form-id={formId} data-widget-id={config.id}>
 				{config.options.map((option) =>

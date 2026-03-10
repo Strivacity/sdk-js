@@ -73,7 +73,7 @@ defineProps<{ formId: string; config: StaticWidget }>();
 </script>
 
 <template>
-	<div v-if="config.render.type === 'html'" data-widget="static" :data-form-id="formId" :data-widget-id="config.id" v-html="config.value"></div>
+	<div v-if="config.render?.type === 'html'" data-widget="static" :data-form-id="formId" :data-widget-id="config.id" v-html="config.value"></div>
 	<div v-else-if="config.type === 'text' && formId === 'identifier'" data-widget="static" :data-form-id="formId" :data-widget-id="config.id">
 		<p>Identifier Form Static Text</p>
 		<p>{{ config.value }}</p>
@@ -183,7 +183,7 @@ async function onSubmit(event: Event) {
 
 <template>
 	<button
-		v-if="props.config.render.type === 'button'"
+		v-if="props.config.render?.type === 'button'"
 		:disabled="disabled"
 		:style="{
 			backgroundColor: props.config.render.bgColor,
@@ -632,7 +632,7 @@ async function onClick() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="button"
 		:disabled="disabled"
 		data-widget="passkeyLogin"
@@ -693,7 +693,7 @@ async function onClick() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="button"
 		:disabled="disabled"
 		data-widget="passkeyEnroll"
@@ -754,7 +754,7 @@ async function onClick() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="button"
 		:disabled="disabled"
 		data-widget="webauthnLogin"
@@ -815,7 +815,7 @@ async function onClick() {
 
 <template>
 	<button
-		v-if="config.render.type === 'button'"
+		v-if="config.render?.type === 'button'"
 		type="button"
 		:disabled="disabled"
 		data-widget="webauthnEnroll"

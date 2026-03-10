@@ -97,7 +97,7 @@ async function onKeyDown(event: KeyboardEvent) {
 	<div data-widget="date" :data-form-id="formId" :data-widget-id="config.id">
 		<label v-if="config.label" :for="config.id" class="label">{{ config.label }}</label>
 		<div
-			v-if="config.render.type === 'fieldSet'"
+			v-if="config.render?.type === 'fieldSet'"
 			:style="{ 'grid-template-columns': `${fieldLengths.year}fr ${fieldLengths.month}fr ${fieldLengths.day}fr` }"
 			class="fieldset"
 		>

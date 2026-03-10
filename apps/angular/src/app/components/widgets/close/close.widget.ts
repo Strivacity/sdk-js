@@ -12,7 +12,7 @@ import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 	styleUrls: ['./close.widget.scss'],
 	host: {
 		'data-widget': 'close',
-		'[attr.data-type]': 'config.render.type',
+		'[attr.data-type]': 'config.render?.type',
 		'[attr.data-form-id]': 'formId',
 		'[attr.data-widget-id]': 'config.id',
 	},

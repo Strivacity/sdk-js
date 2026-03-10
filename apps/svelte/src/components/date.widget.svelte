@@ -87,7 +87,7 @@
 	{#if config.label}
 		<label for={config.id} class="label">{config.label}</label>
 	{/if}
-	{#if config.render.type === 'fieldSet'}
+	{#if config.render?.type === 'fieldSet'}
 		<div class="fieldset" style:grid-template-columns="{fieldLengths.year}fr {fieldLengths.month}fr {fieldLengths.day}fr">
 			{#each format as field (field)}
 				<input

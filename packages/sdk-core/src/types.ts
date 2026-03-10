@@ -1072,7 +1072,7 @@ export type CheckboxWidget = {
 	label?: string;
 	readonly?: boolean;
 	value?: boolean;
-	render: {
+	render?: {
 		type: 'checkboxHidden' | 'checkboxShown';
 		labelType: 'text' | 'html';
 	};
@@ -1084,10 +1084,9 @@ export type DateWidget = {
 	id: string;
 	type: 'date';
 	label?: string;
-	placeholder?: string;
 	readonly?: boolean;
 	value?: string;
-	render: {
+	render?: {
 		type: 'native' | 'fieldSet';
 	};
 	validator?: {
@@ -1101,7 +1100,6 @@ export type InputWidget = {
 	type: 'input';
 	label?: string;
 	value?: string;
-	placeholder?: string;
 	readonly?: boolean;
 	autocomplete?: string;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1164,8 +1162,7 @@ export type SelectWidget = {
 	label?: string;
 	readonly?: boolean;
 	values?: Array<string>;
-	placeholder?: string;
-	render: {
+	render?: {
 		type: 'dropdown' | 'radio';
 	};
 	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
@@ -1179,10 +1176,6 @@ export type MultiSelectWidget = {
 	label?: string;
 	readonly?: boolean;
 	values?: Array<string>;
-	placeholder?: string;
-	render: {
-		type: 'dropdown' | 'checkbox';
-	};
 	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
 	validator?: {
 		minSelectable?: number;
@@ -1193,7 +1186,7 @@ export type StaticWidget = {
 	id: string;
 	type: 'static';
 	value: string;
-	render: {
+	render?: {
 		type: 'html' | 'text';
 	};
 };
@@ -1201,7 +1194,7 @@ export type SubmitWidget = {
 	id: string;
 	type: 'submit';
 	label?: string;
-	render: {
+	render?: {
 		type: 'button' | 'link';
 		textColor?: string;
 		bgColor?: string;
@@ -1215,7 +1208,7 @@ export type CloseWidget = {
 	id: string;
 	type: 'close';
 	label?: string;
-	render: {
+	render?: {
 		type: 'button' | 'link';
 		textColor?: string;
 		bgColor?: string;
@@ -1244,13 +1237,10 @@ export type LayoutWidget = {
 export type PasskeyLoginWidget = {
 	id: string;
 	label?: string;
-	render: {
+	render?: {
 		type: 'button';
 		hint?: {
 			variant?: string;
-		};
-		notification?: {
-			cancelled?: string;
 		};
 	};
 	assertionOptions: PublicKeyCredentialRequestOptions;
@@ -1258,13 +1248,10 @@ export type PasskeyLoginWidget = {
 export type PasskeyEnrollWidget = {
 	id: string;
 	label?: string;
-	render: {
+	render?: {
 		type: 'button';
 		hint?: {
 			variant?: string;
-		};
-		notification?: {
-			cancelled?: string;
 		};
 	};
 	enrollOptions: PublicKeyCredentialCreationOptions;
@@ -1273,13 +1260,10 @@ export type WebauthnLoginWidget = {
 	id: string;
 	label?: string;
 	authenticatorType: 'deviceBiometrics' | 'securityKey';
-	render: {
+	render?: {
 		type: 'button';
 		hint?: {
 			variant?: string;
-		};
-		notification?: {
-			cancelled?: string;
 		};
 	};
 	assertionOptions: PublicKeyCredentialRequestOptions;
@@ -1288,13 +1272,10 @@ export type WebauthnEnrollWidget = {
 	id: string;
 	label?: string;
 	authenticatorType: 'deviceBiometrics' | 'securityKey';
-	render: {
+	render?: {
 		type: 'button';
 		hint?: {
 			variant?: string;
-		};
-		notification?: {
-			cancelled?: string;
 		};
 	};
 	enrollOptions: PublicKeyCredentialCreationOptions;

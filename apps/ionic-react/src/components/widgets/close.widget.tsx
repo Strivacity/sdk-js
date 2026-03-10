@@ -17,7 +17,7 @@ export function CloseWidget({ formId, config }: { formId: string; config: CloseW
 
 	return (
 		<>
-			{config.render.type === 'button' ? (
+			{config.render?.type === 'button' ? (
 				<button
 					disabled={disabled}
 					style={{

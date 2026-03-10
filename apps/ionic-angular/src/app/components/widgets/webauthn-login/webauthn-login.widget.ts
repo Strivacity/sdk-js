@@ -12,7 +12,7 @@ import { StrivacityWidgetService, getCredential } from '@strivacity/sdk-angular'
 	styleUrls: ['./webauthn-login.widget.scss'],
 	host: {
 		'data-widget': 'webauthnLogin',
-		'[attr.data-type]': 'config.render.type',
+		'[attr.data-type]': 'config.render?.type',
 		'[attr.data-form-id]': 'formId',
 		'[attr.data-widget-id]': 'config.id',
 	},
