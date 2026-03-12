@@ -1,6 +1,6 @@
 import { type MockInstance, vi, describe, test, expect, beforeEach } from 'vitest';
 import { type SDKOptions, type NativeParams, initFlow } from '../../src';
-import { type NativeFlowHandler } from '../../src/utils/NativeFlowHandler';
+import { type NativeFlowHandler } from '../../src/handlers/NativeFlowHandler';
 import { DefaultLogging } from '../../src/utils/Logging';
 
 import { mockLocalStorage } from '@strivacity/testing/mocks/storages';

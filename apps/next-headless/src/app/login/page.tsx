@@ -12,7 +12,7 @@ import type {
 	InputWidget,
 	NativeParams,
 } from '@strivacity/sdk-next';
-import type { NativeFlowHandler } from 'packages/sdk-core/dist/utils/NativeFlowHandler';
+import type { NativeFlowHandler } from '@strivacity/sdk-core/handlers/NativeFlowHandler';
 import { unflattenObject } from '@strivacity/sdk-core/utils/object';
 import { useStrivacity, FallbackError } from '@strivacity/sdk-next';
 

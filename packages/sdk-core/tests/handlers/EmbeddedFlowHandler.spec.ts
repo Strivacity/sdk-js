@@ -1,6 +1,6 @@
 import { type MockInstance, vi, describe, test, expect, beforeEach } from 'vitest';
 import { type SDKOptions, type ExtraRequestArgs, initFlow } from '../../src';
-import { type EmbeddedFlowHandler } from '../../src/utils/EmbeddedFlowHandler';
+import { type EmbeddedFlowHandler } from '../../src/handlers/EmbeddedFlowHandler';
 import { DefaultLogging } from '../../src/utils/Logging';
 
 import { mockLocalStorage } from '@strivacity/testing/mocks/storages';
