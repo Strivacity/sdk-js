@@ -1,0 +1,27 @@
+<section>
+	@if (mode === 'embedded') {
+	<sty-notifications></sty-notifications>
+	<sty-login
+		[params]="extraParams"
+		[shortAppId]="shortAppId"
+		[sessionId]="sessionId"
+		(close)="onClose($event.detail)"
+		(login)="onLogin()"
+		(error)="onError($event.detail)"
+		(blockReady)="onBlockReady($event.detail)"
+	/>
+	<sty-language-selector></sty-language-selector>
+	} @else if (mode === 'native') {
+	<sty-login-renderer
+		[params]="extraParams"
+		[widgets]="widgets"
+		[sessionId]="sessionId"
+		(fallback)="onFallback($event)"
+		(close)="onClose($event)"
+		(login)="onLogin()"
+		(error)="onError($event)"
+		(globalMessage)="onGlobalMessage($event)"
+		(blockReady)="onBlockReady($event)"
+	></sty-login-renderer>
+	}
+</section>
