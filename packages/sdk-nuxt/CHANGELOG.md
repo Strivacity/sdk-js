@@ -1,3 +1,17 @@
+# 3.0.0 (2026-04-09)
+
+### 🚀 Features
+
+- ⚠️  NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+
+### ⚠️  Breaking Changes
+
+- NativeFlow entry function now returns an object instead of a string  ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 3.0.0
+
 ## 3.0.0-rc.0 (2026-02-18)
 
 ### 🚀 Features

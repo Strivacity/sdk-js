@@ -1,3 +1,26 @@
+# 3.0.0 (2026-04-09)
+
+### 🚀 Features
+
+- custom sdk mode added ([17812c6](https://github.com/Strivacity/sdk-js/commit/17812c6))
+- ⚠️  EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- ⚠️  NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+- popupUrlHandler refactored ([886f6ea](https://github.com/Strivacity/sdk-js/commit/886f6ea))
+
+### 🩹 Fixes
+
+- select and multiselect default value handling fixed ([25ecacd](https://github.com/Strivacity/sdk-js/commit/25ecacd))
+- widget type definitions fixed ([c2e9b12](https://github.com/Strivacity/sdk-js/commit/c2e9b12))
+
+### ⚠️  Breaking Changes
+
+- EmbeddedFlow implemented  ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- NativeFlow entry function now returns an object instead of a string  ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 3.0.0
+
 ## 3.0.0-rc.0 (2026-02-18)
 
 ### 🚀 Features

@@ -1,3 +1,20 @@
+# 3.0.0 (2026-04-09)
+
+### 🚀 Features
+
+- custom sdk mode added ([17812c6](https://github.com/Strivacity/sdk-js/commit/17812c6))
+- ⚠️  EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- ⚠️  NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+
+### ⚠️  Breaking Changes
+
+- EmbeddedFlow implemented  ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- NativeFlow entry function now returns an object instead of a string  ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 3.0.0
+
 ## 3.0.0-rc.0 (2026-02-18)
 
 ### 🚀 Features
