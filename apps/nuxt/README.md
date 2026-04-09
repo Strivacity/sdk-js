@@ -1,28 +1,52 @@
 # Strivacity SDK - Nuxt Example App
 
-This example application demonstrates how to integrate the Strivacity SDK into a Nuxt 3 application using the official Nuxt module for seamless authentication integration with server-side rendering capabilities.
+This example application demonstrates how to integrate the [@strivacity/sdk-nuxt](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-nuxt) SDK into a Nuxt 3 application using the Nuxt module system. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) and shows how to structure page-based authentication flows.
 
-## Key Features and Implementation
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### 1. Nuxt Dependencies
+## Overview
 
-This Nuxt application uses the Strivacity Nuxt SDK module for authentication (see [package.json](./package.json)):
+The SDK is registered as a Nuxt module in `nuxt.config.ts` and exposes the `useStrivacity` composable, which is auto-imported across all pages and components. Vue Router (built into Nuxt) is used for client-side navigation with route middleware for authentication guards.
 
-```json
-{
-	"@strivacity/sdk-nuxt": "*"
-}
+## Requirements
+
+- Nuxt: 3+
+- Node.js: 20 LTS+
+
+## Install
+
+```bash
+pnpm install
 ```
 
-### 2. Module Configuration
+Create a `.env.local` file in the repository root:
 
-The application integrates the Strivacity SDK through Nuxt's module system with configuration in `nuxt.config.ts` (see [nuxt.config.ts](./nuxt.config.ts)):
+```env
+VITE_MODE=redirect
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
+```
+
+Then start the development server:
+
+```bash
+pnpm app:nuxt:serve
+```
+
+## Usage
+
+### Initialization
+
+The SDK is configured as a Nuxt module in `nuxt.config.ts` under the `strivacity` key. The app runs client-side only (`ssr: false`). The root layout in `app/app.vue` dynamically imports `bundle.js` from the configured issuer domain, which registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
 
 ```typescript
-import { defineNuxtConfig } from 'nuxt/config';
+// nuxt.config.ts
+import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 
 export default defineNuxtConfig({
-	ssr: false, // Client-side rendering for auth compatibility
+	ssr: false,
 	modules: ['@strivacity/sdk-nuxt'],
 	strivacity: {
 		mode: process.env.VITE_MODE as 'redirect' | 'popup' | 'native',
@@ -31,60 +55,171 @@ export default defineNuxtConfig({
 		clientId: process.env.VITE_CLIENT_ID,
 		redirectUri: process.env.VITE_REDIRECT_URI,
 		storageTokenName: 'sty.session.nuxt',
+		logging: DefaultLogging,
 	},
 });
 ```
 
-### 3. Auto-Imported Composables
-
-The Nuxt module automatically provides the `useStrivacity` composable throughout the application (see [app/app.vue](./app/app.vue)):
+The `useStrivacity` composable is auto-imported in all pages and components without any explicit import statement. It returns reactive refs for `loading`, `isAuthenticated`, `idTokenClaims`, `sdk`, and the authentication methods:
 
 ```vue
-<script setup>
-// useStrivacity is auto-imported by the Nuxt module
+<script lang="ts" setup>
+import { computed } from 'vue';
+
 const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
 const userName = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`);
 </script>
 
 <template>
-	<div>
-		<div v-if="loading">Loading...</div>
-		<div v-else-if="isAuthenticated">Welcome, {{ userName }}!</div>
-	</div>
+	<div v-if="loading">Loading...</div>
+	<div v-else-if="isAuthenticated">Welcome, {{ userName }}!</div>
 </template>
 ```
 
-### 4. Logging
+### Login / Register
 
-You can enable SDK logging or plug in your own logger.
+`app/pages/login.vue` and `app/pages/register.vue` initiate the authentication flow. The active mode determines how the UI is rendered:
 
-- Enable default logging by adding `logging: DefaultLogging` to the SDK configuration in [nuxt.config.ts](./nuxt.config.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+- **`redirect`** — `login()` is called on mount; the user is taken to the identity provider in the same window.
+- **`popup`** — `login()` is called on mount; authentication happens in a popup window.
+- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
+- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
 
-```typescript
-import { defineNuxtConfig } from 'nuxt/config';
-import { DefaultLogging } from '@strivacity/sdk-core';
+`app/pages/callback.vue` handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
 
-export default defineNuxtConfig({
-	ssr: false,
-	modules: ['@strivacity/sdk-nuxt'],
-	strivacity: {
-		// ...other options
-		logging: DefaultLogging, // enable built-in console logging
-	},
+```vue
+<script lang="ts" setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const { handleCallback } = useStrivacity();
+
+onMounted(async () => {
+	const url = new URL(location.href);
+
+	if (url.searchParams.has('session_id')) {
+		await router.push(`/login?${url.searchParams}`);
+	} else {
+		try {
+			await handleCallback();
+			await router.push('/profile');
+		} catch (error) {
+			console.error('Error during callback handling:', error);
+		}
+	}
 });
+</script>
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Refresh token
 
-```ts
+Token refresh runs automatically when the SDK detects an expired access token. The `refresh` method is also available via the composable for manual invocation:
+
+```vue
+<script lang="ts" setup>
+const { refresh } = useStrivacity();
+</script>
+```
+
+### Revoke session / logout
+
+`app/pages/revoke.vue` revokes the current session tokens without a full logout. It checks `isAuthenticated` before calling `revoke()` and then returns to the home page:
+
+```vue
+<script lang="ts" setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const { isAuthenticated, revoke } = useStrivacity();
+
+onMounted(async () => {
+	if (isAuthenticated.value) {
+		await revoke();
+	}
+	await router.push('/');
+});
+</script>
+```
+
+`app/pages/logout.vue` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin; otherwise the user is immediately redirected home:
+
+```vue
+<script lang="ts" setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const { isAuthenticated, logout } = useStrivacity();
+
+onMounted(async () => {
+	if (isAuthenticated.value) {
+		await logout({ postLogoutRedirectUri: location.origin });
+	} else {
+		await router.push('/');
+	}
+});
+</script>
+```
+
+### Resume an externally-initiated flow
+
+`app/pages/entry.vue` handles flows started by an external process (e.g. password reset, magic link, invite). On mount it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow; if no data is returned the user is redirected to the home page:
+
+```vue
+<script lang="ts" setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const { entry } = useStrivacity();
+
+onMounted(async () => {
+	try {
+		const data = await entry();
+		if (data && Object.keys(data).length > 0) {
+			await router.push(`/callback?${new URLSearchParams(data).toString()}`);
+		} else {
+			await router.push('/');
+		}
+	} catch (error) {
+		alert(error);
+		await router.push('/');
+	}
+});
+</script>
+```
+
+The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
+
+The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login.
+
+You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { DefaultLogging } from '@strivacity/sdk-nuxt';
+
+// ...within your SDK options:
+logging: DefaultLogging,
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-nuxt';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
-		console.log(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
 		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
@@ -98,185 +233,34 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK configuration:
-
 ```typescript
-import { defineNuxtConfig } from 'nuxt/config';
 import { MyLogger } from './logging/MyLogger';
 
-export default defineNuxtConfig({
-	ssr: false,
-	modules: ['@strivacity/sdk-nuxt'],
-	strivacity: {
-		// ...other options
-		logging: MyLogger,
-	},
-});
+// ...within your SDK options:
+logging: MyLogger,
 ```
 
-### 5. File-Based Routing
+## Pages
 
-The application uses Nuxt's file-based routing with pages for different authentication flows:
+| Page     | Path                     | Description                                                                                                                                                        |
+| -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `app/pages/index.vue`    | Public landing page. Displays user info when authenticated.                                                                                                        |
+| Login    | `app/pages/login.vue`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
+| Register | `app/pages/register.vue` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
+| Callback | `app/pages/callback.vue` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
+| Entry    | `app/pages/entry.vue`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
+| Profile  | `app/pages/profile.vue`  | Protected page showing the authenticated user's session details and token information.                                                                             |
+| Revoke   | `app/pages/revoke.vue`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
+| Logout   | `app/pages/logout.vue`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
 
-```
-app/
-├── app.vue              # Root layout component
-├── pages/
-│   ├── index.vue        # Home page
-│   ├── login.vue        # Login page
-│   ├── register.vue     # Registration page
-│   ├── callback.vue     # OAuth callback handler
-│   ├── profile.vue      # Protected profile page
-│   └── logout.vue       # Logout page
-└── middleware/
-    └── auth.ts          # Authentication middleware
-```
+## Vulnerability Reporting
 
-### 6. Route Protection Middleware
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-The application implements Nuxt middleware for protecting authenticated routes (see [middleware/auth.ts](./middleware/auth.ts)):
+## License
 
-```typescript
-export default defineNuxtRouteMiddleware(() => {
-	const { isAuthenticated } = useStrivacity();
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-	if (!isAuthenticated.value) {
-		return navigateTo('/login');
-	}
-});
-```
+## Contributing
 
-### 7. Page Meta Configuration
-
-Pages can define authentication requirements using Nuxt's page meta:
-
-```vue
-<script setup>
-// Automatically protect this page
-definePageMeta({
-	middleware: 'auth',
-});
-
-const { idTokenClaims } = useStrivacity();
-</script>
-
-<template>
-	<div>
-		<h1>Profile</h1>
-		<p>Email: {{ idTokenClaims?.email }}</p>
-	</div>
-</template>
-```
-
-## Installation and Setup
-
-### 1. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Environment Variables Setup
-
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:4200/callback
-VITE_MODE=redirect
-```
-
-### 3. Running the Application
-
-#### Development Server
-
-```bash
-pnpm app:nuxt:serve
-```
-
-#### Production Build
-
-```bash
-pnpm run build
-pnpm run preview
-```
-
-## Architecture Overview
-
-### SDK Integration
-
-The Strivacity SDK is integrated as a Nuxt module, providing automatic configuration and composable auto-imports throughout the application (see [nuxt.config.ts](./nuxt.config.ts)).
-
-### Composable Usage
-
-The `useStrivacity` composable is automatically available in all Vue components without explicit imports:
-
-```vue
-<script setup>
-// Auto-imported by the Nuxt module
-const { loading, isAuthenticated, idTokenClaims, login, logout, register } = useStrivacity();
-</script>
-```
-
-### Middleware Integration
-
-Authentication logic can be encapsulated in Nuxt middleware for reusable route protection:
-
-```typescript
-// middleware/auth.ts
-export default defineNuxtRouteMiddleware(() => {
-	const { isAuthenticated, loading } = useStrivacity();
-
-	if (loading.value) return;
-
-	if (!isAuthenticated.value) {
-		return navigateTo('/login');
-	}
-});
-```
-
-### Pages
-
-Brief, purpose-oriented descriptions of files under app/pages — what they do, expected behavior, and how they use the Strivacity composable.
-
-- app/pages/index.vue
-  - Purpose: Landing/home page. Publicly accessible; introduces the app and often includes links to login/register.
-  - Behavior: If the app knows authenticated state, it can display user info (e.g., name) using the useStrivacity composable.
-  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-
-- app/pages/login.vue
-  - Purpose: Login page / entry point for the authentication flow.
-  - Behavior: Triggers the Strivacity login flow (redirect/popup/native depending on module config). If already authenticated, commonly redirects to the profile page.
-  - Tip: Check isAuthenticated and redirect (e.g., to /profile) if true.
-
-- app/pages/register.vue
-  - Purpose: Registration page (if registration is supported by your setup).
-  - Behavior: Starts a registration flow or presents a registration form and calls the Strivacity backend. Logic is often similar to login but focused on user creation.
-  - Usage: useStrivacity().register() or custom UI + SDK calls.
-
-- app/pages/callback.vue
-  - Purpose: OAuth / OpenID Connect callback handler — the identity provider returns the user here.
-  - Behavior: Receives query params (code, state, etc.), calls the SDK's callback/handleRedirect method, completes authentication, and redirects to the target (e.g., /profile or a previously saved route).
-  - Note: Do NOT protect this page with auth middleware because external providers must be able to return here.
-
-- app/pages/profile.vue
-  - Purpose: User profile page — intended for authenticated users only.
-  - Behavior: Protected route (e.g., definePageMeta({ middleware: 'auth' }) or via global middleware). Displays idTokenClaims and other user data from useStrivacity.
-  - Usage: const { idTokenClaims, logout } = useStrivacity(); — for displaying data and signing out.
-
-- app/pages/entry.vue
-  - Purpose: Page-level entry component that initiates different operations via links. It is used to start an entry flow (for example when a link or external action should trigger a server-side or SDK-driven operation).
-  - Behavior: On mount it calls the composable's entry() method (useStrivacity().entry()). The call returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise redirect to the home page. Basic error handling shows a message and redirects to home on failure.
-  - Usage: const { entry } = useStrivacity(); — useful for link-driven flows where the entry endpoint decides the next step (redirect to callback or fallback to home).
-
-- app/pages/revoke.vue
-  - Purpose: Revoke tokens or user sessions (e.g., revoke refresh tokens or explicit consent) — optional endpoint for advanced session management.
-  - Behavior: Calls the SDK or backend revoke endpoint to invalidate tokens and optionally triggers a logout/redirect. Should surface success/error feedback to the user and then redirect (home or login).
-  - Usage: Use the SDK's revoke or session-management API (or call your backend) and then use logout/redirect flow; ensure proper UX (loading, error handling).
-
-- app/pages/logout.vue
-  - Purpose: Initiates logout and clears the session.
-  - Behavior: Calls the SDK logout method, clears local session state if needed, and redirects to the home or login page.
-  - Tip: This can be a simple "perform logout and redirect" component.
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).

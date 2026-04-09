@@ -1,8 +1,20 @@
-# Strivacity SDK for Svelte
+# @strivacity/sdk-svelte
 
-Svelte SDK for integrating with Strivacity Identity Platform.
+A Svelte library that integrates Strivacity's policy-driven authentication journeys into your application using the OAuth 2.0 PKCE flow. Supports `redirect`, `popup`, `native`, and `embedded` modes.
 
-> **The SDK supports Svelte version 4 and above**
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+
+## Overview
+
+This SDK allows you to integrate Strivacity's policy-driven journeys into your Svelte application. It wraps the `@strivacity/sdk-core` library as a Svelte context provider and exposes a `useStrivacity` function that provides reactive authentication state and methods throughout your component tree. The SDK uses the OAuth 2.0 PKCE flow to authenticate with Strivacity. For detailed configuration options, available modes, and advanced usage refer to the [`@strivacity/sdk-core` documentation](https://github.com/Strivacity/sdk-js/blob/main/packages/sdk-core/README.md).
+
+## Demo Application
+
+- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/svelte)
+
+## Requirements
+
+- Svelte: 5+
 
 ## Install
 
@@ -12,271 +24,299 @@ npm install @strivacity/sdk-svelte
 
 ## Usage
 
-This SDK supports three authentication modes: **redirect** (default), **popup**, and **native**. Each mode provides a different user experience for authentication flows.
+### Initialization
 
-### Adding the SDK to your main Svelte application
-
-Wrap your application with the `StyAuthProvider` component to provide authentication context to all child components:
+Wrap your application with `StyAuthProvider` in your root layout:
 
 ```svelte
-<script lang="ts">
-	import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-svelte';
-	import Router from './Router.svelte';
+<!-- src/routes/+layout.svelte -->
+<script>
+import { StyAuthProvider } from '@strivacity/sdk-svelte';
 
-	const options: SDKOptions = {
-		mode: 'redirect', // or 'popup' or 'native'
-		issuer: 'https://<YOUR_DOMAIN>',
-		scopes: ['openid', 'profile'],
-		clientId: '<YOUR_CLIENT_ID>',
-		redirectUri: '<YOUR_REDIRECT_URI>',
-	};
+const options = {
+	mode: 'redirect', // or 'popup', 'native', 'embedded'
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+};
 </script>
 
 <StyAuthProvider {options}>
-	<Router />
+	<slot />
 </StyAuthProvider>
 ```
 
-## Redirect mode (default)
-
-In redirect mode, users are redirected to the identity provider's login page and then back to your application after authentication.
-
-##### Login page example
+Use the `useStrivacity` function in any component to access authentication state:
 
 ```svelte
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import { useStrivacity, type RedirectContext } from '@strivacity/sdk-svelte';
+<script>
+import { useStrivacity } from '@strivacity/sdk-svelte';
 
-	const { login } = useStrivacity<RedirectContext>();
-
-	onMount(() => {
-		login();
-	});
+const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
 </script>
 ```
 
-##### Callback page example
+### Redirect / Popup mode
+
+In `redirect` mode the user is taken to the identity provider in the same window; in `popup` mode authentication happens in a popup. Both are initiated the same way from code.
+
+#### Login page example
 
 ```svelte
+<!-- src/routes/login/+page.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { login } = useStrivacity();
+
+onMount(() => {
+	login();
+});
+</script>
+
+<section>
+	<h1>Redirecting...</h1>
+</section>
+```
+
+#### Callback page example
+
+The callback page handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
+
+```svelte
+<!-- src/routes/callback/+page.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { goto } from '$app/navigation';
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { handleCallback } = useStrivacity();
+
+onMount(async () => {
+	try {
+		await handleCallback();
+		await goto('/profile');
+	} catch (error) {
+		console.error('Error during callback handling:', error);
+	}
+});
+</script>
+
+<section>
+	<h1>Logging in...</h1>
+</section>
+```
+
+#### Profile page example
+
+```svelte
+<!-- src/routes/profile/+page.svelte -->
+<script>
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { loading, isAuthenticated, accessToken, accessTokenExpired, accessTokenExpirationDate, idTokenClaims, refreshToken } = useStrivacity();
+</script>
+
+<section>
+	{#if $loading}
+		<h1>Loading...</h1>
+	{:else}
+		<dl>
+			<dt><strong>accessToken</strong></dt>
+			<dd><pre>{JSON.stringify($accessToken)}</pre></dd>
+			<dt><strong>refreshToken</strong></dt>
+			<dd><pre>{JSON.stringify($refreshToken)}</pre></dd>
+			<dt><strong>accessTokenExpired</strong></dt>
+			<dd><pre>{JSON.stringify($accessTokenExpired)}</pre></dd>
+			<dt><strong>accessTokenExpirationDate</strong></dt>
+			<dd><pre>{$accessTokenExpirationDate ? new Date($accessTokenExpirationDate * 1000).toLocaleString() : JSON.stringify(null)}</pre></dd>
+			<dt><strong>claims</strong></dt>
+			<dd><pre>{JSON.stringify($idTokenClaims, null, 2)}</pre></dd>
+		</dl>
+	{/if}
+</section>
+```
+
+#### Logout page example
+
+The `postLogoutRedirectUri` parameter is optional and specifies where users are redirected after logout. This URI must be configured in the Admin Console as an allowed post-logout redirect URI.
+
+```svelte
+<!-- src/routes/logout/+page.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { goto } from '$app/navigation';
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { isAuthenticated, logout } = useStrivacity();
+
+onMount(async () => {
+	if ($isAuthenticated) {
+		await logout({ postLogoutRedirectUri: location.origin });
+	} else {
+		await goto('/');
+	}
+});
+</script>
+
+<section>
+	<h1>Logging out...</h1>
+</section>
+```
+
+#### Component example
+
+```svelte
+<script>
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
+
+$: name = `${$idTokenClaims?.given_name} ${$idTokenClaims?.family_name}`;
+</script>
+
+{#if $isAuthenticated}
+	<div>
+		<div>Welcome, {name}!</div>
+		<button on:click={() => logout()}>Logout</button>
+	</div>
+{:else}
+	<div>
+		<div>Not logged in</div>
+		<button on:click={() => login()}>Log in</button>
+	</div>
+{/if}
+```
+
+### Native mode
+
+In `native` mode the `StyLoginRenderer` component renders the authentication UI inline using your custom widget components. You can define custom components for each input type; see [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/svelte/src/components/widgets).
+
+The example widgets use SCSS for styling and Luxon for date handling:
+
+```bash
+npm install sass luxon
+npm install --save-dev @types/luxon
+```
+
+```js
+import CheckboxWidget from './checkbox.widget.svelte';
+import DateWidget from './date.widget.svelte';
+import InputWidget from './input.widget.svelte';
+import LayoutWidget from './layout.widget.svelte';
+import MultiSelectWidget from './multiselect.widget.svelte';
+import PasscodeWidget from './passcode.widget.svelte';
+import LoadingWidget from './loading.widget.svelte';
+import PasswordWidget from './password.widget.svelte';
+import PhoneWidget from './phone.widget.svelte';
+import SelectWidget from './select.widget.svelte';
+import StaticWidget from './static.widget.svelte';
+import SubmitWidget from './submit.widget.svelte';
+
+export const widgets = {
+	checkbox: CheckboxWidget,
+	date: DateWidget,
+	input: InputWidget,
+	layout: LayoutWidget,
+	loading: LoadingWidget,
+	passcode: PasscodeWidget,
+	password: PasswordWidget,
+	phone: PhoneWidget,
+	select: SelectWidget,
+	multiSelect: MultiSelectWidget,
+	static: StaticWidget,
+	submit: SubmitWidget,
+};
+```
+
+#### Login page example
+
+The login page extracts `session_id` from the URL on load, cleans up the URL, and passes it to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
+
+```svelte
+<!-- src/routes/login/+page.svelte -->
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { useStrivacity, type RedirectContext } from '@strivacity/sdk-svelte';
+import { goto } from '$app/navigation';
+import { StyLoginRenderer, type FallbackError, type LoginFlowState } from '@strivacity/sdk-svelte';
+import { widgets } from '$lib/components/widgets';
 
-	const { handleCallback } = useStrivacity<RedirectContext>();
+let sessionId: string | null = null;
 
-	onMount(async () => {
+if (window.location.search !== '') {
+	const url = new URL(window.location.href);
+	sessionId = url.searchParams.get('session_id');
+	url.search = '';
+	history.replaceState({}, '', url.toString());
+}
+
+const onLogin = async () => {
+	await goto('/profile');
+};
+
+const onFallback = (error: FallbackError) => {
+	if (error.url) {
+		window.location.href = error.url.toString();
+	} else {
+		alert(error);
+	}
+};
+
+const onError = (error: string) => {
+	alert(error);
+};
+
+const onGlobalMessage = (message: string) => {
+	alert(message);
+};
+
+const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
+	console.log('previousState', previousState);
+	console.log('state', state);
+};
+</script>
+
+<StyLoginRenderer
+	{widgets}
+	{sessionId}
+	on:login={onLogin}
+	on:fallback={({ detail }) => onFallback(detail)}
+	on:error={({ detail }) => onError(detail)}
+	on:globalMessage={({ detail }) => onGlobalMessage(detail)}
+	on:blockReady={({ detail }) => onBlockReady(detail)}
+/>
+```
+
+#### Callback page example
+
+When a `session_id` is present in the URL the native flow is resumed by forwarding it to the login page. Otherwise the standard `handleCallback()` path is used:
+
+```svelte
+<!-- src/routes/callback/+page.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { goto } from '$app/navigation';
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const query = Object.fromEntries(new URLSearchParams(window.location.search));
+const { handleCallback } = useStrivacity();
+
+onMount(async () => {
+	const url = new URL(location.href);
+	const sessionId = url.searchParams.get('session_id');
+
+	if (sessionId) {
+		await goto(`/login?session_id=${sessionId}`);
+	} else {
 		try {
 			await handleCallback();
 			await goto('/profile');
 		} catch (error) {
 			console.error('Error during callback handling:', error);
 		}
-	});
-</script>
-
-<h1>Logging in...</h1>
-```
-
-##### Profile page example
-
-```svelte
-<script lang="ts">
-	import { useStrivacity, type RedirectContext } from '@strivacity/sdk-svelte';
-	import { goto } from '$app/navigation';
-
-	const { isAuthenticated, idTokenClaims, logout } = useStrivacity<RedirectContext>();
-
-	async function handleLogout() {
-		await logout();
 	}
-</script>
-
-{#if $isAuthenticated}
-	<h1>Welcome, {$idTokenClaims?.name || 'User'}</h1>
-	<button onclick={handleLogout}>Logout</button>
-{:else}
-	<p>Not authenticated</p>
-{/if}
-```
-
-##### Logout page example
-
-```svelte
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import { useStrivacity, type RedirectContext } from '@strivacity/sdk-svelte';
-
-	const { logout } = useStrivacity<RedirectContext>();
-
-	onMount(() => {
-		logout();
-	});
-</script>
-
-<h1>Logging out...</h1>
-```
-
-## Popup mode
-
-In popup mode, authentication happens in a popup window, allowing users to stay on the same page.
-
-##### Login page example
-
-```svelte
-<script lang="ts">
-	import { useStrivacity, type PopupContext } from '@strivacity/sdk-svelte';
-	import { goto } from '$app/navigation';
-
-	const { login } = useStrivacity<PopupContext>();
-
-	async function handleLogin() {
-		try {
-			await login();
-			await goto('/profile');
-		} catch (error) {
-			console.error('Login error:', error);
-		}
-	}
-</script>
-
-<button onclick={handleLogin}>Login</button>
-```
-
-##### Callback page example
-
-Same as the callback page example in redirect mode.
-
-##### Profile page example
-
-Same as the profile page example in redirect mode.
-
-##### Logout page example
-
-Same as the logout page example in redirect mode.
-
-## Native mode
-
-In native mode, authentication UI is rendered directly within your application using customizable widgets. This provides the most seamless user experience.
-
-##### Login page example
-
-```svelte
-<script lang="ts">
-	import { StyLoginRenderer, useStrivacity, type NativeContext } from '@strivacity/sdk-svelte';
-	import { goto } from '$app/navigation';
-	import { widgets } from './components/widgets';
-	import type { FallbackError, IdTokenClaims, LoginFlowState } from '@strivacity/sdk-svelte';
-
-	const { handleCallback } = useStrivacity<NativeContext>();
-
-	// Extract session_id from URL for continuing flows
-	let sessionId = $state<string | null>(null);
-
-	if (typeof window !== 'undefined') {
-		const url = new URL(window.location.href);
-		sessionId = url.searchParams.get('session_id');
-	}
-
-	/**
-	 * Called when authentication is successful
-	 * @param claims - ID token claims of the authenticated user
-	 */
-	const onLogin = async (claims?: IdTokenClaims | null) => {
-		console.log('Login successful:', claims);
-		await goto('/profile');
-	};
-
-	/**
-	 * Called when native flow cannot handle the authentication
-	 * Falls back to redirect mode by navigating to the provided URL
-	 * @param error - FallbackError containing the fallback URL and message
-	 */
-	const onFallback = (error: FallbackError) => {
-		if (error.url) {
-			console.log(`Fallback: ${error.url}`);
-			window.location.href = error.url.toString();
-		} else {
-			console.error(`FallbackError without URL: ${error.message}`);
-			alert(error);
-		}
-	};
-
-	/**
-	 * Called when an error occurs during the authentication process
-	 * @param error - Error message describing what went wrong
-	 */
-	const onError = (error: string) => {
-		console.error(`Error: ${error}`);
-		alert(error);
-	};
-
-	/**
-	 * Called when the authentication flow wants to display a global message
-	 * @param message - Message to display to the user
-	 */
-	const onGlobalMessage = (message: string) => {
-		alert(message);
-	};
-
-	/**
-	 * Called when the authentication flow transitions between states
-	 * Useful for tracking flow progress and inject custom logic such as logging or analytics
-	 * @param params - Object containing previous and current flow states
-	 */
-	const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
-		console.log('previousState', previousState);
-		console.log('state', state);
-	};
-</script>
-
-<StyLoginRenderer
-	{widgets}
-	{sessionId}
-	onlogin={onLogin}
-	onfallback={onFallback}
-	onerror={onError}
-	onglobalmessage={onGlobalMessage}
-	onblockready={onBlockReady}
-/>
-```
-
-##### Callback page example
-
-The native mode callback page handles authentication responses when external identity providers redirect back to your application. This page checks for session IDs in the URL parameters and either continues the native flow or falls back to standard callback handling.
-
-This component is essential for handling social login providers (like Google, Facebook, etc.) that require redirect-based authentication even within native mode flows.
-
-```svelte
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { useStrivacity, type NativeContext } from '@strivacity/sdk-svelte';
-
-	const { handleCallback } = useStrivacity<NativeContext>();
-
-	let query = $state<Record<string, string>>({});
-
-	if (typeof window !== 'undefined') {
-		query = Object.fromEntries(new URLSearchParams(window.location.search));
-	}
-
-	onMount(async () => {
-		const url = new URL(location.href);
-		const sessionId = url.searchParams.get('session_id');
-
-		if (sessionId) {
-			await goto(`/login?session_id=${sessionId}`);
-		} else {
-			try {
-				await handleCallback();
-				await goto('/profile');
-			} catch (error) {
-				console.error('Error during callback handling:', error);
-			}
-		}
-	});
+});
 </script>
 
 {#if query.error}
@@ -294,13 +334,71 @@ This component is essential for handling social login providers (like Google, Fa
 {/if}
 ```
 
-##### Profile page example
+#### Entry page example
+
+The entry page processes flows started by an external process (e.g. password reset) by calling `entry()` to extract the necessary parameters to resume the flow and forwarding them to the callback page:
+
+```svelte
+<!-- src/routes/entry/+page.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { goto } from '$app/navigation';
+import { useStrivacity } from '@strivacity/sdk-svelte';
+
+const { entry } = useStrivacity();
+
+onMount(async () => {
+	try {
+		const data = await entry();
+
+		if (data && Object.keys(data).length > 0) {
+			await goto(`/callback?${new URLSearchParams(data).toString()}`);
+		} else {
+			await goto('/');
+		}
+	} catch (error) {
+		console.error('Entry failed:', error);
+		await goto('/');
+	}
+});
+</script>
+```
+
+#### Profile page example
 
 Same as the profile page example in redirect/popup mode.
 
-##### Logout page example
+#### Logout page example
 
 Same as the logout page example in redirect/popup mode.
+
+### Embedded mode
+
+In `embedded` mode the `<sty-login>` web component (loaded via `bundle.js` from the cluster) handles rendering. Import the bundle at application startup to register the Strivacity web components:
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+import { onMount } from 'svelte';
+import { StyAuthProvider } from '@strivacity/sdk-svelte';
+
+onMount(() => {
+	void import(`${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+});
+
+const options = {
+	mode: 'embedded',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+};
+</script>
+
+<StyAuthProvider {options}>
+	<slot />
+</StyAuthProvider>
+```
 
 ## Logging
 
@@ -308,33 +406,30 @@ The SDK supports optional logging to help you debug authentication flows and mon
 
 ### Using the Default Logger
 
-Enable the default console logger by adding the `logging` option when creating the SDK:
+Enable the default console logger by adding the `logging` option:
 
 ```svelte
-<script lang="ts">
-	import { StyAuthProvider, DefaultLogging, type SDKOptions } from '@strivacity/sdk-svelte';
-	import Router from './Router.svelte';
+<script>
+import { StyAuthProvider, DefaultLogging } from '@strivacity/sdk-svelte';
 
-	const options: SDKOptions = {
-		mode: 'redirect',
-		issuer: 'https://<YOUR_DOMAIN>',
-		scopes: ['openid', 'profile'],
-		clientId: '<YOUR_CLIENT_ID>',
-		redirectUri: '<YOUR_REDIRECT_URI>',
-		logging: DefaultLogging, // Enable built-in console logging
-	};
+const options = {
+	mode: 'redirect',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+	logging: DefaultLogging,
+};
 </script>
 
 <StyAuthProvider {options}>
-	<Router />
+	<slot />
 </StyAuthProvider>
 ```
 
-The default logger writes to the browser console and automatically prefixes messages with a correlation ID when available (via the `xEventId` property).
-
 ### Creating a Custom Logger
 
-You can provide your own logger by implementing the `SDKLogging` interface with four methods: `debug`, `info`, `warn`, and `error`. An optional `xEventId` property is honored for log correlation.
+Implement the `SDKLogging` interface and pass your class to the `logging` option:
 
 ```typescript
 import type { SDKLogging } from '@strivacity/sdk-svelte';
@@ -343,7 +438,6 @@ export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// Send to your logging pipeline
 		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
 	}
 
@@ -361,39 +455,7 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your custom logger when creating the SDK:
-
-```svelte
-<script lang="ts">
-	import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-svelte';
-	import { MyLogger } from './logging/MyLogger';
-	import Router from './Router.svelte';
-
-	const options: SDKOptions = {
-		mode: 'redirect',
-		issuer: 'https://<YOUR_DOMAIN>',
-		scopes: ['openid', 'profile'],
-		clientId: '<YOUR_CLIENT_ID>',
-		redirectUri: '<YOUR_REDIRECT_URI>',
-		logging: MyLogger, // Use your custom logger
-	};
-</script>
-
-<StyAuthProvider {options}>
-	<Router />
-</StyAuthProvider>
-```
-
-### Logger Interface
-
-The `SDKLogging` interface requires the following methods:
-
-- **`debug(message: string): void`** - Log debug-level messages
-- **`info(message: string): void`** - Log informational messages
-- **`warn(message: string): void`** - Log warning messages
-- **`error(message: string, error: Error): void`** - Log error messages with error objects
-
-The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
+The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
 
 ## API Documentation
 
@@ -403,142 +465,90 @@ The optional `xEventId` property, when set by the SDK, provides a correlation ID
 useStrivacity<T extends PopupContext | RedirectContext | NativeContext>(): T;
 ```
 
-You can choose between `PopupContext`, `RedirectContext`, or `NativeContext` using the `mode` option when configuring the SDK.
+The function returns a different context type depending on the `mode` configured in `StyAuthProvider`.
 
-**Properties**
+**Shared properties (all modes)**
 
-All properties return Svelte stores that you can subscribe to using the `$` prefix in templates.
-
-- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: Returns the SDK instance based on the configured mode.
-- **`loading: Readable<boolean>`**: Indicates if the session is being loaded.
-- **`options: SDKOptions`**: The configured options for the SDK.
-- **`isAuthenticated: Readable<boolean>`**: Indicates whether the user is authenticated.
-- **`idTokenClaims: Readable<IdTokenClaims | null>`**: Claims from the ID token, or null if not available.
-- **`accessToken: Readable<string | null>`**: The access token, or null if not available.
-- **`refreshToken: Readable<string | null>`**: The refresh token, or null if not available.
-- **`accessTokenExpired: Readable<boolean>`**: Indicates if the access token has expired.
-- **`accessTokenExpirationDate: Readable<number | null>`**: Expiration date of the access token, or null if not set.
+- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: The underlying SDK flow instance.
+- **`loading: Readable<boolean>`**: `true` while the session is being initialized.
+- **`options: SDKOptions`**: The configured SDK options.
+- **`isAuthenticated: Readable<boolean>`**: `true` when the user has a valid session.
+- **`idTokenClaims: Readable<IdTokenClaims | null>`**: Claims from the ID token, or `null` if not authenticated.
+- **`accessToken: Readable<string | null>`**: The current access token.
+- **`refreshToken: Readable<string | null>`**: The current refresh token.
+- **`accessTokenExpired: Readable<boolean>`**: `true` when the access token has expired.
+- **`accessTokenExpirationDate: Readable<number | null>`**: Expiration timestamp (Unix seconds) of the access token.
 
 ---
 
 **Type: `RedirectContext`**
 
-Represents the available methods for redirect-based interactions.
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process by redirecting the user to the identity provider.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a redirect flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a redirect flow.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a redirect flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the identity provider.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login by redirecting to the identity provider.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a redirect flow.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback after redirect.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
 
 ---
 
 **Type: `PopupContext`**
 
-Represents the available methods for popup-based interactions.
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process using a popup window.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a popup flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a popup.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a popup flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user using a popup window.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a popup-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login using a popup window.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a popup.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via popup.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
 
 ---
 
 **Type: `NativeContext`**
 
-Represents the available methods for native-based interactions.
-
-- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates the login process using a native flow.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Registers a new user using a native flow.
-  - `options` (optional): Configuration options for registration.
+- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates login using the native flow.
+- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Initiates registration using the native flow.
 - **`refresh(): Promise<void>`**: Refreshes the user's session.
 - **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the logout page.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication. This will be called automatically by the native flow handler during fallback.
-  - `url` (optional): The URL to handle for the callback.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
+
+---
 
 ### `StyLoginRenderer` component
 
-The `StyLoginRenderer` component is used in native mode to render the authentication UI directly within your application. It provides a fully customizable login experience using your own UI components.
+Used in `native` mode to render the authentication UI with your own widget components.
 
-```typescript
-StyLoginRenderer: Svelte.Component<{
-	params?: NativeParams;
-	widgets?: PartialRecord<WidgetType, Svelte.Component>;
-	sessionId?: string | null;
-	onlogin?: (claims?: IdTokenClaims | null) => void;
-	onfallback?: (error: FallbackError) => void;
-	onerror?: (error: any) => void;
-	onglobalmessage?: (message: string) => void;
-	onblockready?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
-}>;
-```
+**Props**
 
-**Properties**
+- **`params?: NativeParams`**: Additional parameters for the native login flow.
+- **`widgets?: PartialRecord<WidgetType, SvelteComponent>`**: Custom Svelte components for each widget type used in the flow.
+- **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
 
-- **`params?: NativeParams`** (optional): Additional parameters to pass to the native login flow. These parameters can include custom configuration options for the authentication process.
+**Events**
 
-- **`widgets?: PartialRecord<WidgetType, Svelte.Component>`** (optional): A collection of Svelte components that define the UI widgets used in the authentication flow. Each widget type (input, button, layout, etc.) can be customized with your own components.
+- **`on:login`**: Dispatched on successful authentication. Receives `IdTokenClaims | null`.
+- **`on:fallback`**: Dispatched when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
+- **`on:error`**: Dispatched when an error occurs during authentication.
+- **`on:globalMessage`**: Dispatched when the flow wants to display a global message (e.g. account lockout warning).
+- **`on:blockReady`**: Dispatched on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
 
-- **`sessionId?: string | null`** (optional): The session ID for continuing an existing authentication session. This is typically extracted from URL parameters when returning from external identity providers.
+## Vulnerability Reporting
 
-**Callback Props**
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-In Svelte 5, events are replaced with callback props. All callbacks are optional:
+## License
 
-- **`onlogin?: (claims?: IdTokenClaims | null) => void`** (optional): Called when authentication is successful. Receives the ID token claims as a parameter.
+@strivacity/sdk-svelte is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-- **`onfallback?: (error: FallbackError) => void`** (optional): Called when the native flow cannot handle the authentication and needs to fall back to redirect mode. The error parameter contains the fallback URL.
+## Contributing
 
-- **`onerror?: (error: any) => void`** (optional): Called when an error occurs during the authentication process. Use this to handle and display error messages to users.
-
-- **`onglobalmessage?: (message: string) => void`** (optional): Called when the authentication flow wants to display a global message to the user (e.g., account lockout warnings, validation messages).
-
-- **`onblockready?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void`** (optional): Called when the authentication flow transitions between states. Useful for tracking progress, implementing custom logging, or injecting analytics. Receives both the previous and current flow states.
-
-**Widget Types**
-
-The `widgets` prop accepts the following widget types:
-
-- `checkbox`: For checkbox input fields
-- `close`: For close buttons
-- `date`: For date input fields
-- `input`: For text input fields
-- `layout`: For layout containers and form structure
-- `loading`: For loading indicators
-- `multiSelect`: For multi-select dropdown fields
-- `passcode`: For passcode input fields
-- `password`: For password input fields
-- `passkeyEnroll`: For passkey enrollment
-- `passkeyLogin`: For passkey login
-- `phone`: For phone number input fields
-- `select`: For single-select dropdown fields
-- `static`: For static text and display elements
-- `submit`: For form submission buttons
-- `webauthnEnroll`: For WebAuthn enrollment
-- `webauthnLogin`: For WebAuthn login
-
-Each widget component receives props specific to its type and function within the authentication flow.
-
-## Links
-
-- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/svelte)
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
 
 ## Migrating to v3.0
 
 ### Entry API Major Changes
 
-Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.

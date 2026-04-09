@@ -1,225 +1,44 @@
-# Strivacity SDK - Next.js Example App
+# Strivacity SDK - Next.js Headless Example App
 
-## How the Login Flow Works (Based on `src/app/login/page.tsx`)
+This example application demonstrates how to integrate the [@strivacity/sdk-next](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-next) SDK into a Next.js application using the App Router with a fully custom, headless login UI. Unlike the standard Next.js app, this example implements the Native Journey directly — rendering each authentication screen by hand without using `StyLoginRenderer` or any web components.
 
-This section explains how the Strivacity SDK is used to implement a custom login flow in Next.js, as seen in [`src/app/login/page.tsx`].
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### 1. SDK Initialization
+## Overview
 
-The SDK is accessed via the `useStrivacity` hook, which provides the `sdk` object for authentication operations.
+The SDK is initialized via `StyAuthProvider` in `src/app/layout.tsx`. Login state is managed manually using `NativeFlowHandler` — on each step the handler returns a `LoginFlowState` describing the current screen and available forms, which the login page renders as plain HTML form elements.
 
-```tsx
-const { sdk } = useStrivacity<NativeContext>();
+## Requirements
+
+- Next.js: 15+
+- Node.js: 20 LTS+
+
+## Install
+
+```bash
+pnpm install
 ```
 
-### 2. State Variables in the Login Component
+Create a `.env.local` file in the repository root:
 
-The login page uses several React state variables to manage the authentication flow:
-
-```tsx
-const [sessionId, setSessionId] = useState<string | null>(null);
-// Stores the current session_id if present in the URL. This helps identify the session during the login flow.
-
-const [handler, setHandler] = useState<NativeFlowHandler | null>(null);
-// Holds the flow handler instance returned by the Strivacity SDK, which manages the steps of the login process.
-
-const [isLoading, setIsLoading] = useState(true);
-// Indicates whether the component is loading or processing an operation.
-
-const [screen, setScreen] = useState<string | null>(null);
-// Stores the name of the current login screen (e.g., 'identification', 'password').
-
-const [state, setState] = useState<LoginFlowState>({});
-// Contains the current state of the login flow, as returned by the backend.
-
-const [formData, setFormData] = useState<Record<string, unknown>>({});
-// Stores the values of the current form fields as entered by the user.
-
-const [messages, setMessages] = useState<Record<string, Record<string, LoginFlowMessage>>>({});
-// Holds validation or error messages for forms and fields.
+```env
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
 ```
 
-### 3. `initializeSession` Function
+Then start the development server:
 
-When the login page loads, the `initializeSession` function is called. It initializes a login session using the SDK's login handler.
-
-```tsx
-const loginHandler = sdk.login();
-const state = await loginHandler.startSession();
+```bash
+pnpm app:next-headless:serve
 ```
 
-### 4. Form Rendering
+## Usage
 
-The login flow is split into multiple screens (e.g., identification, password). The current screen is tracked in state, and the appropriate form is rendered based on the flow state.
+### Initialization
 
-```tsx
-switch (screen) {
-	case 'identification':
-	// Render identifier form
-	case 'password':
-	// Render password form
-}
-```
-
-**Example: Rendering the identification form**
-
-Below is an example of how the identification form can be implemented. This form collects the user's identifier (such as email or username) and submits it using the login flow handler:
-
-```tsx
-<form onSubmit={(e) => onFormSubmit('identifier', e)}>
-	<label htmlFor="identifier">Identifier:</label>
-	<input id="identifier" type="text" value={formData.identifier || ''} onChange={(e) => handleInputChange('identifier', e.target.value)} required />
-	{renderFieldMessage('identifier', 'identifier')}
-	<button type="submit" disabled={isLoading}>
-		{isLoading ? 'Loading...' : 'Continue'}
-	</button>
-</form>
-```
-
-### 5. Form Submission
-
-The form submission logic is handled by the `onFormSubmit` function. When a form is submitted, the SDK's flow handler is used to submit the form data. If authentication succeeds, the user is redirected to the profile page.
-
-```tsx
-// ...inside the Login component...
-const onFormSubmit = async (formId: string, event: React.FormEvent) => {
-	event.preventDefault();
-
-	if (!handler) {
-		return;
-	}
-
-	try {
-		setIsLoading(true);
-		const newState = await handler.submitForm(formId, formData);
-
-		if (await sdk.isAuthenticated) {
-			router.push('/profile');
-		} else {
-			updateStateFromResponse(newState);
-		}
-	} catch (error) {
-		// error handling...
-	} finally {
-		setIsLoading(false);
-	}
-};
-// ...
-```
-
-### 6. Error Handling and Fallback
-
-Error handling is performed inside the `onFormSubmit` function. If an error occurs during form submission and the error is an instance of `FallbackError` and a hosted login URL is available, the user is redirected to the hosted login page. Otherwise, a generic error message is shown.
-
-```tsx
-try {
-	// form submission logic...
-} catch (error) {
-	// eslint-disable-next-line no-console
-	console.error('Error submitting form:', error);
-
-	if (error instanceof FallbackError && state.hostedUrl) {
-		// Fallback to hosted login
-		window.location.href = state.hostedUrl;
-	} else {
-		alert(error.message);
-	}
-}
-```
-
-### 7. Field-Level Messages
-
-Field-level validation and error messages are displayed using the `renderFieldMessage` function. This function checks if there is an error message for a specific field and renders it if present.
-
-```tsx
-const renderFieldMessage = (formId: string, fieldName: string) => {
-	const fieldMessage = messages[formId]?.[fieldName];
-
-	if (fieldMessage && fieldMessage.type === 'error') {
-		return <div className={styles.error}>{fieldMessage.text}</div>;
-	}
-
-	return null;
-};
-```
-
----
-
-## Key Features and Implementation
-
-### 1. Next.js Dependencies
-
-This Next.js application uses the Strivacity Next.js SDK for authentication (see [package.json](./package.json)):
-
-```json
-{
-	"@strivacity/sdk-next": "latest"
-}
-```
-
-### 2. App Router Integration
-
-The application uses Next.js App Router with client-side authentication provider in the root layout (see [src/app/layout.tsx](./src/app/layout.tsx)):
-
-```tsx
-'use client';
-
-import { type SDKOptions, StyAuthProvider } from '@strivacity/sdk-next';
-
-const options: SDKOptions = {
-	mode: process.env.MODE as 'redirect' | 'popup' | 'native',
-	issuer: process.env.ISSUER as string,
-	clientId: process.env.CLIENT_ID as string,
-	scopes: process.env.SCOPES?.split(' ') as Array<string>,
-	redirectUri: process.env.REDIRECT_URI as string,
-	storageTokenName: 'sty.session.next',
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-	return (
-		<html lang="en">
-			<body>
-				<StyAuthProvider options={options}>{children}</StyAuthProvider>
-			</body>
-		</html>
-	);
-}
-```
-
-### 3. Client-Side Authentication State
-
-The application manages authentication state on the client side while leveraging Next.js features (see [src/app/layout.tsx](./src/app/layout.tsx)):
-
-```tsx
-'use client';
-
-import { useStrivacity } from '@strivacity/sdk-next';
-
-function App({ children }: { children: React.ReactElement }) {
-	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-	const [name, setName] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (isAuthenticated) {
-			setName(`${idTokenClaims?.given_name ?? ''} ${idTokenClaims?.family_name ?? ''}`);
-		}
-	}, [isAuthenticated, idTokenClaims]);
-
-	return (
-		<div>
-			{loading && <div>Loading...</div>}
-			{isAuthenticated && <div>Welcome, {name}!</div>}
-			{children}
-		</div>
-	);
-}
-```
-
-### 4. Logging
-
-You can enable SDK logging or plug in your own logger.
-
-- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/app/layout.tsx](./src/app/layout.tsx). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+The SDK is configured with `mode: 'native'` in `src/app/layout.tsx` using `StyAuthProvider`:
 
 ```tsx
 'use client';
@@ -227,31 +46,116 @@ You can enable SDK logging or plug in your own logger.
 import { type SDKOptions, StyAuthProvider, DefaultLogging } from '@strivacity/sdk-next';
 
 const options: SDKOptions = {
-	// ...other options
-	logging: DefaultLogging, // enable built-in console logging
+	mode: 'native',
+	issuer: process.env.ISSUER as string,
+	clientId: process.env.CLIENT_ID as string,
+	scopes: process.env.SCOPES?.split(' ') as Array<string>,
+	redirectUri: process.env.REDIRECT_URI as string,
+	storageTokenName: 'sty.session.next',
+	logging: DefaultLogging,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-	return (
-		<html lang="en">
-			<body>
-				<StyAuthProvider options={options}>{children}</StyAuthProvider>
-			</body>
-		</html>
-	);
+	return <StyAuthProvider options={options}>{children}</StyAuthProvider>;
 }
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Headless login flow
 
-```ts
+`src/app/login/page.tsx` implements the full login UI without using `StyLoginRenderer`. It manages flow state manually using `NativeFlowHandler`:
+
+1. `sdk.login(extraParams)` is called to get a `NativeFlowHandler`.
+2. `handler.startSession(sessionId?)` initiates the session and returns the first `LoginFlowState`.
+3. The component renders the appropriate form based on `state.screen` (e.g. `'identification'`, `'password'`, `'registration'`).
+4. On form submission, `handler.submitForm(formId, data)` advances the flow and returns the next state.
+5. When `sdk.isAuthenticated` becomes `true`, the user is redirected to `/profile`.
+6. If `FallbackError` is thrown and `state.hostedUrl` is set, the page redirects to the hosted login URL.
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStrivacity } from '@strivacity/sdk-next';
+import { FallbackError } from '@strivacity/sdk-core';
+
+export default function LoginPage() {
+	const router = useRouter();
+	const { sdk } = useStrivacity();
+	const [handler, setHandler] = useState(null);
+	const [state, setState] = useState({});
+	const [isLoading, setIsLoading] = useState(false);
+	const [formData, setFormData] = useState({});
+
+	useEffect(() => {
+		(async () => {
+			setIsLoading(true);
+			const loginHandler = sdk.login();
+			setHandler(loginHandler);
+			const flowState = await loginHandler.startSession();
+			if (flowState) setState(flowState);
+			setIsLoading(false);
+		})();
+	}, []);
+
+	const onFormSubmit = async (formId, event) => {
+		event.preventDefault();
+		setIsLoading(true);
+		try {
+			const newState = await handler.submitForm(formId, formData);
+			if (await sdk.isAuthenticated) {
+				router.push('/profile');
+			} else {
+				setState(newState);
+			}
+		} catch (error) {
+			if (error instanceof FallbackError && state.hostedUrl) {
+				window.location.href = state.hostedUrl;
+			} else {
+				alert(error.message);
+				window.location.href = '/';
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// Render form based on state.screen ...
+}
+```
+
+### Refresh token
+
+Token refresh runs automatically when the SDK detects an expired access token.
+
+### Revoke session / logout
+
+`src/app/revoke/page.tsx` revokes the current session tokens without a full logout and returns to the home page.
+
+`src/app/logout/page.tsx` performs a full logout by calling `logout({ postLogoutRedirectUri: location.origin })`.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { DefaultLogging } from '@strivacity/sdk-next';
+
+// ...within your SDK options:
+logging: DefaultLogging,
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-next';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
 		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
@@ -266,29 +170,32 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK options:
-
-```tsx
-import { StyAuthProvider } from '@strivacity/sdk-next';
+```typescript
 import { MyLogger } from './logging/MyLogger';
 
-const options: SDKOptions = {
-	// ...other options
-	logging: MyLogger,
-};
+// ...within your SDK options:
+logging: MyLogger,
 ```
 
-### 5. File-Based Routing
+## Pages
 
-The application uses Next.js file-based routing with pages for different authentication flows:
+| Page     | Path                        | Description                                                                                                                                           |
+| -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home     | `src/app/page.tsx`          | Public landing page. Displays user info when authenticated.                                                                                           |
+| Login    | `src/app/login/page.tsx`    | Fully custom headless login UI. Renders forms by hand based on the `LoginFlowState` screen. Accepts an optional `session_id` URL parameter to resume. |
+| Callback | `src/app/callback/page.tsx` | Handles the identity provider's redirect response and completes the authorization flow.                                                               |
+| Profile  | `src/app/profile/page.tsx`  | Protected page showing the authenticated user's session details and token information.                                                                |
+| Revoke   | `src/app/revoke/page.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                   |
+| Logout   | `src/app/logout/page.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                            |
 
-```
-src/app/
-├── layout.tsx          # Root layout with auth provider
-├── page.tsx           # Home page
-├── login/page.tsx     # Login page
-├── register/page.tsx  # Registration page
-├── callback/page.tsx  # OAuth callback handler
-├── profile/page.tsx   # Protected profile page
-└── logout/page.tsx    # Logout page
-```
+## Vulnerability Reporting
+
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
+
+## License
+
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
+
+## Contributing
+
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).

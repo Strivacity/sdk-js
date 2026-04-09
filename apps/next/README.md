@@ -1,27 +1,53 @@
 # Strivacity SDK - Next.js Example App
 
-This example application demonstrates how to integrate the Strivacity SDK into a Next.js application using the App Router and React Server Components, while maintaining client-side authentication state management.
+This example application demonstrates how to integrate the [@strivacity/sdk-next](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-next) SDK into a Next.js application using the App Router. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) and shows how to structure file-based route authentication flows.
 
-## Key Features and Implementation
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### 1. Next.js Dependencies
+## Overview
 
-This Next.js application uses the Strivacity Next.js SDK for authentication (see [package.json](./package.json)):
+The SDK is initialized via `StyAuthProvider` in `src/app/layout.tsx` and exposes the `useStrivacity` hook, which provides reactive authentication state and methods throughout the application. Next.js App Router handles client-side navigation.
 
-```json
-{
-	"@strivacity/sdk-next": "*"
-}
+## Requirements
+
+- Next.js: 15+
+- Node.js: 20 LTS+
+
+## Install
+
+```bash
+pnpm install
 ```
 
-### 2. App Router Integration
+Create a `.env.local` file in the repository root:
 
-The application uses Next.js App Router with client-side authentication provider in the root layout (see [src/app/layout.tsx](./src/app/layout.tsx)):
+```env
+VITE_MODE=redirect
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
+```
+
+Then start the development server:
+
+```bash
+pnpm app:next:serve
+```
+
+## Usage
+
+### Initialization
+
+The SDK is configured in `src/app/layout.tsx` using `StyAuthProvider`. All files that use the SDK must include the `'use client'` directive. Environment variables are mapped to unprefixed names via `next.config.js` and read as `process.env.MODE`, `process.env.ISSUER`, etc.
+
+The layout also loads `bundle.js` from the configured issuer domain via `next/script`, which registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
 
 ```tsx
 'use client';
 
-import { type SDKOptions, StyAuthProvider } from '@strivacity/sdk-next';
+import { type SDKOptions, StyAuthProvider, DefaultLogging } from '@strivacity/sdk-next';
+import Script from 'next/script';
 
 const options: SDKOptions = {
 	mode: process.env.MODE as 'redirect' | 'popup' | 'native',
@@ -30,86 +56,215 @@ const options: SDKOptions = {
 	scopes: process.env.SCOPES?.split(' ') as Array<string>,
 	redirectUri: process.env.REDIRECT_URI as string,
 	storageTokenName: 'sty.session.next',
+	logging: DefaultLogging,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
-			<body>
-				<StyAuthProvider options={options}>{children}</StyAuthProvider>
-			</body>
-		</html>
+		<StyAuthProvider options={options}>
+			<Script src={`${process.env.ISSUER}/assets/components/bundle.js`} strategy="lazyOnload" />
+			<App>{children}</App>
+		</StyAuthProvider>
 	);
 }
 ```
 
-### 3. Client-Side Authentication State
-
-The application manages authentication state on the client side while leveraging Next.js features (see [src/app/layout.tsx](./src/app/layout.tsx)):
+Page components access authentication state through the `useStrivacity` hook:
 
 ```tsx
 'use client';
 
 import { useStrivacity } from '@strivacity/sdk-next';
 
-function App({ children }: { children: React.ReactElement }) {
+export default function HomePage() {
 	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-	const [name, setName] = useState<string | null>(null);
+	const firstName = idTokenClaims?.given_name ?? '';
 
-	useEffect(() => {
-		if (isAuthenticated) {
-			setName(`${idTokenClaims?.given_name ?? ''} ${idTokenClaims?.family_name ?? ''}`);
-		}
-	}, [isAuthenticated, idTokenClaims]);
-
-	return (
-		<div>
-			{loading && <div>Loading...</div>}
-			{isAuthenticated && <div>Welcome, {name}!</div>}
-			{children}
-		</div>
-	);
+	if (loading) return <div>Loading...</div>;
+	if (isAuthenticated) return <div>Welcome, {firstName}!</div>;
+	return <div>Please log in.</div>;
 }
 ```
 
-### 4. Logging
+### Login / Register
 
-You can enable SDK logging or plug in your own logger.
+`src/app/login/page.tsx` and `src/app/register/page.tsx` initiate the authentication flow. The active mode determines how the UI is rendered:
 
-- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/app/layout.tsx](./src/app/layout.tsx). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+- **`redirect`** — `login()` is called on mount; the user is taken to the identity provider in the same window.
+- **`popup`** — `login()` is called on mount; authentication happens in a popup window.
+- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
+- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
+
+`src/app/callback/page.tsx` handles the response from the identity provider. It calls `sdk.handleCallback()` and redirects to `/profile` on success:
 
 ```tsx
 'use client';
 
-import { type SDKOptions, StyAuthProvider, DefaultLogging } from '@strivacity/sdk-next';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStrivacity } from '@strivacity/sdk-next';
 
-const options: SDKOptions = {
-	// ...other options
-	logging: DefaultLogging, // enable built-in console logging
-};
+export default function CallbackPage() {
+	const router = useRouter();
+	const { sdk, loading } = useStrivacity();
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-	return (
-		<html lang="en">
-			<body>
-				<StyAuthProvider options={options}>{children}</StyAuthProvider>
-			</body>
-		</html>
-	);
+	useEffect(() => {
+		(async () => {
+			const url = new URL(location.href);
+			if (url.searchParams.has('session_id')) {
+				router.push(`/login?${url.searchParams}`);
+			} else {
+				if (loading) return;
+				try {
+					await sdk.handleCallback();
+					router.push('/profile');
+				} catch (error) {
+					console.error('Error during callback handling:', error);
+				}
+			}
+		})();
+	}, [loading]);
+
+	return <h1>Logging in...</h1>;
 }
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Refresh token
 
-```ts
+Token refresh runs automatically when the SDK detects an expired access token. The `sdk.refresh()` method is also available for manual invocation:
+
+```tsx
+'use client';
+
+import { useStrivacity } from '@strivacity/sdk-next';
+
+export default function ProfilePage() {
+	const { sdk } = useStrivacity();
+
+	return <button onClick={() => void sdk.refresh()}>Refresh token</button>;
+}
+```
+
+### Revoke session / logout
+
+`src/app/revoke/page.tsx` revokes the current session tokens without a full logout. It checks `isAuthenticated` before calling `revoke()` and then returns to the home page:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStrivacity } from '@strivacity/sdk-next';
+
+export default function RevokePage() {
+	const router = useRouter();
+	const { isAuthenticated, revoke } = useStrivacity();
+
+	useEffect(() => {
+		(async () => {
+			if (isAuthenticated) {
+				await revoke();
+			}
+			router.push('/');
+		})();
+	}, []);
+
+	return <h1>Logging out...</h1>;
+}
+```
+
+`src/app/logout/page.tsx` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin; otherwise the user is immediately redirected home:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStrivacity } from '@strivacity/sdk-next';
+
+export default function LogoutPage() {
+	const router = useRouter();
+	const { isAuthenticated, logout } = useStrivacity();
+
+	useEffect(() => {
+		(async () => {
+			if (isAuthenticated) {
+				await logout({ postLogoutRedirectUri: location.origin });
+			} else {
+				router.push('/');
+			}
+		})();
+	}, []);
+
+	return <h1>Logging out...</h1>;
+}
+```
+
+### Resume an externally-initiated flow
+
+`src/app/entry/page.tsx` handles flows started by an external process (e.g. password reset, magic link, invite). On mount it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow; if no data is returned the user is redirected to the home page:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStrivacity } from '@strivacity/sdk-next';
+
+export default function EntryPage() {
+	const router = useRouter();
+	const { loading, entry } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) return;
+		(async () => {
+			try {
+				const data = await entry();
+				if (data && Object.keys(data).length > 0) {
+					router.push(`/callback?${new URLSearchParams(data).toString()}`);
+				} else {
+					router.push('/');
+				}
+			} catch (error) {
+				alert(error);
+				router.push('/');
+			}
+		})();
+	}, [loading]);
+
+	return <h1>Redirecting...</h1>;
+}
+```
+
+The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
+
+The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login.
+
+You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { DefaultLogging } from '@strivacity/sdk-next';
+
+// ...within your SDK options:
+logging: DefaultLogging,
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-next';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
-		console.log(this.xEventId ? `(${this.xEventId}) ${message}` : message);
+		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
 		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
@@ -123,156 +278,34 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK options:
-
-```tsx
-import { StyAuthProvider } from '@strivacity/sdk-next';
+```typescript
 import { MyLogger } from './logging/MyLogger';
 
-const options: SDKOptions = {
-	// ...other options
-	logging: MyLogger,
-};
-```
-
-### 5. File-Based Routing
-
-The application uses Next.js file-based routing with pages for different authentication flows:
-
-```
-src/app/
-├── layout.tsx          # Root layout with auth provider
-├── page.tsx           # Home page
-├── login/page.tsx     # Login page
-├── register/page.tsx  # Registration page
-├── callback/page.tsx  # OAuth callback handler
-├── profile/page.tsx   # Protected profile page
-└── logout/page.tsx    # Logout page
-```
-
-### 6. Environment Variables
-
-Next.js environment variables are configured for different deployment environments (see [next.config.js](./next.config.js)):
-
-```javascript
-const nextConfig = {
-	env: {
-		MODE: process.env.VITE_MODE,
-		ISSUER: process.env.VITE_ISSUER,
-		CLIENT_ID: process.env.VITE_CLIENT_ID,
-		SCOPES: process.env.VITE_SCOPES,
-		REDIRECT_URI: process.env.VITE_REDIRECT_URI,
-	},
-};
-```
-
-## Installation and Setup
-
-### 1. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Environment Variables Setup
-
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:3000/callback
-VITE_MODE=redirect
-```
-
-### 3. Running the Application
-
-#### Development Server
-
-```bash
-pnpm app:next:serve
-```
-
-#### Production Build
-
-```bash
-pnpm run build
-pnpm start
-```
-
-## Architecture Overview
-
-### SDK Integration
-
-The Strivacity SDK is integrated at the root layout level, providing authentication context throughout the Next.js application while maintaining compatibility with App Router (see [src/app/layout.tsx](./src/app/layout.tsx)).
-
-### Page Components
-
-Next.js pages can access authentication state through the `useStrivacity` hook:
-
-```tsx
-'use client';
-
-import { useStrivacity } from '@strivacity/sdk-next';
-
-export default function ProfilePage() {
-	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-
-	if (!isAuthenticated) {
-		redirect('/login');
-	}
-
-	return (
-		<div>
-			<h1>Profile</h1>
-			<p>Email: {idTokenClaims?.email}</p>
-		</div>
-	);
-}
+// ...within your SDK options:
+logging: MyLogger,
 ```
 
 ## Pages
 
-Brief, purpose-oriented descriptions of files under src/app — what they do, expected behavior, and how they use the Strivacity hook/provider.
+| Page     | Path                        | Description                                                                                                                                                        |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `src/app/page.tsx`          | Public landing page. Displays user info when authenticated.                                                                                                        |
+| Login    | `src/app/login/page.tsx`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
+| Register | `src/app/register/page.tsx` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
+| Callback | `src/app/callback/page.tsx` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
+| Entry    | `src/app/entry/page.tsx`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
+| Profile  | `src/app/profile/page.tsx`  | Protected page showing the authenticated user's session details and token information.                                                                             |
+| Revoke   | `src/app/revoke/page.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
+| Logout   | `src/app/logout/page.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
 
-- src/app/page.tsx
-  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
-  - Behavior: Shows public content and optionally user info when authenticated via useStrivacity(). Should render quickly and not block navigation.
-  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); Use client-side rendering for user-specific bits.
+## Vulnerability Reporting
 
-- src/app/login/page.tsx
-  - Purpose: Login page / entry point for authentication flows.
-  - Behavior: Triggers the SDK login flow (redirect/popup/native depending on options). If the user is already authenticated, redirect to /profile or another intended route.
-  - Usage: Check isAuthenticated and call login() from useStrivacity(); provide UX for popup vs redirect modes.
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-- src/app/register/page.tsx
-  - Purpose: Registration page (if supported).
-  - Behavior: Starts a registration flow or presents a registration form that calls backend/SDK to create a user. On success, either sign in automatically or redirect to login.
-  - Usage: Use SDK registration helper if provided (e.g., useStrivacity().register()) or post to your backend.
+## License
 
-- src/app/entry/page.tsx
-  - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls the provider/hook entry() method; it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading and error states.
-  - Usage: const { entry } = useStrivacity(); handle network errors and timeouts gracefully.
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-- src/app/callback/page.tsx
-  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
-  - Behavior: Receives query params (code, state, session_id), finalizes authentication via SDK (handleRedirect/token exchange) in a client effect, then redirects to the intended route (e.g., /profile).
-  - Note: Keep this route unprotected so external providers can return to it.
-  - Usage: Parse URL params, call SDK's callback/handleRedirect, handle success/error and redirect.
+## Contributing
 
-- src/app/profile/page.tsx
-  - Purpose: Protected user profile page.
-  - Behavior: Require authentication (client-side guard or server redirect). Displays idTokenClaims and other user data from useStrivacity and offers logout.
-  - Usage: const { idTokenClaims, logout } = useStrivacity(); optionally fetch server-backed profile data using the authenticated session.
-
-- src/app/revoke/page.tsx
-  - Purpose: Revoke tokens or sessions (optional advanced session management page).
-  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then redirects or logs out.
-  - Usage: Call revoke endpoints via SDK or your backend; after success call logout() and redirect to home.
-
-- src/app/logout/page.tsx
-  - Purpose: Initiates logout and clears the session.
-  - Behavior: Calls the SDK logout method, clears client session state, and redirects to home or login. Implement as a simple action page that shows progress and redirects on completion.
-  - Usage: Perform logout in an effect and route the user to a public page when complete.
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).

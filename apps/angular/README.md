@@ -1,27 +1,51 @@
 # Strivacity SDK - Angular Example App
 
-This example application demonstrates how to integrate the Strivacity SDK into an Angular application using standalone components, Angular's dependency injection system, and modern Angular patterns.
+This example application demonstrates how to integrate the [@strivacity/sdk-angular](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-angular) SDK into an Angular 19 application using standalone components and Angular Router. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) and shows how to structure route-based authentication flows.
 
-## Key Features and Implementation
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### 1. Angular Dependencies
+## Overview
 
-This Angular application uses the Strivacity Angular SDK for authentication (see [package.json](./package.json)):
+The SDK is registered via `provideStrivacity()` in `app.config.ts` and exposes the `StrivacityAuthService`, which is injected into standalone components using Angular's dependency injection. Angular Router is used for client-side navigation with route-based authentication guards.
 
-```json
-{
-	"@strivacity/sdk-angular": "*"
-}
+## Requirements
+
+- Angular: 19+
+- Node.js: 20 LTS+
+
+## Install
+
+```bash
+pnpm install
 ```
 
-### 2. Dependency Injection Integration
+Create a `.env.local` file in the repository root:
 
-The application uses Angular's dependency injection system to provide the Strivacity SDK throughout the application (see [src/app/app.config.ts](./src/app/app.config.ts)):
+```env
+VITE_MODE=redirect
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
+```
+
+Then start the development server:
+
+```bash
+pnpm app:angular:serve
+```
+
+## Usage
+
+### Initialization
+
+The SDK is registered as an Angular provider in `src/app/app.config.ts` using `provideStrivacity()`. All environment variables are read from the Vite environment and passed directly. The app also dynamically imports `bundle.js` from the configured issuer domain, which registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
 
 ```typescript
-import { ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideStrivacity } from '@strivacity/sdk-angular';
+import { provideStrivacity, DefaultLogging } from '@strivacity/sdk-angular';
+import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
 	providers: [
@@ -34,126 +58,214 @@ export const appConfig: ApplicationConfig = {
 			clientId: import.meta.env.VITE_CLIENT_ID,
 			redirectUri: import.meta.env.VITE_REDIRECT_URI,
 			storageTokenName: 'sty.session.angular',
+			logging: DefaultLogging,
 		}),
 	],
 };
 ```
 
-### 3. Standalone Components
-
-The application uses Angular's standalone components pattern for modern, modular architecture (see [src/app/app.component.ts](./src/app/app.component.ts)):
+Components access authentication state by injecting `StrivacityAuthService`. The service exposes Angular Signals for `loading`, `isAuthenticated`, `idTokenClaims`, and other state properties:
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink } from '@angular/router';
-import { StrivacityService } from '@strivacity/sdk-angular';
+import { Component, SkipSelf, computed } from '@angular/core';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
-@Component({
-	selector: 'app-root',
-	standalone: true,
-	imports: [CommonModule, RouterOutlet, RouterLink],
-	template: `
-		<div>
-			@if (strivacityService.loading()) {
-				<div>Loading...</div>
-			}
-			@if (strivacityService.isAuthenticated()) {
-				<div>Welcome, {{ userName() }}!</div>
-			}
-		</div>
-	`,
-})
-export class AppComponent {
-	strivacityService = inject(StrivacityService);
+@Component({ standalone: true, selector: 'app-home', templateUrl: './home.page.html' })
+export class HomeComponent {
+	loading = this.authService.loading;
+	isAuthenticated = this.authService.isAuthenticated;
+	userName = computed(() => this.authService.idTokenClaims()?.given_name ?? '');
 
-	userName = computed(() => {
-		const claims = this.strivacityService.idTokenClaims();
-		return `${claims?.given_name ?? ''} ${claims?.family_name ?? ''}`;
-	});
+	constructor(@SkipSelf() protected authService: StrivacityAuthService) {}
 }
 ```
 
-### 4. Route Guards
+### Login / Register
 
-The application implements Angular route guards for protecting authenticated routes (see [src/app/guards/auth.guard.ts](./src/app/guards/auth.guard.ts)):
+`src/app/pages/login/login.page.ts` and `src/app/pages/register/register.page.ts` initiate the authentication flow. The active mode determines how the UI is rendered:
+
+- **`redirect`** — `login()` is called on init; the user is taken to the identity provider in the same window.
+- **`popup`** — `login()` is called on init; authentication happens in a popup window.
+- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
+- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
+
+`src/app/pages/callback/callback.page.ts` handles the response from the identity provider. It calls `handleCallback()` and navigates to `/profile` on success:
 
 ```typescript
-import { inject } from '@angular/core';
-import { Router, type CanActivateFn } from '@angular/router';
-import { StrivacityService } from '@strivacity/sdk-angular';
+import { Component, SkipSelf } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
-export const authGuard: CanActivateFn = () => {
-	const strivacityService = inject(StrivacityService);
-	const router = inject(Router);
+@Component({ standalone: true, selector: 'app-callback-page', templateUrl: './callback.page.html' })
+export class CallbackPage {
+	readonly subscription = new Subscription();
 
-	if (strivacityService.isAuthenticated()) {
-		return true;
+	constructor(
+		protected router: Router,
+		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
+	) {}
+
+	ngOnInit(): void {
+		const url = new URL(location.href);
+
+		if (url.searchParams.has('session_id')) {
+			void this.router.navigate(['/login'], { queryParams: url.searchParams });
+			return;
+		}
+
+		this.subscription.add(
+			this.strivacityAuthService.handleCallback().subscribe({
+				next: () => void this.router.navigateByUrl('/profile'),
+				error: (err) => console.error('Error during callback handling:', err),
+			}),
+		);
 	}
 
-	router.navigate(['/login']);
-	return false;
-};
-```
-
-### 5. Reactive Patterns
-
-The application leverages Angular's signals and reactive patterns for state management:
-
-```typescript
-import { Component, inject, computed } from '@angular/core';
-import { StrivacityService } from '@strivacity/sdk-angular';
-
-@Component({
-	template: `
-		@if (isLoading()) {
-			<div>Loading...</div>
-		} @else if (isAuthenticated()) {
-			<div>Welcome back!</div>
-		}
-	`,
-})
-export class ProfileComponent {
-	private strivacityService = inject(StrivacityService);
-
-	isLoading = this.strivacityService.loading;
-	isAuthenticated = this.strivacityService.isAuthenticated;
-	userClaims = this.strivacityService.idTokenClaims;
+	ngOnDestroy(): void {
+		this.subscription.unsubscribe();
+	}
 }
 ```
 
-### 6. Logging
+### Refresh token
 
-You can enable SDK logging or plug in your own logger.
-
-- Enable default logging by adding `logging: DefaultLogging` to the SDK configuration in [src/app/app.config.ts](./src/app/app.config.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available.
+Token refresh runs automatically when the SDK detects an expired access token. The `refresh` method is also available on the service for manual invocation:
 
 ```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideStrivacity } from '@strivacity/sdk-angular';
-import { DefaultLogging } from '@strivacity/sdk-core';
+import { Component, SkipSelf } from '@angular/core';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
-export const appConfig: ApplicationConfig = {
-	providers: [
-		// ...other providers
-		provideStrivacity({
-			// ...other options
-			logging: DefaultLogging, // enable built-in console logging
-		}),
-	],
-};
+@Component({ standalone: true, selector: 'app-profile', templateUrl: './profile.page.html' })
+export class ProfilePage {
+	constructor(@SkipSelf() protected authService: StrivacityAuthService) {}
+
+	refresh() {
+		this.authService.refresh().subscribe();
+	}
+}
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Revoke session / logout
 
-```ts
+`src/app/pages/revoke/revoke.page.ts` revokes the current session tokens without a full logout. It calls `revoke()` and then navigates to the home page:
+
+```typescript
+import { Component, SkipSelf } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
+
+@Component({ standalone: true, selector: 'app-revoke-page', templateUrl: './revoke.page.html' })
+export class RevokePage {
+	readonly subscription = new Subscription();
+
+	constructor(
+		protected router: Router,
+		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
+	) {}
+
+	ngOnInit(): void {
+		this.strivacityAuthService.revoke().subscribe({
+			next: () => void this.router.navigateByUrl('/'),
+		});
+	}
+
+	ngOnDestroy(): void {
+		this.subscription.unsubscribe();
+	}
+}
+```
+
+`src/app/pages/logout/logout.page.ts` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin; otherwise the user is immediately redirected home:
+
+```typescript
+import { Component, SkipSelf } from '@angular/core';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
+
+@Component({ standalone: true, selector: 'app-logout-page', templateUrl: './logout.page.html' })
+export class LogoutPage {
+	constructor(
+		protected router: Router,
+		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
+	) {}
+
+	async ngOnInit(): Promise<void> {
+		if (this.strivacityAuthService.isAuthenticated()) {
+			await firstValueFrom(this.strivacityAuthService.logout({ postLogoutRedirectUri: window.location.origin }));
+		} else {
+			void this.router.navigateByUrl('/');
+		}
+	}
+}
+```
+
+### Resume an externally-initiated flow
+
+`src/app/pages/entry/entry.page.ts` handles flows started by an external process (e.g. password reset, magic link, invite). On init it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow; if no data is returned the user is redirected to the home page:
+
+```typescript
+import { Component, SkipSelf } from '@angular/core';
+import { Router } from '@angular/router';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
+
+@Component({ standalone: true, selector: 'app-entry-page', templateUrl: './entry.page.html' })
+export class EntryPage {
+	constructor(
+		protected router: Router,
+		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
+	) {}
+
+	ngOnInit() {
+		this.strivacityAuthService.entry().subscribe({
+			next: (data) => {
+				if (data && Object.keys(data).length > 0) {
+					void this.router.navigate(['/callback'], { queryParams: new URLSearchParams(data) });
+				} else {
+					void this.router.navigate(['/']);
+				}
+			},
+			error: (error) => {
+				alert(error);
+				void this.router.navigate(['/']);
+			},
+		});
+	}
+}
+```
+
+The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
+
+The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login.
+
+You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { provideStrivacity, DefaultLogging } from '@strivacity/sdk-angular';
+
+provideStrivacity({
+	// ...other options
+	logging: DefaultLogging,
+});
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-angular';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
 		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
@@ -168,131 +280,37 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK configuration:
-
 ```typescript
 import { provideStrivacity } from '@strivacity/sdk-angular';
 import { MyLogger } from './logging/MyLogger';
 
-export const appConfig: ApplicationConfig = {
-	providers: [
-		// ...other providers
-		provideStrivacity({
-			// ...other options
-			logging: MyLogger,
-		}),
-	],
-};
-```
-
-## Installation and Setup
-
-### 1. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Environment Variables Setup
-
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:4200/callback
-VITE_MODE=redirect
-```
-
-### 3. Running the Application
-
-#### Development Server
-
-```bash
-pnpm app:angular:serve
-```
-
-#### Production Build
-
-```bash
-pnpm run build
-```
-
-## Architecture Overview
-
-### SDK Integration
-
-The Strivacity SDK is integrated through Angular's dependency injection system, making it available throughout the application as a service (see [src/app/app.config.ts](./src/app/app.config.ts)).
-
-### Service Usage
-
-Angular components can inject the `StrivacityService` to access authentication state and methods:
-
-```typescript
-import { Component, inject } from '@angular/core';
-import { StrivacityService } from '@strivacity/sdk-angular';
-
-@Component({
-	template: `
-		<button (click)="login()">Login</button>
-		<button (click)="logout()">Logout</button>
-	`,
-})
-export class AuthComponent {
-	private strivacityService = inject(StrivacityService);
-
-	login() {
-		this.strivacityService.login();
-	}
-
-	logout() {
-		this.strivacityService.logout();
-	}
-}
+provideStrivacity({
+	// ...other options
+	logging: MyLogger,
+});
 ```
 
 ## Pages
 
-Brief, purpose-oriented descriptions of the components under src/app/pages — what they do, expected behavior, and how they use the StrivacityService.
+| Page     | Path                                      | Description                                                                                                                                                        |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `src/app/pages/home/home.page.ts`         | Public landing page. Displays user info when authenticated.                                                                                                        |
+| Login    | `src/app/pages/login/login.page.ts`       | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
+| Register | `src/app/pages/register/register.page.ts` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
+| Callback | `src/app/pages/callback/callback.page.ts` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
+| Entry    | `src/app/pages/entry/entry.page.ts`       | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
+| Profile  | `src/app/pages/profile/profile.page.ts`   | Protected page showing the authenticated user's session details and token information.                                                                             |
+| Revoke   | `src/app/pages/revoke/revoke.page.ts`     | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
+| Logout   | `src/app/pages/logout/logout.page.ts`     | Terminates the user's session and redirects to the home page after logout.                                                                                         |
 
-- src/app/pages/home.component.ts
-  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
-  - Behavior: Shows public content and, when authenticated, brief user info from StrivacityService.idTokenClaims(). Should be accessible without auth.
-  - Usage: const strivacity = inject(StrivacityService); use strivacity.loading, strivacity.isAuthenticated() and strivacity.idTokenClaims() (or signal accessors) for conditional UI.
+## Vulnerability Reporting
 
-- src/app/pages/login.component.ts
-  - Purpose: Login page / entry point for authentication flows.
-  - Behavior: Triggers the SDK login flow (redirect/popup depending on configuration). If already authenticated, typically navigate to /profile.
-  - Usage: const strivacity = inject(StrivacityService); call strivacity.login(); check strivacity.isAuthenticated() and navigate when appropriate.
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-- src/app/pages/register.component.ts
-  - Purpose: Registration page (if supported).
-  - Behavior: Initiates a registration flow via the SDK or backend. On success either sign-in or navigate to login.
-  - Usage: inject(StrivacityService) or use a form + backend call, then call login/redirect as needed.
+## License
 
-- src/app/pages/entry.component.ts
-  - Purpose: Entry page used by link-driven flows to start server/SDK-driven operations.
-  - Behavior: Calls StrivacityService.entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading and error states.
-  - Usage: const strivacity = inject(StrivacityService); run entry() in an effect/ngOnInit and handle the returned params and errors.
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-- src/app/pages/callback.component.ts
-  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
-  - Behavior: Processes query params (code, state, session_id), completes authentication via the SDK, then redirects to the intended route (e.g., /profile).
-  - Note: Keep this route unprotected so external providers can return to it.
-  - Usage: inject(StrivacityService); call the SDK callback/redirect handler (e.g., handleRedirect or the appropriate method) in an effect, then Router.navigate() on success.
+## Contributing
 
-- src/app/pages/profile.component.ts
-  - Purpose: Protected user profile page.
-  - Behavior: Require authentication (route guard or component-level check). Displays idTokenClaims and other user data from StrivacityService; optionally fetch server data using the session.
-  - Usage: const strivacity = inject(StrivacityService); use strivacity.idTokenClaims, provide a logout button that calls strivacity.logout().
-
-- src/app/pages/revoke.component.ts
-  - Purpose: Revoke tokens or sessions (optional advanced session management page).
-  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
-  - Usage: inject(StrivacityService); call the SDK revoke method (if available) and then call logout/redirect on success.
-
-- src/app/pages/logout.component.ts
-  - Purpose: Initiates logout and clears the session.
-  - Behavior: Calls StrivacityService.logout(), clears client-side state, and redirects to home or login. Implement as an effect that shows progress and navigates away.
-  - Usage: const strivacity = inject(StrivacityService); perform logout in ngOnInit/effect and Router.navigate when complete.
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).

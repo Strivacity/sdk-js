@@ -1,10 +1,20 @@
 # @strivacity/sdk-remix
 
-> **The SDK supports Remix version 2 and above**
+A Remix library that integrates Strivacity's policy-driven authentication journeys into your application using the OAuth 2.0 PKCE flow. Supports `redirect`, `popup`, `native`, and `embedded` modes.
 
-## Example App
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+
+## Overview
+
+This SDK allows you to integrate Strivacity's policy-driven journeys into your Remix application. It wraps the `@strivacity/sdk-core` library as a React context provider and exposes a `useStrivacity` hook that provides authentication state and methods throughout your component tree. The SDK uses the OAuth 2.0 PKCE flow to authenticate with Strivacity. For detailed configuration options, available modes, and advanced usage refer to the [`@strivacity/sdk-core` documentation](https://github.com/Strivacity/sdk-js/blob/main/packages/sdk-core/README.md).
+
+## Demo Application
 
 - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/remix)
+
+## Requirements
+
+- Remix: 2+
 
 ## Install
 
@@ -14,48 +24,45 @@ npm install @strivacity/sdk-remix
 
 ## Usage
 
-### Wrap your app with `StyAuthProvider`
+### Initialization
 
-Add the `StyAuthProvider` to your `main.tsx` file.
+Wrap your application with `StyAuthProvider` in your root layout:
 
 ```tsx
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-react';
+import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-remix';
 
 const options: SDKOptions = {
-	mode: 'redirect', // or 'popup' or 'native'
+	mode: 'redirect', // or 'popup', 'native', 'embedded'
 	issuer: 'https://<YOUR_DOMAIN>',
 	scopes: ['openid', 'profile'],
 	clientId: '<YOUR_CLIENT_ID>',
 	redirectUri: '<YOUR_REDIRECT_URI>',
 };
 
-createRoot(document.getElementById('app')!).render(
-	<BrowserRouter>
+export default function App() {
+	return (
 		<StyAuthProvider options={options}>
-			<Routes>
-				<Route path="/" element={<App />}>
-					...
-				</Route>
-			</Routes>
+			<Outlet />
 		</StyAuthProvider>
-	</BrowserRouter>,
-);
+	);
+}
 ```
 
-### How to use the SDK in your components:
+Use the `useStrivacity` hook in any component to access authentication state:
 
-#### Redirect or popup mode
+```tsx
+import { useStrivacity } from '@strivacity/sdk-remix';
 
-When using redirect or popup mode, the authentication flow involves two main components: a login page that initiates the authentication process, and a callback page that handles the response from the identity provider.
+export default function MyComponent() {
+	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+}
+```
 
-In **redirect mode**, users are redirected to the identity provider's login page in the same browser window. After successful authentication, they are redirected back to your application's callback URL.
+### Redirect / Popup mode
 
-In **popup mode**, the authentication happens in a popup window, allowing the main application to remain open while the user authenticates.
+In `redirect` mode the user is taken to the identity provider in the same window; in `popup` mode authentication happens in a popup. Both are initiated the same way from code.
 
-##### Login page example
-
-The login page is where users start the authentication process. This component automatically triggers the login flow when the page loads, redirecting users to the identity provider for authentication.
+#### Login page example
 
 ```tsx
 import { useEffect } from 'react';
@@ -76,9 +83,9 @@ export default function Login() {
 }
 ```
 
-##### Callback page example
+#### Callback page example
 
-The callback page handles the response from the identity provider after successful authentication. It processes the authentication result, extracts the tokens, and redirects users to their intended destination (typically a protected page like a profile or dashboard).
+The callback page handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
 
 ```tsx
 import { useEffect } from 'react';
@@ -108,11 +115,7 @@ export default function Callback() {
 }
 ```
 
-##### Profile page example
-
-The profile page displays user information and authentication details after successful login. It uses the `useStrivacity` hook to access the authentication state and display relevant data such as access tokens, ID token claims, and expiration status.
-
-We check if the user is authenticated and display their profile information. If the user is not authenticated, we redirect them to the login page.
+#### Profile page example
 
 ```tsx
 import { useStrivacity } from '@strivacity/sdk-remix';
@@ -163,11 +166,9 @@ export default function Profile() {
 }
 ```
 
-##### Logout page example
+#### Logout page example
 
-The logout page handles user logout by terminating their session. The `postLogoutRedirectUri` parameter is optional and specifies where users should be redirected after logout. If not provided, users will be redirected to the identity provider's logout page.
-
-This URI must be configured in the Admin Console as an allowed post-logout redirect URI for your application.
+The `postLogoutRedirectUri` parameter is optional and specifies where users are redirected after logout. This URI must be configured in the Admin Console as an allowed post-logout redirect URI.
 
 ```tsx
 import { useEffect } from 'react';
@@ -196,15 +197,34 @@ export default function Logout() {
 }
 ```
 
-#### Native mode
+#### Component example
 
-If you are using `native` mode, you can use the `StyLoginRenderer` component to render the login UI.
+```tsx
+import { useStrivacity } from '@strivacity/sdk-remix';
 
-To customize the UI components used in the authentication flows, define the `widgets` object in your component.
+export default function Nav() {
+	const { isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
+	const name = `${idTokenClaims?.given_name} ${idTokenClaims?.family_name}`;
 
-###### Example widgets
+	return isAuthenticated ? (
+		<div>
+			<div>Welcome, {name}!</div>
+			<button onClick={() => logout()}>Logout</button>
+		</div>
+	) : (
+		<div>
+			<div>Not logged in</div>
+			<button onClick={() => login()}>Log in</button>
+		</div>
+	);
+}
+```
 
-The example widgets use SCSS for styling and Luxon for date handling. You'll need to install these dependencies:
+### Native mode
+
+In `native` mode the `StyLoginRenderer` component renders the authentication UI inline using your custom widget components. You can define custom components for each input type; see [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/remix/app/components/widgets).
+
+The example widgets use SCSS for styling and Luxon for date handling:
 
 ```bash
 npm install sass luxon
@@ -241,110 +261,71 @@ export const widgets = {
 };
 ```
 
-You can find example widgets here: [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/remix/src/components/widgets)
+#### Login page example
 
-##### Login page example
-
-The native mode login page provides a fully customizable authentication experience rendered directly within your application. Unlike redirect or popup modes, native mode keeps users on your site throughout the entire authentication process using the `StyLoginRenderer` component.
-
-This example demonstrates how to handle session management, implement callback functions for various authentication events, and manage URL parameters for session continuity.
+The login page extracts `session_id` from the URL on load, cleans up the URL, and passes it to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
 
 ```tsx
-import { Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-remix';
-import { widgets } from '@/components/widgets';
+import { StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-remix';
+import { widgets } from '~/components/widgets';
 
 export default function Login() {
 	const navigate = useNavigate();
-	const { options, login } = useStrivacity();
 	const [sessionId, setSessionId] = useState<string | null>(null);
 
-	/**
-	 * Extract session_id from URL parameters and clean up the URL
-	 * This is necessary for maintaining session state across external login providers
-	 */
 	useEffect(() => {
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
-			const sid = url.searchParams.get('session_id');
-			setSessionId(sid);
+			setSessionId(url.searchParams.get('session_id'));
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
 	}, []);
 
-	/**
-	 * Called when authentication is successful
-	 * Redirects user to the profile page
-	 */
 	const onLogin = async () => {
 		await navigate('/profile');
 	};
 
-	/**
-	 * Called when native flow cannot handle the authentication
-	 * Falls back to redirect mode by navigating to the provided URL
-	 * @param error - FallbackError containing the fallback URL and message
-	 */
 	const onFallback = (error: FallbackError) => {
 		if (error.url) {
-			console.log(`Fallback: ${error.url}`);
 			window.location.href = error.url.toString();
 		} else {
-			console.error(`FallbackError without URL: ${error.message}`);
 			alert(error);
 		}
 	};
 
-	/**
-	 * Called when an error occurs during the authentication process
-	 * @param error - Error message describing what went wrong
-	 */
 	const onError = (error: string) => {
-		console.error(`Error: ${error}`);
 		alert(error);
 	};
 
-	/**
-	 * Called when the authentication flow wants to display a global message
-	 * @param message - Message to display to the user
-	 */
 	const onGlobalMessage = (message: string) => {
 		alert(message);
 	};
 
-	/**
-	 * Called when the authentication flow transitions between states
-	 * Useful for tracking flow progress and inject custom logic such as logging or analytics
-	 * @param params - Object containing previous and current flow states
-	 */
 	const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
 		console.log('previousState', previousState);
 		console.log('state', state);
 	};
 
 	return (
-		<Suspense fallback={<span>Loading...</span>}>
-			<StyLoginRenderer
-				widgets={widgets}
-				sessionId={sessionId}
-				onFallback={onFallback}
-				onLogin={() => void onLogin()}
-				onError={onError}
-				onGlobalMessage={onGlobalMessage}
-				onBlockReady={onBlockReady}
-			/>
-		</Suspense>
+		<StyLoginRenderer
+			widgets={widgets}
+			sessionId={sessionId}
+			onFallback={onFallback}
+			onLogin={() => void onLogin()}
+			onError={onError}
+			onGlobalMessage={onGlobalMessage}
+			onBlockReady={onBlockReady}
+		/>
 	);
 }
 ```
 
-##### Callback page example
+#### Callback page example
 
-The native mode callback page handles authentication responses when external identity providers redirect back to your application. This page checks for session IDs in the URL parameters and either continues the native flow or falls back to standard callback handling.
-
-This component is essential for handling social login providers (like Google, Facebook, etc.) that require redirect-based authentication even within native mode flows.
+When a `session_id` is present in the URL the native flow is resumed by forwarding it to the login page. Otherwise the standard `handleCallback()` path is used:
 
 ```tsx
 import { useEffect } from 'react';
@@ -352,7 +333,6 @@ import { useNavigate } from 'react-router-dom';
 import { useStrivacity } from '@strivacity/sdk-remix';
 
 export default function Callback() {
-	const query = globalThis?.window ? Object.fromEntries(new URLSearchParams(globalThis.window.location.search)) : {};
 	const navigate = useNavigate();
 	const { handleCallback } = useStrivacity();
 
@@ -374,33 +354,85 @@ export default function Callback() {
 		})();
 	}, []);
 
-	if (query.error) {
-		return (
-			<section>
-				<h1>Error in authentication</h1>
-				<div>
-					<h4>{query.error}</h4>
-					<p>{query.error_description}</p>
-				</div>
-			</section>
-		);
-	} else {
-		return (
-			<section>
-				<h1>Logging in...</h1>
-			</section>
-		);
-	}
+	return (
+		<section>
+			<h1>Logging in...</h1>
+		</section>
+	);
 }
 ```
 
-##### Profile page example
+#### Entry page example
+
+The entry page processes flows started by an external process (e.g. password reset) by calling `entry()` to extract the necessary parameters to resume the flow and forwarding them to the callback page:
+
+```tsx
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStrivacity } from '@strivacity/sdk-remix';
+
+export default function Entry() {
+	const navigate = useNavigate();
+	const { entry } = useStrivacity();
+
+	useEffect(() => {
+		(async () => {
+			try {
+				const data = await entry();
+
+				if (data && Object.keys(data).length > 0) {
+					await navigate(`/callback?${new URLSearchParams(data).toString()}`);
+				} else {
+					await navigate('/');
+				}
+			} catch (error) {
+				console.error('Entry failed:', error);
+				await navigate('/');
+			}
+		})();
+	}, []);
+
+	return (
+		<section>
+			<h1>Loading...</h1>
+		</section>
+	);
+}
+```
+
+#### Profile page example
 
 Same as the profile page example in redirect/popup mode.
 
-##### Logout page example
+#### Logout page example
 
 Same as the logout page example in redirect/popup mode.
+
+### Embedded mode
+
+In `embedded` mode the `<sty-login>` web component (loaded via `bundle.js` from the cluster) handles rendering. Import the bundle at application startup to register the Strivacity web components:
+
+```tsx
+import { StyAuthProvider } from '@strivacity/sdk-remix';
+
+void import(`${window.ENV.VITE_ISSUER}/assets/components/bundle.js`);
+
+export default function App() {
+	return (
+		<StyAuthProvider
+			options={{
+				mode: 'embedded',
+				issuer: 'https://<YOUR_DOMAIN>',
+				scopes: ['openid', 'profile'],
+				clientId: '<YOUR_CLIENT_ID>',
+				redirectUri: '<YOUR_REDIRECT_URI>',
+			}}
+		>
+			<Outlet />
+		</StyAuthProvider>
+	);
+}
+```
 
 ## Logging
 
@@ -408,11 +440,10 @@ The SDK supports optional logging to help you debug authentication flows and mon
 
 ### Using the Default Logger
 
-Enable the default console logger by adding the `logging` option when creating the SDK:
+Enable the default console logger by adding the `logging` option:
 
 ```tsx
-import { BrowserRouter, Routes } from 'react-router-dom';
-import { StyAuthProvider, type SDKOptions, DefaultLogging } from '@strivacity/sdk-remix';
+import { StyAuthProvider, DefaultLogging, type SDKOptions } from '@strivacity/sdk-remix';
 
 const options: SDKOptions = {
 	mode: 'redirect',
@@ -420,23 +451,13 @@ const options: SDKOptions = {
 	scopes: ['openid', 'profile'],
 	clientId: '<YOUR_CLIENT_ID>',
 	redirectUri: '<YOUR_REDIRECT_URI>',
-	logging: DefaultLogging, // Enable built-in console logging
+	logging: DefaultLogging,
 };
-
-createRoot(document.getElementById('app')!).render(
-	<BrowserRouter>
-		<StyAuthProvider options={options}>
-			<Routes>{/* Your routes */}</Routes>
-		</StyAuthProvider>
-	</BrowserRouter>,
-);
 ```
-
-The default logger writes to the browser console and automatically prefixes messages with a correlation ID when available (via the `xEventId` property).
 
 ### Creating a Custom Logger
 
-You can provide your own logger by implementing the `SDKLogging` interface with four methods: `debug`, `info`, `warn`, and `error`. An optional `xEventId` property is honored for log correlation.
+Implement the `SDKLogging` interface and pass your class to the `logging` option:
 
 ```typescript
 import type { SDKLogging } from '@strivacity/sdk-remix';
@@ -445,7 +466,6 @@ export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// Send to your logging pipeline
 		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
 	}
 
@@ -463,161 +483,100 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your custom logger when creating the SDK:
+The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
 
-```tsx
-import { StyAuthProvider } from '@strivacity/sdk-remix';
-import { MyLogger } from './logging/MyLogger';
+## API Documentation
 
-const options: SDKOptions = {
-	mode: 'redirect',
-	issuer: 'https://<YOUR_DOMAIN>',
-	scopes: ['openid', 'profile'],
-	clientId: '<YOUR_CLIENT_ID>',
-	redirectUri: '<YOUR_REDIRECT_URI>',
-	logging: MyLogger, // Use your custom logger
-};
-```
-
-### Logger Interface
-
-The `SDKLogging` interface requires the following methods:
-
-- **`debug(message: string): void`** - Log debug-level messages
-- **`info(message: string): void`** - Log informational messages
-- **`warn(message: string): void`** - Log warning messages
-- **`error(message: string, error: Error): void`** - Log error messages with error objects
-
-The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
-
-### API Documentation
-
-#### `useStrivacity` hook
+### `useStrivacity` hook
 
 ```typescript
 useStrivacity<T extends PopupContext | RedirectContext | NativeContext>(): T;
 ```
 
-You can choose between `PopupContext`, `RedirectContext`, or `NativeContext` with the `mode` option when you configure the sdk options.
+The hook returns a different context type depending on the `mode` configured in `StyAuthProvider`.
 
-**Properties**
+**Shared properties (all modes)**
 
-- **`loading: boolean`**: Indicates if the session is being loaded.
-- **`isAuthenticated: boolean`**: Indicates whether the user is authenticated.
-- **`idTokenClaims: IdTokenClaims | null`**: Claims from the ID token or null if not available.
-- **`accessToken: string | null`**: The access token or null if not available.
-- **`refreshToken: string | null`**: The refresh token or null if not available.
-- **`accessTokenExpired: boolean`**: Indicates if the access token has expired.
-- **`accessTokenExpirationDate: number | null`**: Expiration date of the access token or null if not set.
-
----
-
-Type: `RedirectContext`
-Represents the available methods for Redirect-based interactions.
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process by redirecting the user to the identity provider.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a redirect flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a redirect flow.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a redirect flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the identity provider.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
+- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: The underlying SDK flow instance.
+- **`loading: boolean`**: `true` while the session is being initialized.
+- **`options: SDKOptions`**: The configured SDK options.
+- **`isAuthenticated: boolean`**: `true` when the user has a valid session.
+- **`idTokenClaims: IdTokenClaims | null`**: Claims from the ID token, or `null` if not authenticated.
+- **`accessToken: string | null`**: The current access token.
+- **`refreshToken: string | null`**: The current refresh token.
+- **`accessTokenExpired: boolean`**: `true` when the access token has expired.
+- **`accessTokenExpirationDate: number | null`**: Expiration timestamp (Unix seconds) of the access token.
 
 ---
 
-Type: `PopupContext`
-Represents the available methods for Popup-based interactions.
+**Type: `RedirectContext`**
 
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process using a popup window.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a popup flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a popup.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a popup flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user using a popup window.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a popup-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
-
----
-
-Type: `NativeContext`
-Represents the available methods for native-based interactions.
-
-- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates the login process using a native flow.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Registers a new user using a native flow.
-  - `options` (optional): Configuration options for registration.
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login by redirecting to the identity provider.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a redirect flow.
 - **`refresh(): Promise<void>`**: Refreshes the user's session.
 - **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the logout page.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication. This will be called automatically by the native flow handler during fallback.
-  - `url` (optional): The URL to handle for the callback.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback after redirect.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
 
-#### `StyLoginRenderer` component
+---
 
-The `StyLoginRenderer` component is used in native mode to render the authentication UI directly within your application. It provides a fully customizable login experience using your own UI components.
+**Type: `PopupContext`**
 
-```typescript
-StyLoginRenderer: React.FC<{
-	params?: NativeParams;
-	widgets?: PartialRecord<WidgetType, React.ComponentType<any>>;
-	sessionId?: string | null;
-	onLogin?: (claims?: IdTokenClaims | null) => void;
-	onFallback?: (error: FallbackError) => void;
-	onError?: (error: any) => void;
-	onGlobalMessage?: (message: string) => void;
-	onBlockReady?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
-}>;
-```
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login using a popup window.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a popup.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via popup.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
 
-**Properties**
+---
 
-- **`params?: NativeParams`** (optional): Additional parameters to pass to the native login flow. These parameters can include custom configuration options for the authentication process.
+**Type: `NativeContext`**
 
-- **`widgets?: PartialRecord<WidgetType, React.ComponentType<any>>`** (optional): A collection of React components that define the UI widgets used in the authentication flow. Each widget type (input, button, layout, etc.) can be customized with your own components.
+- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates login using the native flow.
+- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Initiates registration using the native flow.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
 
-- **`sessionId?: string | null`** (optional): The session ID for continuing an existing authentication session. This is typically extracted from URL parameters when returning from external identity providers.
+---
 
-- **`onLogin?: (claims?: IdTokenClaims | null) => void`** (optional): Callback function called when authentication is successful. Receives the ID token claims as a parameter.
+### `StyLoginRenderer` component
 
-- **`onFallback?: (error: FallbackError) => void`** (optional): Callback function called when the native flow cannot handle the authentication and needs to fall back to redirect mode. The error parameter contains the fallback URL.
+Used in `native` mode to render the authentication UI with your own widget components.
 
-- **`onError?: (error: any) => void`** (optional): Callback function called when an error occurs during the authentication process. Use this to handle and display error messages to users.
+**Props**
 
-- **`onGlobalMessage?: (message: string) => void`** (optional): Callback function called when the authentication flow wants to display a global message to the user (e.g., account lockout warnings, validation messages).
+- **`params?: NativeParams`**: Additional parameters for the native login flow.
+- **`widgets?: PartialRecord<WidgetType, React.ComponentType>`**: Custom React components for each widget type used in the flow.
+- **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
 
-- **`onBlockReady?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void`** (optional): Callback function called when the authentication flow transitions between states. Useful for tracking progress, implementing custom logging, or injecting analytics. Receives both the previous and current flow states.
+**Event callbacks**
 
-**Widget Types**
+- **`onLogin`**: Called on successful authentication. Receives `IdTokenClaims | null`.
+- **`onFallback`**: Called when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
+- **`onError`**: Called when an error occurs during authentication.
+- **`onGlobalMessage`**: Called when the flow wants to display a global message (e.g. account lockout warning).
+- **`onBlockReady`**: Called on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
 
-The `widgets` prop accepts the following widget types:
+## Vulnerability Reporting
 
-- `checkbox`: For checkbox input fields
-- `date`: For date input fields
-- `input`: For text input fields
-- `layout`: For layout containers and form structure
-- `loading`: For loading indicators
-- `multiSelect`: For multi-select dropdown fields
-- `passcode`: For passcode input fields
-- `password`: For password input fields
-- `phone`: For phone number input fields
-- `select`: For single-select dropdown fields
-- `static`: For static text and display elements
-- `submit`: For form submission buttons
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-Each widget component receives props specific to its type and function within the authentication flow.
+## License
 
-### Links
+@strivacity/sdk-remix is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-[Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/remix)
+## Contributing
+
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
 
 ## Migrating to v3.0
 
 ### Entry API Major Changes
 
-Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.

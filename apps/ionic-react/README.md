@@ -1,232 +1,90 @@
 # Strivacity SDK - Ionic React Example App
 
-This example application demonstrates how to integrate the Strivacity SDK into an Ionic React application with full mobile platform support using Capacitor plugins and native device capabilities.
+This example application demonstrates how to integrate the [@strivacity/sdk-react](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-react) SDK into an Ionic React application with Capacitor. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) on both web and native mobile platforms (Android, iOS).
 
-## Ionic-Specific Enhancements
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### Mobile Platform Support with Capacitor
+## Overview
 
-This Ionic React application extends the standard React implementation with Capacitor plugins for mobile platform support:
+The app extends the React SDK example with Capacitor-specific adapters. On mobile platforms, `CapacitorStorage` replaces localStorage with `@capacitor/preferences`, and authentication redirects are handled via `@capacitor/inappbrowser` instead of standard browser navigation. The `useStrivacity` hook provides reactive authentication state and methods throughout the application.
 
-#### 1. Additional Dependencies
+## Requirements
 
-The Ionic version includes additional Capacitor packages for mobile platform functionality (see [package.json](./package.json)):
+- React: 19+
+- Ionic: 8+
+- Capacitor: 7+
+- Node.js: 20 LTS+
 
-```json
-{
-	"@strivacity/sdk-react": "*",
-	"@capacitor/app": "^7.0.1",
-	"@capacitor/inappbrowser": "2.2.0",
-	"@capacitor/preferences": "^7.0.1"
-}
+## Install
+
+```bash
+pnpm install
 ```
 
-These packages provide:
+Create a `.env.local` file in the repository root:
 
-- **@capacitor/app**: App lifecycle and state management for mobile platforms
-- **@capacitor/inappbrowser**: In-app browser functionality for authentication flows
-- **@capacitor/preferences**: Native storage capabilities for secure token management
+```env
+VITE_MODE=redirect
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
+```
 
-#### 2. Enhanced Provider Configuration
+Then start the development server:
 
-The Ionic version includes Capacitor-specific storage and HTTP client implementations (see [src/main.tsx](./src/main.tsx)):
+```bash
+# Web
+pnpm app:ionic-react:serve
+
+# Android
+pnpm app:ionic-react:android:run
+
+# iOS
+pnpm app:ionic-react:ios:run
+```
+
+## Usage
+
+### Initialization
+
+The SDK is configured in `src/main.tsx` via `StyAuthProvider`. Platform detection is used to select the appropriate storage and URL/callback handlers. The app also dynamically imports `bundle.js` from the configured issuer domain, which registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
 
 ```tsx
-import { Preferences } from '@capacitor/preferences';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { StyAuthProvider, DefaultLogging, type SDKOptions, type SDKStorage, type SDKHttpClient } from '@strivacity/sdk-react';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { InAppBrowser } from '@capacitor/inappbrowser';
+import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-react';
 
-// Custom HTTP client for mobile platforms
-class CapacitorHttpClient extends SDKHttpClient {
-	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
+const isNative = Capacitor.getPlatform() !== 'web';
+
+class CapacitorHttpClient implements SDKHttpClient {
+	async request(url: string, options: RequestInit = {}): Promise<Response> {
 		const response = await CapacitorHttp.request({
 			url,
-			method: options?.method || 'GET',
-			headers: (options?.headers as Record<string, string>) || {},
-			data: options?.body,
-			webFetchExtra: options,
+			method: (options.method as string) ?? 'GET',
+			headers: options.headers as Record<string, string>,
+			data: options.body,
 		});
-
-		return {
-			headers: new Headers(response.headers),
-			ok: response.status >= 200 && response.status < 300,
-			status: response.status,
-			statusText: '',
-			url: response.url,
-			json: () => Promise.resolve(response.data),
-			text: () => Promise.resolve(response.data),
-		};
+		return new Response(JSON.stringify(response.data), { status: response.status, headers: response.headers });
 	}
 }
 
-// Native storage implementation
-class CapacitorStorage extends SDKStorage {
+class CapacitorStorage implements SDKStorage {
 	async get(key: string): Promise<string | null> {
 		const { value } = await Preferences.get({ key });
 		return value;
 	}
-
 	async set(key: string, value: string): Promise<void> {
 		await Preferences.set({ key, value });
 	}
-
-	async delete(key: string): Promise<void> {
+	async remove(key: string): Promise<void> {
 		await Preferences.remove({ key });
 	}
 }
-```
-
-#### 3. Platform-Aware SDK Options
-
-The configuration includes platform detection for handling authentication flows differently on web vs mobile:
-
-```tsx
-const options: SDKOptions = {
-	// ...other config
-	storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
-	async urlHandler(url, responseMode) {
-		if (Capacitor.getPlatform() === 'web') {
-			return redirectUrlHandler(url, responseMode);
-		} else {
-			await InAppBrowser.openInWebView({ url, options: DefaultWebViewOptions });
-		}
-	},
-	async callbackHandler(url, responseMode) {
-		if (Capacitor.getPlatform() !== 'web') {
-			// InAppBrowser navigation listener implementation
-			return new Promise(async (resolve, reject) => {
-				// Mobile-specific callback handling with navigation listeners
-			});
-		} else {
-			return redirectCallbackHandler(url, responseMode);
-		}
-	},
-};
-```
-
-### 3. Enhanced Authentication Pages
-
-Both login and register pages include mobile-specific fallback handling:
-
-#### Login Page Enhancements ([src/pages/Login.tsx](./src/pages/Login.tsx)):
-
-```tsx
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
-import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
-import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
-
-useEffect(() => {
-	(async () => {
-		if (options.mode === 'redirect') {
-			await login();
-
-			// Mobile platform token exchange
-			if (Capacitor.getPlatform() !== 'web') {
-				const params = await options.callbackHandler!(options.redirectUri, options.responseMode || 'fragment');
-				await sdk.tokenExchange(params);
-				await navigate('/profile');
-			}
-		} else if (options.mode === 'popup') {
-			await login();
-			await navigate('/profile');
-		}
-	})();
-}, []);
-
-const onFallback = async (error: FallbackError) => {
-	if (error.url) {
-		if (Capacitor.getPlatform() === 'web') {
-			return redirectUrlHandler(error.url.toString());
-		} else {
-			// InAppBrowser implementation for mobile platforms
-			await InAppBrowser.openInWebView({
-				url: error.url.toString(),
-				options: DefaultWebViewOptions,
-			});
-
-			const params = await new Promise<Record<string, string>>(async (resolve, reject) => {
-				let navigationListener: PluginListenerHandle | null = null;
-				let finishListener: PluginListenerHandle | null = null;
-				let userCancelled = true;
-
-				// Navigation event listeners for mobile authentication flow
-				navigationListener = await InAppBrowser.addListener('browserPageNavigationCompleted', async (event) => {
-					// Handle redirect URI navigation
-					if (event.url?.startsWith(options.redirectUri)) {
-						// Extract and process authentication parameters
-						userCancelled = false;
-						await InAppBrowser.close();
-						resolve(params);
-					}
-				});
-
-				finishListener = await InAppBrowser.addListener('browserClosed', async () => {
-					if (userCancelled) {
-						reject(new Error('InAppBrowser flow cancelled by user.'));
-					}
-				});
-			});
-
-			// Handle authentication result
-			if (params.session_id) {
-				await navigate(`/callback?session_id=${params.session_id}`);
-			} else {
-				await sdk.tokenExchange(params);
-				await navigate('/profile');
-			}
-		}
-	}
-};
-```
-
-#### Register Page Enhancements ([src/pages/Register.tsx](./src/pages/Register.tsx)):
-
-The register page includes identical mobile platform enhancements with the same InAppBrowser handling and platform detection logic.
-
-### 4. Key Differences from Standard React Implementation
-
-| Feature                 | Standard React        | Ionic React                                                         |
-| ----------------------- | --------------------- | ------------------------------------------------------------------- |
-| **Storage**             | LocalStorage only     | Platform-aware: LocalStorage (web) / Capacitor Preferences (mobile) |
-| **HTTP Client**         | Standard fetch        | Platform-aware: fetch (web) / CapacitorHttp (mobile)                |
-| **Authentication Flow** | Web redirects only    | Platform-aware: redirects (web) / InAppBrowser (mobile)             |
-| **URL Handling**        | Browser navigation    | Platform-aware: browser (web) / InAppBrowser (mobile)               |
-| **Callback Handling**   | URL parameter parsing | Platform-aware: URL parsing (web) / navigation listeners (mobile)   |
-| **Session Management**  | Browser-based         | Native device storage integration                                   |
-
-### 5. Mobile Platform Features
-
-- **Native Storage**: Uses Capacitor Preferences API for secure token storage on mobile devices
-- **InAppBrowser Integration**: Handles authentication flows within the app context on mobile platforms
-- **Platform Detection**: Automatically detects and adapts behavior for web, iOS, and Android platforms
-- **Navigation Listeners**: Monitors InAppBrowser navigation events for authentication callback handling
-- **User Cancellation Handling**: Properly handles user-initiated authentication flow cancellations
-- **Session Management**: Platform-appropriate session handling with native capabilities
-
-## Standard React Features
-
-# Strivacity SDK - React Example App
-
-This example application demonstrates how to integrate the Strivacity SDK into a React application using React Router for navigation and modern React patterns including hooks and context.
-
-## Key Features and Implementation
-
-### 1. React Dependencies
-
-This React application uses the Strivacity React SDK for authentication (see [package.json](./package.json)):
-
-```json
-{
-	"@strivacity/sdk-react": "*"
-}
-```
-
-### 2. Provider Pattern Integration
-
-The application uses React's context pattern through the `StyAuthProvider` to provide authentication state throughout the component tree (see [src/main.tsx](./src/main.tsx)):
-
-```tsx
-import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-react';
 
 const options: SDKOptions = {
 	mode: import.meta.env.VITE_MODE,
@@ -235,64 +93,97 @@ const options: SDKOptions = {
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.react',
+	logging: DefaultLogging,
+	storage: isNative ? CapacitorStorage : undefined,
+	httpClient: isNative ? CapacitorHttpClient : undefined,
+	urlHandler: isNative ? async (url) => InAppBrowser.openInWebView({ url }) : redirectUrlHandler,
+	callbackHandler: isNative
+		? () =>
+				new Promise((resolve) => {
+					/* InAppBrowser navigation listener */
+				})
+		: redirectCallbackHandler,
 };
 
-<StyAuthProvider options={options}>
+createRoot(document.getElementById('app')!).render(
 	<BrowserRouter>
-		<Routes>// Routes configuration</Routes>
-	</BrowserRouter>
-</StyAuthProvider>;
+		<StyAuthProvider options={options}>
+			<Routes>{/* route definitions */}</Routes>
+		</StyAuthProvider>
+	</BrowserRouter>,
+);
 ```
 
-### 3. Route Protection
-
-The application implements route guards using React hooks to protect authenticated routes (see [src/main.tsx](./src/main.tsx)):
+Components access authentication state through the `useStrivacity` hook — identical to the React example app:
 
 ```tsx
 import { useStrivacity } from '@strivacity/sdk-react';
 
-const RouteGuard = ({ children }: { children: React.ReactElement }) => {
-	const { loading, isAuthenticated } = useStrivacity();
+export const Home = () => {
+	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+	const firstName = idTokenClaims?.given_name ?? '';
 
-	if (loading) {
-		return <h1>Loading...</h1>;
-	}
-
-	if (!isAuthenticated) {
-		return <Navigate to="/login" replace />;
-	}
-
-	return children;
+	if (loading) return <div>Loading...</div>;
+	if (isAuthenticated) return <div>Welcome, {firstName}!</div>;
+	return <div>Please log in.</div>;
 };
 ```
 
-### 4. Logging
+### Login / Register
 
-You can enable SDK logging or plug in your own logger.
+`src/pages/Login.tsx` and `src/pages/Register.tsx` initiate the authentication flow. The active mode determines how the UI is rendered:
 
-- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/main.tsx](./src/main.tsx). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+- **`redirect`** — `login()` is called on mount; the user is taken to the identity provider (or InAppBrowser on mobile).
+- **`popup`** — `login()` is called on mount; authentication happens in a popup window.
+- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
+- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
+
+`src/pages/Callback.tsx` handles the response from the identity provider. It calls `sdk.handleCallback()` and navigates to `/profile` on success.
+
+### Refresh token
+
+Token refresh runs automatically when the SDK detects an expired access token. The `refresh` method is also available via the hook for manual invocation:
 
 ```tsx
-import { StyAuthProvider, type SDKOptions, DefaultLogging } from '@strivacity/sdk-react';
-
-const options: SDKOptions = {
-	// ...other options
-	logging: DefaultLogging, // enable built-in console logging
-};
-
-<StyAuthProvider options={options}>{/* Your app */}</StyAuthProvider>;
+const { refresh } = useStrivacity();
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Revoke session / logout
 
-```ts
+`src/pages/Revoke.tsx` revokes the current session tokens without a full logout, then returns to the home page.
+
+`src/pages/Logout.tsx` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin.
+
+### Resume an externally-initiated flow
+
+`src/pages/Entry.tsx` handles flows started by an external process (e.g. password reset, magic link, invite). On mount it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow.
+
+The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
+
+You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { DefaultLogging } from '@strivacity/sdk-react';
+
+// ...within your SDK options:
+logging: DefaultLogging,
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-react';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
 		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
@@ -307,156 +198,34 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK options:
-
-```tsx
-import { StyAuthProvider } from '@strivacity/sdk-react';
+```typescript
 import { MyLogger } from './logging/MyLogger';
 
-const options: SDKOptions = {
-	// ...other options
-	logging: MyLogger,
-};
+// ...within your SDK options:
+logging: MyLogger,
 ```
 
-### 5. React Router Integration
+## Pages
 
-The application uses React Router for client-side navigation with protected and public routes:
+| Page     | Path                     | Description                                                                                                                                                        |
+| -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `src/pages/Home.tsx`     | Public landing page. Displays user info when authenticated.                                                                                                        |
+| Login    | `src/pages/Login.tsx`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
+| Register | `src/pages/Register.tsx` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
+| Callback | `src/pages/Callback.tsx` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
+| Entry    | `src/pages/Entry.tsx`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
+| Profile  | `src/pages/Profile.tsx`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                                 |
+| Revoke   | `src/pages/Revoke.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
+| Logout   | `src/pages/Logout.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
 
-```tsx
-<Routes>
-	<Route path="/" element={<App />}>
-		<Route index element={<Home />} />
-		<Route path="login" element={<Login />} />
-		<Route path="register" element={<Register />} />
-		<Route path="callback" element={<Callback />} />
-		<Route
-			path="profile"
-			element={
-				<RouteGuard>
-					<Profile />
-				</RouteGuard>
-			}
-		/>
-		<Route
-			path="logout"
-			element={
-				<RouteGuard>
-					<Logout />
-				</RouteGuard>
-			}
-		/>
-		<Route
-			path="revoke"
-			element={
-				<RouteGuard>
-					<Revoke />
-				</RouteGuard>
-			}
-		/>
-	</Route>
-</Routes>
-```
+## Vulnerability Reporting
 
-## Installation and Setup
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-### 1. Install Dependencies
+## License
 
-```bash
-pnpm install
-```
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-### 2. Environment Variables Setup
+## Contributing
 
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:3000/callback
-VITE_MODE=redirect
-```
-
-### 3. Running the Application
-
-```bash
-pnpm app:react:serve
-```
-
-## Architecture Overview
-
-### SDK Integration
-
-The Strivacity SDK is integrated using React's provider pattern, making authentication state available throughout the component tree (see [src/main.tsx](./src/main.tsx)).
-
-### Component Usage
-
-React components can access authentication state and methods through the `useStrivacity` hook (see [src/components/App.tsx](./src/components/App.tsx)):
-
-```tsx
-import { useStrivacity } from '@strivacity/sdk-react';
-
-export function App() {
-	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-
-	return (
-		<div>
-			{loading && <div>Loading...</div>}
-			{isAuthenticated && <div>Welcome, {idTokenClaims?.name}!</div>}
-		</div>
-	);
-}
-```
-
-### Pages
-
-Brief, purpose-oriented descriptions of route components under src/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the SDK and React hooks.
-
-- src/pages/Home.tsx
-  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
-  - Behavior: Shows public content and, when authenticated, brief user info from useStrivacity(). Should be accessible without auth.
-  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); render conditional UI with loading/isAuthenticated.
-
-- src/pages/Login.tsx
-  - Purpose: Login page / entry point for authentication flows.
-  - Behavior: Triggers the SDK login flow (redirect/popup/native based on options). On web this usually redirects; on mobile open InAppBrowser and exchange tokens when callback is received.
-  - Usage: useEffect(() => { await login(); /_ handle mobile token exchange if needed _/ }, []); use options.callbackHandler(...) and sdk.tokenExchange(params) for mobile flows. Use Capacitor.getPlatform() to detect mobile.
-
-- src/pages/Register.tsx
-  - Purpose: Registration page (if supported).
-  - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback similar to login.
-  - Usage: call SDK registration API or backend, then call login() / navigate as appropriate.
-
-- src/pages/Entry.tsx
-  - Purpose: Entry page used by deep links or external links to start server/SDK-driven operations.
-  - Behavior: Calls SDK entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise fallback to home. Show loading/error states.
-  - Usage: const { entry } = useStrivacity(); call entry() in `useEffect`, handle returned params and navigate.
-
-- src/pages/Callback.tsx
-  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
-  - Behavior: Parses query params (code, state, session_id) from location, finalizes authentication via sdk.tokenExchange or provider-specific handler, then redirect to intended route (e.g., /profile).
-  - Note: Keep this route unprotected so external providers and InAppBrowser flows can return.
-  - Usage: useEffect(() => { const params = parseQuery(location.search); await sdk.tokenExchange(params); navigate('/profile'); }, []).
-
-- src/pages/Profile.tsx
-  - Purpose: Protected user profile page.
-  - Behavior: Require authentication (Route guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
-  - Usage: const { idTokenClaims, logout } = useStrivacity(); provide logout button that calls logout(); protect route via guard or check isAuthenticated before render.
-
-- src/pages/Revoke.tsx
-  - Purpose: Revoke tokens or sessions (advanced session management).
-  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
-  - Usage: await sdk.revoke(params) or call backend endpoint, then call logout() / navigate('/') on success; show confirmations.
-
-- src/pages/Logout.tsx
-  - Purpose: Initiates logout and clears the session.
-  - Behavior: Calls sdk.logout(), clears client/native storage (Capacitor Preferences) and redirects to home or login. Implement as an effect that shows progress and navigates away.
-  - Usage: useEffect(() => { await logout(); navigate('/'); }, []); ensure mobile/native clearing if using Capacitor storage.
-
-Mobile-specific notes (applies to login/register/entry/callback flows)
-
-- Use Capacitor.getPlatform() to choose between web redirect handlers and mobile InAppBrowser flows.
-- For InAppBrowser flows, open the auth URL via InAppBrowser.openInWebView(...) and attach navigation listeners (InAppBrowser.addListener) to detect redirectUri navigation, then close the webview and forward params to sdk.tokenExchange or navigate to /callback?session_id=...
-- Always keep the callback route unprotected so external providers / InAppBrowser can return to it.
-- Use PluginListenerHandle cleanup to avoid leaks and handle user cancellation (browserClosed event).
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
