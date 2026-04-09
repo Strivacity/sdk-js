@@ -1,3 +1,5 @@
+import type { BaseFlow } from './flows/BaseFlow';
+
 /**
  * Makes properties of `T` required based on the keys provided in `K`.
  *
@@ -509,10 +511,10 @@ export type SDKOptions = {
 	/**
 	 * Specifies the mode of the SDK operation, either 'popup' or 'redirect'.
 	 *
-	 * @type {'popup' | 'redirect'}
+	 * @type {'popup' | 'redirect' | 'native' | 'embedded' | 'custom'}
 	 * @default 'redirect'
 	 */
-	mode?: 'popup' | 'redirect' | 'native' | 'embedded';
+	mode?: 'popup' | 'redirect' | 'native' | 'embedded' | 'custom';
 
 	/**
 	 * The issuer of the tokens, typically the URL of the authorization server.
@@ -594,6 +596,13 @@ export type SDKOptions = {
 	 * @type {SDKLoggingType}
 	 */
 	logging?: SDKLoggingType;
+
+	/**
+	 * A custom flow handler that extends the BaseFlow class. This allows you to implement a custom authentication flow by providing your own handler.
+	 *
+	 * @type {FlowType}
+	 */
+	customFlow?: FlowType;
 
 	/**
 	 * Handles the URL redirection to the specified target.
@@ -689,6 +698,12 @@ export type SDKHttpClientType = new (...args: Array<any>) => SDKHttpClient;
 export type SDKLoggingType = new (...args: Array<any>) => SDKLogging;
 
 /**
+ * Type representing a constructor function for a custom flow that extends BaseFlow.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type FlowType = new (...args: Array<any>) => BaseFlow;
+
+/**
  * Http client response type.
  */
 export type HttpClientResponse<T> = {
@@ -713,7 +728,7 @@ export type EventFunctions = {
 	 * @param {string | null} [params.refreshToken] - The refresh token associated with the access token, if available.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	accessTokenExpired: (params: { accessToken: string; refreshToken?: string | null }) => Promise<void> | void;
+	accessTokenExpired: (params?: { accessToken?: string; refreshToken?: string | null }) => Promise<void> | void;
 
 	/**
 	 * Handler called when the SDK is initialized.
@@ -731,7 +746,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims extracted from the ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	loggedIn: (params: { accessToken: string; refreshToken?: string | null; claims: IdTokenClaims }) => Promise<void> | void;
+	loggedIn: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims }) => Promise<void> | void;
 
 	/**
 	 * Handler called when login has been initiated.
@@ -748,7 +763,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims associated with the ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the logout initiation process is complete, or void if no asynchronous operation is needed.
 	 */
-	logoutInitiated: (params: { idToken: string; claims: IdTokenClaims }) => Promise<void> | void;
+	logoutInitiated: (params?: { idToken?: string; claims?: IdTokenClaims }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a user session has been successfully loaded.
@@ -759,7 +774,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims associated with the ID token in the session.
 	 * @returns {Promise<void> | void} A promise that resolves when the session loading is complete, or void if no asynchronous operation is needed.
 	 */
-	sessionLoaded: (params: { accessToken: string; refreshToken?: string | null; claims: IdTokenClaims }) => Promise<void> | void;
+	sessionLoaded: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims }) => Promise<void> | void;
 
 	/**
 	 * Handler called when an access token has been successfully refreshed.
@@ -770,7 +785,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims extracted from the new ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the token refresh is complete, or void if no asynchronous operation is needed.
 	 */
-	tokenRefreshed: (params: { accessToken: string; refreshToken: string; claims: IdTokenClaims }) => Promise<void> | void;
+	tokenRefreshed: (params?: { accessToken?: string; refreshToken?: string; claims?: IdTokenClaims }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a token refresh operation fails.
@@ -779,7 +794,7 @@ export type EventFunctions = {
 	 * @param {string} params.refreshToken - The refresh token that was used in the failed refresh operation.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	tokenRefreshFailed: (params: { refreshToken: string }) => Promise<void> | void;
+	tokenRefreshFailed: (params?: { refreshToken?: string }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a token has been successfully revoked.
@@ -789,7 +804,7 @@ export type EventFunctions = {
 	 * @param {'refresh_token' | 'access_token'} params.tokenTypeHint - The type of token that was revoked.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	tokenRevoked: (params: { token: string; tokenTypeHint: 'refresh_token' | 'access_token' }) => Promise<void> | void;
+	tokenRevoked: (params?: { token?: string; tokenTypeHint?: 'refresh_token' | 'access_token' }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a token revocation operation fails.
@@ -799,7 +814,7 @@ export type EventFunctions = {
 	 * @param {'refresh_token' | 'access_token'} params.tokenTypeHint - The type of token that was attempted to be revoked.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	tokenRevokeFailed: (params: { token: string; tokenTypeHint: 'refresh_token' | 'access_token' }) => Promise<void> | void;
+	tokenRevokeFailed: (params?: { token?: string; tokenTypeHint?: 'refresh_token' | 'access_token' }) => Promise<void> | void;
 };
 
 // endregion

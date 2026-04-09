@@ -10,6 +10,7 @@ export class LogoutPage extends LitElement {
 	}
 
 	async init() {
+		// eslint-disable-next-line @typescript-eslint/await-thenable
 		if (await globalThis.sdk.isAuthenticated) {
 			await globalThis.sdk.logout();
 		} else {

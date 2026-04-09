@@ -1,11 +1,21 @@
 # @strivacity/sdk-angular
 
-> **The SDK supports Angular version 16 and above**
+An Angular library that integrates Strivacity's policy-driven authentication journeys into your application using the OAuth 2.0 PKCE flow. Supports `redirect`, `popup`, `native`, and `embedded` modes.
 
-## Example Apps
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+
+## Overview
+
+This SDK allows you to integrate Strivacity's policy-driven journeys into your Angular application. It wraps the `@strivacity/sdk-core` library as an Angular service and provides `StrivacityAuthModule` for NgModule apps and `provideStrivacity()` for standalone apps. The SDK uses the OAuth 2.0 PKCE flow to authenticate with Strivacity. For detailed configuration options, available modes, and advanced usage refer to the [`@strivacity/sdk-core` documentation](https://github.com/Strivacity/sdk-js/blob/main/packages/sdk-core/README.md).
+
+## Demo Application
 
 - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular)
 - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-angular)
+
+## Requirements
+
+- Angular: 17+
 
 ## Install
 
@@ -15,15 +25,15 @@ npm install @strivacity/sdk-angular
 
 ## Usage
 
-### Add this to your application configuration
+### Initialization
 
-#### NgModule - Import `StrivacityAuthModule` to your application:
+#### NgModule apps
 
-`app.module.ts`
+Import `StrivacityAuthModule` in your `AppModule`:
 
 ```ts
+// app.module.ts
 import { NgModule } from '@angular/core';
-
 import { AppComponent } from './app.component';
 import { StrivacityAuthModule } from '@strivacity/sdk-angular';
 
@@ -31,7 +41,7 @@ import { StrivacityAuthModule } from '@strivacity/sdk-angular';
 	declarations: [AppComponent],
 	imports: [
 		...StrivacityAuthModule.forRoot({
-			mode: 'redirect', // or 'popup' or 'native'
+			mode: 'redirect', // or 'popup', 'native', 'embedded'
 			issuer: 'https://<YOUR_DOMAIN>',
 			scopes: ['openid', 'profile'],
 			clientId: '<YOUR_CLIENT_ID>',
@@ -43,18 +53,19 @@ import { StrivacityAuthModule } from '@strivacity/sdk-angular';
 export class AppModule {}
 ```
 
-#### Standalone mode - Configure SDK for your application:
+#### Standalone apps
 
-`app.config.ts`
+Use `provideStrivacity()` in your application config:
 
 ```ts
+// app.config.ts
 import { ApplicationConfig } from '@angular/core';
 import { provideStrivacity } from '@strivacity/sdk-angular';
 
 export const appConfig: ApplicationConfig = {
 	providers: [
 		...provideStrivacity({
-			mode: 'redirect', // or 'popup' or 'native'
+			mode: 'redirect', // or 'popup', 'native', 'embedded'
 			issuer: 'https://<YOUR_DOMAIN>',
 			scopes: ['openid', 'profile'],
 			clientId: '<YOUR_CLIENT_ID>',
@@ -64,17 +75,23 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-### How to use the SDK in your components
+Inject `StrivacityAuthService` into any component to access authentication state:
 
-#### Redirect mode
+```ts
+import { Component } from '@angular/core';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
-When using redirect mode, the authentication flow involves two main components: a login page that initiates the authentication process, and a callback page that handles the response from the identity provider.
+@Component({ standalone: true, selector: 'app-root', template: '' })
+export class AppComponent {
+	constructor(private strivacityAuthService: StrivacityAuthService) {}
+}
+```
 
-In **redirect mode**, users are redirected to the identity provider's login page in the same browser window. After successful authentication, they are redirected back to your application's callback URL.
+### Redirect / Popup mode
 
-##### Login page example
+In `redirect` mode the user is taken to the identity provider in the same window; in `popup` mode authentication happens in a popup. Both are initiated the same way from code.
 
-The login page is where users start the authentication process. This component automatically triggers the login flow when the page loads, redirecting users to the identity provider for authentication.
+#### Login page example
 
 ```html
 <!-- login.component.html -->
@@ -102,9 +119,9 @@ export class LoginComponent implements OnInit {
 }
 ```
 
-##### Callback page example
+#### Callback page example
 
-The callback page handles the response from the identity provider after successful authentication. It processes the authentication result, extracts the tokens, and redirects users to their intended destination (typically a protected page like a profile or dashboard).
+The callback page handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
 
 ```html
 <!-- callback.component.html -->
@@ -165,11 +182,7 @@ export class CallbackComponent implements OnInit, OnDestroy {
 }
 ```
 
-##### Profile page example
-
-The profile page displays user information and authentication details after successful login. It uses the `StrivacityAuthService` to access the authentication state and display relevant data such as access tokens, ID token claims, and expiration status.
-
-We check if the user is authenticated and display their profile information. If the user is not authenticated, we redirect them to the login page.
+#### Profile page example
 
 ```html
 <!-- profile.component.html -->
@@ -178,36 +191,16 @@ We check if the user is authenticated and display their profile information. If 
 	<h1>Loading...</h1>
 	} @else {
 	<dl>
-		<dt>
-			<strong>accessToken</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessToken | json }}</pre>
-		</dd>
-		<dt>
-			<strong>refreshToken</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.refreshToken | json }}</pre>
-		</dd>
-		<dt>
-			<strong>accessTokenExpired</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessTokenExpired | json }}</pre>
-		</dd>
-		<dt>
-			<strong>accessTokenExpirationDate</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessTokenExpirationDate | date: 'medium' }}</pre>
-		</dd>
-		<dt>
-			<strong>claims</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.idTokenClaims | json }}</pre>
-		</dd>
+		<dt><strong>accessToken</strong></dt>
+		<dd><pre>{{ session.accessToken | json }}</pre></dd>
+		<dt><strong>refreshToken</strong></dt>
+		<dd><pre>{{ session.refreshToken | json }}</pre></dd>
+		<dt><strong>accessTokenExpired</strong></dt>
+		<dd><pre>{{ session.accessTokenExpired | json }}</pre></dd>
+		<dt><strong>accessTokenExpirationDate</strong></dt>
+		<dd><pre>{{ session.accessTokenExpirationDate | date: 'medium' }}</pre></dd>
+		<dt><strong>claims</strong></dt>
+		<dd><pre>{{ session.idTokenClaims | json }}</pre></dd>
 	</dl>
 	}
 </section>
@@ -252,11 +245,9 @@ export class ProfileComponent implements OnDestroy {
 }
 ```
 
-##### Logout page example
+#### Logout page example
 
-The logout page handles user logout by terminating their session. The `postLogoutRedirectUri` parameter is optional and specifies where users should be redirected after logout. If not provided, users will be redirected to the identity provider's logout page.
-
-This URI must be configured in the Admin Console as an allowed post-logout redirect URI for your application.
+The `postLogoutRedirectUri` parameter is optional and specifies where users are redirected after logout. This URI must be configured in the Admin Console as an allowed post-logout redirect URI.
 
 ```html
 <!-- logout.component.html -->
@@ -299,9 +290,7 @@ export class LogoutComponent implements OnInit, OnDestroy {
 }
 ```
 
-##### Component example
-
-Here's a simple component example that demonstrates how to use the SDK in a component with login/logout functionality:
+#### Component example
 
 ```html
 <!-- app.component.html -->
@@ -317,7 +306,6 @@ Here's a simple component example that demonstrates how to use the SDK in a comp
 ```ts
 // app.component.ts
 import { Component, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
@@ -331,10 +319,7 @@ export class AppComponent implements OnDestroy {
 	isAuthenticated = false;
 	name = '';
 
-	constructor(
-		private router: Router,
-		private strivacityAuthService: StrivacityAuthService,
-	) {
+	constructor(private strivacityAuthService: StrivacityAuthService) {
 		this.subscription.add(
 			this.strivacityAuthService.session$.subscribe((session) => {
 				this.isAuthenticated = session.isAuthenticated;
@@ -348,30 +333,25 @@ export class AppComponent implements OnDestroy {
 	}
 
 	login(): void {
-		this.strivacityAuthService.login().subscribe({
-			next: () => {
-				this.router.navigateByUrl('/profile');
-			},
-		});
+		this.strivacityAuthService.login().subscribe();
 	}
 
 	logout(): void {
-		this.strivacityAuthService.logout().subscribe({
-			next: () => {
-				this.router.navigateByUrl('/');
-			},
-		});
+		this.strivacityAuthService.logout().subscribe();
 	}
 }
 ```
 
-#### Native mode
+### Native mode
 
-If you are using `native` mode, you can use the `sty-login-renderer` component to render the login UI.
+In `native` mode the `<sty-login-renderer>` component renders the authentication UI inline using your custom widget components. You can define custom Angular components for each input type; see [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/angular/src/app/components/widgets).
 
-To customize the UI components used in the authentication flows, define the `widgets` object in your component.
+The example widgets use SCSS for styling and Luxon for date handling:
 
-##### Example widgets
+```bash
+npm install sass luxon
+npm install --save-dev @types/luxon
+```
 
 ```ts
 import {
@@ -405,55 +385,42 @@ export const widgets = {
 };
 ```
 
-You can find example widgets here: [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/angular/src/app/components/widgets)
+#### Login page example
 
-##### Login page example
-
-The native mode login page provides a fully customizable authentication experience rendered directly within your application. Unlike redirect mode, native mode keeps users on your site throughout the entire authentication process using the `sty-login-renderer` component.
-
-This example demonstrates how to handle session management, implement callback functions for various authentication events, and manage URL parameters for session continuity.
+The login page extracts `session_id` from the URL on load, cleans up the URL, and passes it to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
 
 ```html
 <!-- login.component.html -->
-<section>
-	<sty-login-renderer
-		[widgets]="widgets"
-		[sessionId]="sessionId"
-		(fallback)="onFallback($event)"
-		(login)="onLogin()"
-		(error)="onError($event)"
-		(globalMessage)="onGlobalMessage($event)"
-		(blockReady)="onBlockReady($event)"
-	></sty-login-renderer>
-</section>
+<sty-login-renderer
+	[widgets]="widgets"
+	[sessionId]="sessionId"
+	(login)="onLogin()"
+	(fallback)="onFallback($event)"
+	(error)="onError($event)"
+	(globalMessage)="onGlobalMessage($event)"
+	(blockReady)="onBlockReady($event)"
+/>
 ```
 
 ```ts
 // login.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState } from '@strivacity/sdk-angular';
-import { widgets } from '@/components/widgets'; // Import your custom widgets
+import { StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-angular';
+import { widgets } from './components/widgets';
 
 @Component({
 	standalone: true,
-	imports: [StyLoginRenderer],
 	selector: 'app-login',
 	templateUrl: './login.component.html',
+	imports: [StyLoginRenderer],
 })
 export class LoginComponent implements OnInit {
-	readonly widgets = widgets;
+	widgets = widgets;
 	sessionId: string | null = null;
 
-	constructor(
-		private router: Router,
-		private strivacityAuthService: StrivacityAuthService,
-	) {}
+	constructor(private router: Router) {}
 
-	/**
-	 * Extract session_id from URL parameters and clean up the URL
-	 * This is necessary for maintaining session state across external login providers
-	 */
 	ngOnInit(): void {
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
@@ -463,51 +430,26 @@ export class LoginComponent implements OnInit {
 		}
 	}
 
-	/**
-	 * Called when authentication is successful
-	 * Redirects user to the profile page
-	 */
-	async onLogin(): Promise<void> {
-		await this.router.navigateByUrl('/profile');
+	onLogin(): void {
+		this.router.navigateByUrl('/profile');
 	}
 
-	/**
-	 * Called when native flow cannot handle the authentication
-	 * Falls back to redirect mode by navigating to the provided URL
-	 * @param error - FallbackError containing the fallback URL and message
-	 */
 	onFallback(error: FallbackError): void {
 		if (error.url) {
-			console.log(`Fallback: ${error.url}`);
-			location.href = error.url.toString();
+			window.location.href = error.url.toString();
 		} else {
-			console.error(`FallbackError without URL: ${error.message}`);
 			alert(error);
 		}
 	}
 
-	/**
-	 * Called when an error occurs during the authentication process
-	 * @param error - Error message describing what went wrong
-	 */
 	onError(error: string): void {
-		console.error(`Error: ${error}`);
 		alert(error);
 	}
 
-	/**
-	 * Called when the authentication flow wants to display a global message
-	 * @param message - Message to display to the user
-	 */
 	onGlobalMessage(message: string): void {
 		alert(message);
 	}
 
-	/**
-	 * Called when the authentication flow transitions between states
-	 * Useful for tracking flow progress and inject custom logic such as logging or analytics
-	 * @param params - Object containing previous and current flow states
-	 */
 	onBlockReady({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }): void {
 		console.log('previousState', previousState);
 		console.log('state', state);
@@ -515,11 +457,9 @@ export class LoginComponent implements OnInit {
 }
 ```
 
-##### Callback page example
+#### Callback page example
 
-The native mode callback page handles authentication responses when external identity providers redirect back to your application. This page checks for session IDs in the URL parameters and either continues the native flow or falls back to standard callback handling.
-
-This component is essential for handling social login providers (like Google, Facebook, etc.) that require redirect-based authentication even within native mode flows.
+When a `session_id` is present in the URL the native flow is resumed by forwarding it to the login page. Otherwise the standard `handleCallback()` path is used:
 
 ```html
 <!-- callback.component.html -->
@@ -549,7 +489,7 @@ import { StrivacityAuthService } from '@strivacity/sdk-angular';
 	templateUrl: './callback.component.html',
 })
 export class CallbackComponent implements OnInit, OnDestroy {
-	readonly subscription = new Subscription();
+	private subscription = new Subscription();
 	error: string | null = null;
 	errorDescription: string | null = null;
 
@@ -560,26 +500,25 @@ export class CallbackComponent implements OnInit, OnDestroy {
 	) {}
 
 	ngOnInit(): void {
-		const url = new URL(window.location.href);
+		const url = new URL(location.href);
 		const sessionId = url.searchParams.get('session_id');
 
 		if (sessionId) {
 			this.router.navigate(['/login'], { queryParams: { session_id: sessionId } });
-			return;
+		} else {
+			this.subscription.add(
+				this.strivacityAuthService.handleCallback().subscribe({
+					next: () => {
+						this.router.navigateByUrl('/profile');
+					},
+					error: (err) => {
+						this.error = this.route.snapshot.queryParamMap.get('error');
+						this.errorDescription = this.route.snapshot.queryParamMap.get('error_description');
+						console.error('Error during callback handling:', err);
+					},
+				}),
+			);
 		}
-
-		this.subscription.add(
-			this.strivacityAuthService.handleCallback().subscribe({
-				next: () => {
-					this.router.navigateByUrl('/profile');
-				},
-				error: (err) => {
-					this.error = this.route.snapshot.queryParamMap.get('error');
-					this.errorDescription = this.route.snapshot.queryParamMap.get('error_description');
-					console.error('Error during callback handling:', err);
-				},
-			}),
-		);
 	}
 
 	ngOnDestroy(): void {
@@ -588,13 +527,115 @@ export class CallbackComponent implements OnInit, OnDestroy {
 }
 ```
 
-##### Profile page example
+#### Entry page example
 
-Same as the profile page example in redirect mode.
+The entry page processes flows started by an external process (e.g. password reset) by calling `entry()` to extract the necessary parameters to resume the flow and forwarding them to the callback page:
 
-##### Logout page example
+```ts
+// entry.component.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subscription, firstValueFrom } from 'rxjs';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
-Same as the logout page example in redirect mode.
+@Component({
+	standalone: true,
+	selector: 'app-entry',
+	template: '<section><h1>Loading...</h1></section>',
+})
+export class EntryComponent implements OnInit, OnDestroy {
+	readonly subscription = new Subscription();
+
+	constructor(
+		private router: Router,
+		private strivacityAuthService: StrivacityAuthService,
+	) {}
+
+	async ngOnInit(): Promise<void> {
+		try {
+			const data = await firstValueFrom(this.strivacityAuthService.entry());
+
+			if (data && Object.keys(data).length > 0) {
+				await this.router.navigate(['/callback'], { queryParams: data });
+			} else {
+				await this.router.navigateByUrl('/');
+			}
+		} catch (error) {
+			console.error('Entry failed:', error);
+			await this.router.navigateByUrl('/');
+		}
+	}
+
+	ngOnDestroy(): void {
+		this.subscription.unsubscribe();
+	}
+}
+```
+
+#### Profile page example
+
+Same as the profile page example in redirect/popup mode.
+
+#### Logout page example
+
+Same as the logout page example in redirect/popup mode.
+
+### Embedded mode
+
+In `embedded` mode the `<sty-login>` web component (loaded via `bundle.js` from the cluster) handles rendering. Import the bundle in your `main.ts` to register the Strivacity web components, and add `CUSTOM_ELEMENTS_SCHEMA` to your module or component:
+
+```ts
+// main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app.component';
+
+void import(`${environment.issuer}/assets/components/bundle.js`);
+
+bootstrapApplication(AppComponent, appConfig);
+```
+
+```ts
+// login.component.ts (embedded mode)
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+
+@Component({
+	standalone: true,
+	selector: 'app-login',
+	schemas: [CUSTOM_ELEMENTS_SCHEMA],
+	template: `
+		<sty-notifications></sty-notifications>
+		<sty-login [shortAppId]="shortAppId" [sessionId]="sessionId" (close)="onClose()" (login)="onLogin()" (error)="onError($event.detail)"></sty-login>
+		<sty-language-selector></sty-language-selector>
+	`,
+})
+export class LoginComponent {
+	shortAppId: string | null = null;
+	sessionId: string | null = null;
+
+	constructor(private router: Router) {
+		if (location.search !== '') {
+			const url = new URL(window.location.href);
+			this.shortAppId = url.searchParams.get('short_app_id');
+			this.sessionId = url.searchParams.get('session_id');
+			url.search = '';
+			history.replaceState({}, '', url.toString());
+		}
+	}
+
+	onLogin(): void {
+		this.router.navigateByUrl('/profile');
+	}
+
+	onClose(): void {
+		location.reload();
+	}
+
+	onError(detail: string): void {
+		alert(detail);
+	}
+}
+```
 
 ## Logging
 
@@ -604,36 +645,8 @@ The SDK supports optional logging to help you debug authentication flows and mon
 
 Enable the default console logger by adding the `logging` option when configuring the SDK:
 
-#### NgModule Configuration
-
-```typescript
-import { NgModule } from '@angular/core';
-import { StrivacityAuthModule } from '@strivacity/sdk-angular';
-import { DefaultLogging } from '@strivacity/sdk-core';
-
-@NgModule({
-	declarations: [AppComponent],
-	imports: [
-		...StrivacityAuthModule.forRoot({
-			mode: 'redirect',
-			issuer: 'https://<YOUR_DOMAIN>',
-			scopes: ['openid', 'profile'],
-			clientId: '<YOUR_CLIENT_ID>',
-			redirectUri: '<YOUR_REDIRECT_URI>',
-			logging: DefaultLogging, // Enable built-in console logging
-		}),
-	],
-	bootstrap: [AppComponent],
-})
-export class AppModule {}
-```
-
-#### Standalone Configuration
-
-```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideStrivacity } from '@strivacity/sdk-angular';
-import { DefaultLogging } from '@strivacity/sdk-core';
+```ts
+import { provideStrivacity, DefaultLogging } from '@strivacity/sdk-angular';
 
 export const appConfig: ApplicationConfig = {
 	providers: [
@@ -643,7 +656,7 @@ export const appConfig: ApplicationConfig = {
 			scopes: ['openid', 'profile'],
 			clientId: '<YOUR_CLIENT_ID>',
 			redirectUri: '<YOUR_REDIRECT_URI>',
-			logging: DefaultLogging, // Enable built-in console logging
+			logging: DefaultLogging,
 		}),
 	],
 };
@@ -653,7 +666,7 @@ The default logger writes to the browser console and automatically prefixes mess
 
 ### Creating a Custom Logger
 
-You can provide your own logger by implementing the `SDKLogging` interface with four methods: `debug`, `info`, `warn`, and `error`. An optional `xEventId` property is honored for log correlation.
+Implement the `SDKLogging` interface and pass your class to the `logging` option:
 
 ```typescript
 import type { SDKLogging } from '@strivacity/sdk-angular';
@@ -662,7 +675,6 @@ export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// Send to your logging pipeline
 		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
 	}
 
@@ -680,212 +692,76 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your custom logger when configuring the SDK:
-
-#### Standalone Configuration
-
-```typescript
-import { provideStrivacity } from '@strivacity/sdk-angular';
-import { MyLogger } from './logging/MyLogger';
-
-export const appConfig: ApplicationConfig = {
-	providers: [
-		...provideStrivacity({
-			mode: 'redirect',
-			issuer: 'https://<YOUR_DOMAIN>',
-			scopes: ['openid', 'profile'],
-			clientId: '<YOUR_CLIENT_ID>',
-			redirectUri: '<YOUR_REDIRECT_URI>',
-			logging: MyLogger, // Use your custom logger
-		}),
-	],
-};
-```
-
-### Logger Interface
-
-The `SDKLogging` interface requires the following methods:
-
-- **`debug(message: string): void`** - Log debug-level messages
-- **`info(message: string): void`** - Log informational messages
-- **`warn(message: string): void`** - Log warning messages
-- **`error(message: string, error: Error): void`** - Log error messages with error objects
-
-The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
+The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
 
 ## API Documentation
 
-#### `StrivacityAuthService`
+### `StrivacityAuthService`
 
-Service that manages Strivacity authentication flows. Supports `PopupFlow`, `RedirectFlow`, or `NativeFlow` types.
-
-**Constructor**
-
-```typescript
-constructor(@Inject(STRIVACITY_SDK) public options: Options);
-```
-
-- `options`: SDK configuration options.
+An injectable Angular service providing reactive authentication state and methods.
 
 **Properties**
 
-- **`session$`**: An observable that emits the current authentication session state. It provides updates on the authentication status, token information, and other relevant session details.
+- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: The underlying SDK flow instance.
+- **`session$: Observable<Session>`**: Observable stream of the current session state.
 
-**Session Object Structure**:
+**Session type**
 
-```typescript
-interface Session = {
-	/**
-	 * Indicates whether the session is in the process of loading or initializing.
-	 * When `true`, the session information might not be fully available yet.
-	 */
-	loading: boolean;
-
-	/**
-	 * Indicates whether the user is currently authenticated.
-	 * `true` if the user is authenticated, otherwise `false`.
-	 */
-	isAuthenticated: boolean;
-
-	/**
-	 * The claims contained in the ID token if the user is authenticated.
-	 * This includes information such as the user's identity and authentication context.
-	 * If the user is not authenticated, this will be `null`.
-	 */
-	idTokenClaims: IdTokenClaims | null;
-
-	/**
-	 * The current access token used for authorizing API requests.
-	 * This token is `null` if the user is not authenticated or if the token has not been set.
-	 */
-	accessToken: string | null;
-
-	/**
-	 * The current refresh token used to obtain a new access token when the current one expires.
-	 * This token is `null` if the user is not authenticated or if the token has not been set.
-	 */
-	refreshToken: string | null;
-
-	/**
-	 * Indicates whether the current access token has expired.
-	 * `true` if the token is expired, otherwise `false`.
-	 */
-	accessTokenExpired: boolean;
-
-	/**
-	 * The expiration date of the current access token in Unix time (milliseconds since epoch).
-	 * If the access token is not available or the session is not authenticated, this will be `null`.
-	 */
-	accessTokenExpirationDate: number | null;
-};
-```
+- **`loading: boolean`**: `true` while the session is being initialized.
+- **`isAuthenticated: boolean`**: `true` when the user has a valid session.
+- **`idTokenClaims: IdTokenClaims | null`**: Claims from the ID token, or `null` if not authenticated.
+- **`accessToken: string | null`**: The current access token.
+- **`refreshToken: string | null`**: The current refresh token.
+- **`accessTokenExpired: boolean`**: `true` when the access token has expired.
+- **`accessTokenExpirationDate: number | null`**: Expiration timestamp (Unix seconds) of the access token.
 
 **Methods**
 
-- **`isAuthenticated()`**: Checks if the user is authenticated.
+- **`isAuthenticated(): boolean`**: Returns whether the user is currently authenticated.
+- **`login(options?: LoginOptions): Observable<void>`**: Initiates login.
+- **`register(options?: RegisterOptions): Observable<void>`**: Initiates registration.
+- **`refresh(): Observable<void>`**: Refreshes the user's session.
+- **`revoke(): Observable<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Observable<void>`**: Logs the user out.
+- **`handleCallback(url?: string): Observable<void>`**: Processes the authorization callback.
+- **`entry(): Observable<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
 
-  ```typescript
-  isAuthenticated(): Observable<boolean>;
-  ```
+---
 
-- **`login(options?: LoginOptions)`**: Logs the user in using the specified options.
+### `StyLoginRenderer` component
 
-  ```typescript
-  login(options?: LoginOptions): Observable<void>;
-  ```
+Used in `native` mode to render the authentication UI with your own widget components.
 
-- **`register(options?: RegisterOptions)`**: Registers a new user using the specified options.
+**Selector:** `sty-login-renderer`
 
-  ```typescript
-  register(options?: RegisterOptions): Observable<void>;
-  ```
+**Inputs**
 
-- **`refresh()`**: Refreshes the current authentication session.
+- **`params?: NativeParams`**: Additional parameters for the native login flow.
+- **`widgets?: PartialRecord<WidgetType, Type<any>>`**: Custom Angular components for each widget type used in the flow.
+- **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
 
-  ```typescript
-  refresh(): Observable<void>;
-  ```
+**Outputs**
 
-- **`revoke()`**: Revokes the current session tokens.
+- **`(login)`**: Emitted on successful authentication. Receives `IdTokenClaims | null`.
+- **`(fallback)`**: Emitted when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
+- **`(error)`**: Emitted when an error occurs during authentication.
+- **`(globalMessage)`**: Emitted when the flow wants to display a global message (e.g. account lockout warning).
+- **`(blockReady)`**: Emitted on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
 
-  ```typescript
-  revoke(): Observable<void>;
-  ```
+## Vulnerability Reporting
 
-- **`logout(options?: LogoutOptions)`**: Logs the user out using the specified options.
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-  ```typescript
-  logout(options?: LogoutOptions): Observable<void>;
-  ```
+## License
 
-- **`handleCallback(url?: string)`**: Handles the authentication callback (e.g., after a redirect flow).
+@strivacity/sdk-angular is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-  ```typescript
-  handleCallback(url?: string): Observable<void>;
-  ```
+## Contributing
 
-#### `StyLoginRenderer` component
-
-The `StyLoginRenderer` component is used in native mode to render the authentication UI directly within your application. It provides a fully customizable login experience using your own UI components.
-
-```typescript
-StyLoginRenderer: Component<{
-	params?: NativeParams;
-	widgets?: PartialRecord<WidgetType, Component>;
-	sessionId?: string | null;
-	login?: EventEmitter<IdTokenClaims | null>;
-	fallback?: EventEmitter<FallbackError>;
-	error?: EventEmitter<any>;
-	globalMessage?: EventEmitter<string>;
-	blockReady?: EventEmitter<{ previousState: LoginFlowState; state: LoginFlowState }>;
-}>;
-```
-
-**Properties**
-
-- **`params?: NativeParams`** (optional): Additional parameters to pass to the native login flow. These parameters can include custom configuration options for the authentication process.
-
-- **`widgets?: PartialRecord<WidgetType, Component>`** (optional): A collection of Angular components that define the UI widgets used in the authentication flow. Each widget type (input, button, layout, etc.) can be customized with your own components.
-
-- **`sessionId?: string | null`** (optional): The session ID for continuing an existing authentication session. This is typically extracted from URL parameters when returning from external identity providers.
-
-**Events**
-
-- **`(login)?: EventEmitter<IdTokenClaims | null>`** (optional): Event emitted when authentication is successful. Receives the ID token claims as a parameter.
-
-- **`(fallback)?: EventEmitter<FallbackError>`** (optional): Event emitted when the native flow cannot handle the authentication and needs to fall back to redirect mode. The error parameter contains the fallback URL.
-
-- **`(error)?: EventEmitter<any>`** (optional): Event emitted when an error occurs during the authentication process. Use this to handle and display error messages to users.
-
-- **`(globalMessage)?: EventEmitter<string>`** (optional): Event emitted when the authentication flow wants to display a global message to the user (e.g., account lockout warnings, validation messages).
-
-- **`(blockReady)?: EventEmitter<{ previousState: LoginFlowState; state: LoginFlowState }>`** (optional): Event emitted when the authentication flow transitions between states. Useful for tracking progress, implementing custom logging, or injecting analytics. Receives both the previous and current flow states.
-
-**Widget Types**
-
-The `widgets` input accepts the following widget types:
-
-- `checkbox`: For checkbox input fields
-- `date`: For date input fields
-- `input`: For text input fields
-- `layout`: For layout containers and form structure
-- `loading`: For loading indicators
-- `multiSelect`: For multi-select dropdown fields
-- `passcode`: For passcode input fields
-- `password`: For password input fields
-- `phone`: For phone number input fields
-- `select`: For single-select dropdown fields
-- `static`: For static text and display elements
-- `submit`: For form submission buttons
-
-Each widget component receives inputs specific to its type and function within the authentication flow.
-
-## Links
-
-- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular)
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
 
 ## Migrating to v3.0
 
 ### Entry API Major Changes
 
-Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.

@@ -1,0 +1,13 @@
+<section>
+	<sty-login-renderer
+		[params]="extraParams"
+		[widgets]="widgets"
+		[sessionId]="sessionId"
+		(fallback)="onFallback($event)"
+		(close)="onClose()"
+		(login)="onLogin()"
+		(error)="onError($event)"
+		(globalMessage)="onGlobalMessage($event)"
+		(blockReady)="onBlockReady($event)"
+	></sty-login-renderer>
+</section>

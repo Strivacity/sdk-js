@@ -46,7 +46,6 @@ export class LoginPage implements OnInit, OnDestroy {
 	ngOnInit() {
 		if (this.options?.mode === 'redirect') {
 			this.subscription.add(
-				// @ts-expect-error: Ignore SDK type mismatch for login
 				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: async () => {
 						if (Capacitor.getPlatform() !== 'web') {
@@ -60,7 +59,6 @@ export class LoginPage implements OnInit, OnDestroy {
 			);
 		} else if (this.options?.mode === 'popup') {
 			this.subscription.add(
-				// @ts-expect-error: Ignore SDK type mismatch for login
 				this.strivacityAuthService.login(this.extraParams).subscribe({
 					next: async () => {
 						await this.router.navigateByUrl('/profile');

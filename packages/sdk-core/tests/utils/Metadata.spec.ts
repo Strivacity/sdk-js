@@ -36,7 +36,7 @@ describe('Metadata', () => {
 			const metadata = new Metadata(flow, 'https://brandtegrity.io/.well-known/openid-configuration');
 			const fetchError = new Error('Network error');
 			vi.spyOn(global, 'fetch').mockRejectedValueOnce(fetchError);
-			const loggingSpy = vi.spyOn(flow.logging!, 'error');
+			const loggingSpy = vi.spyOn(flow.logging, 'error');
 
 			await expect(metadata.issuer).rejects.toThrow('Network error');
 			expect(loggingSpy).toHaveBeenCalledWith('Failed to fetch metadata', fetchError);

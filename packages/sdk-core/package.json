@@ -23,6 +23,12 @@
       "require": "./dist/flows/*.cjs",
       "default": "./dist/flows/*.mjs"
     },
+    "./handlers/*": {
+      "types": "./dist/handlers/*.d.ts",
+      "import": "./dist/handlers/*.mjs",
+      "require": "./dist/handlers/*.cjs",
+      "default": "./dist/handlers/*.mjs"
+    },
     "./storages/*": {
       "types": "./dist/storages/*.d.ts",
       "import": "./dist/storages/*.mjs",

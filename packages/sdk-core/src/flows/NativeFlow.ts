@@ -1,6 +1,6 @@
 import type { SDKOptions, NativeParams, SDKStorage, SDKHttpClient, SDKLogging } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
-import { NativeFlowHandler } from '../utils/NativeFlowHandler';
+import { NativeFlowHandler } from '../handlers/NativeFlowHandler';
 import { BaseFlow } from './BaseFlow';
 
 export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {

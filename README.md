@@ -1,61 +1,125 @@
 ![JavaScript SDK](https://static.strivacity.com/images/javascript-sdk.png)
 
-These SDKs allows you to integrate Strivacity’s policy-driven journeys into your brand’s JavaScript application. The SDK uses the OAuth 2.0 PKCE flow authenticate with Strivacity.
+# Strivacity JavaScript SDK
 
-See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+This repository contains the Strivacity JavaScript SDK — a collection of framework-specific packages and example applications for integrating Strivacity's policy-driven authentication journeys into JavaScript and TypeScript applications.
 
-# Client SDKs
+The SDK uses the OAuth 2.0 PKCE flow and supports `redirect`, `popup`, `native`, and `embedded` modes.
 
-- **[Core](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-core)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/web-component)
-- **[Angular](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-angular)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/angular) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-angular)
-- **[Next.js](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-next)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/next)
-- **[Nuxt](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-nuxt)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/nuxt)
-- **[Remix](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-remix)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/remix)
-- **[React](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-react)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-react)
-- **[Vue.js](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-vue)** - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue) - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
+---
 
-# Usage of Build and Serve Scripts
+## Repository structure
 
-This repository provides npm scripts to build SDK packages and serve example applications. You can run these scripts from the project root using your preferred package manager (e.g., `pnpm`, `npm run`, or `yarn`).
+This is a pnpm monorepo. It contains:
 
-## Build SDK Packages
+- **`packages/`** — Publishable SDK packages
+- **`apps/`** — Example applications for each framework
 
-To build a specific SDK package, use one of the following commands:
+### SDK packages
 
-- `pnpm sdk:angular:build` – Build the Angular SDK
-- `pnpm sdk:next:build` – Build the Next.js SDK
-- `pnpm sdk:nuxt:build` – Build the Nuxt SDK
-- `pnpm sdk:react:build` – Build the React SDK
-- `pnpm sdk:remix:build` – Build the Remix SDK
-- `pnpm sdk:vue:build` – Build the Vue SDK
-- `pnpm sdk:core:build` – Build the Core SDK
+| Package                                 | Description                                                  |
+| --------------------------------------- | ------------------------------------------------------------ |
+| [`sdk-core`](./packages/sdk-core)       | Framework-agnostic core SDK. Required by all other packages. |
+| [`sdk-angular`](./packages/sdk-angular) | Angular integration                                          |
+| [`sdk-next`](./packages/sdk-next)       | Next.js integration                                          |
+| [`sdk-nuxt`](./packages/sdk-nuxt)       | Nuxt integration                                             |
+| [`sdk-react`](./packages/sdk-react)     | React integration                                            |
+| [`sdk-remix`](./packages/sdk-remix)     | Remix integration                                            |
+| [`sdk-svelte`](./packages/sdk-svelte)   | Svelte integration                                           |
+| [`sdk-vue`](./packages/sdk-vue)         | Vue.js integration                                           |
 
-> All SDK build scripts support the `--watch` flag for continuous build during development. For example: `pnpm sdk:react:build --watch`
+### Example applications
 
-## Serve Example Applications
+| App                                          | Framework                           |
+| -------------------------------------------- | ----------------------------------- |
+| [`apps/web-component`](./apps/web-component) | Vanilla JS / Web Component          |
+| [`apps/angular`](./apps/angular)             | Angular                             |
+| [`apps/angular-bff`](./apps/angular-bff)     | Angular (Backend for Frontend)      |
+| [`apps/next`](./apps/next)                   | Next.js                             |
+| [`apps/next-headless`](./apps/next-headless) | Next.js (headless / Native Journey) |
+| [`apps/nuxt`](./apps/nuxt)                   | Nuxt                                |
+| [`apps/react`](./apps/react)                 | React                               |
+| [`apps/remix`](./apps/remix)                 | Remix                               |
+| [`apps/svelte`](./apps/svelte)               | Svelte                              |
+| [`apps/vue`](./apps/vue)                     | Vue.js                              |
+| [`apps/ionic-angular`](./apps/ionic-angular) | Ionic + Angular                     |
+| [`apps/ionic-react`](./apps/ionic-react)     | Ionic + React                       |
+| [`apps/ionic-vue`](./apps/ionic-vue)         | Ionic + Vue.js                      |
 
-Before serving any example application, you must create a `.env.local` file in the repository root. Copy the contents of `.env.local.example` and fill in the following values:
+> **Note:** [`apps/backend`](./apps/backend) is an Express server exclusively for the `angular-bff` example. It implements the Backend for Frontend (BFF) pattern - handling the OAuth 2.0 PKCE flow, managing server-side sessions, and exposing a `/api/session/*` REST API that the Angular BFF frontend calls instead of communicating with the identity provider directly.
+> It is not a standalone example application and is not needed by any other app.
 
-- `VITE_ISSUER`: your cluster domain
-- `VITE_CLIENT_ID`: the client ID of your application
-- `VITE_SCOPES`: the scopes you want to request
+---
 
-To start the development server for an example application, use one of the following commands:
+## Prerequisites
 
-- `pnpm app:angular:serve` – Serve the Angular example app
-- `pnpm app:next:serve` – Serve the Next.js example app
-- `pnpm app:next-headless:serve` – Serve the Next.js headless example app
-- `pnpm app:nuxt:serve` – Serve the Nuxt example app
-- `pnpm app:react:serve` – Serve the React example app
-- `pnpm app:remix:serve` – Serve the Remix example app
-- `pnpm app:vue:serve` – Serve the Vue example app
-- `pnpm app:wc:serve` – Serve the Web Component example app
-- `pnpm app:ionic-angular:serve` – Serve the Ionic Angular example app
-- `pnpm app:ionic-react:serve` – Serve the Ionic React example app
-- `pnpm app:ionic-vue:serve` – Serve the Ionic Vue.js example app
+- [Node.js](https://nodejs.org/) LTS
+- [pnpm](https://pnpm.io/) 10+
 
-Replace `pnpm` with `npm run` or `yarn` if you use a different package manager.
+---
 
-# Contributing
+## Setup
 
-Please see our [contributing guide](./CONTRIBUTING.md).
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/Strivacity/sdk-js.git
+cd sdk-js
+pnpm install
+```
+
+### Environment configuration
+
+Before running any example application, create a `.env.local` file in the repository root by copying `.env.local.example` and filling in your values:
+
+```bash
+cp .env.local.example .env.local
+```
+
+| Variable         | Description                                                                |
+| ---------------- | -------------------------------------------------------------------------- |
+| `VITE_ISSUER`    | Your Strivacity cluster domain (e.g. `https://your-tenant.strivacity.com`) |
+| `VITE_CLIENT_ID` | The client ID of your application                                          |
+| `VITE_SCOPES`    | Space-separated list of scopes to request (e.g. `openid profile`)          |
+
+---
+
+## Building SDK packages
+
+```bash
+pnpm build
+```
+
+---
+
+## Running example applications
+
+```bash
+pnpm app:wc:serve            # Web Component
+pnpm app:angular:serve       # Angular
+pnpm app:next:serve          # Next.js
+pnpm app:next-headless:serve # Next.js headless
+pnpm app:nuxt:serve          # Nuxt
+pnpm app:react:serve         # React
+pnpm app:remix:serve         # Remix
+pnpm app:vue:serve           # Vue.js
+pnpm app:ionic-angular:serve # Ionic + Angular
+pnpm app:ionic-react:serve   # Ionic + React
+pnpm app:ionic-vue:serve     # Ionic + Vue.js
+pnpm app:angular-bff:serve   # Angular (Backend for Frontend)
+pnpm app:backend:serve       # BFF backend (required for angular-bff)
+```
+
+---
+
+## Contributing
+
+Please see the [contributing guide](./CONTRIBUTING.md).
+
+## Vulnerability Reporting
+
+See the [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) for reporting security issues. Please do not report security vulnerabilities on the public issue tracker.
+
+## License
+
+Available under the MIT License. See the [LICENSE](./LICENSE) file for details.

@@ -1,293 +1,191 @@
 # Strivacity SDK - Ionic Vue Example App
 
-This example application demonstrates how to integrate the Strivacity SDK into an Ionic Vue application with full mobile platform support using Capacitor plugins and native device capabilities.
+This example application demonstrates how to integrate the [@strivacity/sdk-vue](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-vue) SDK into an Ionic Vue application with Capacitor. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) on both web and native mobile platforms (Android, iOS).
 
-## Ionic-Specific Enhancements
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
 
-### Mobile Platform Support with Capacitor
+## Overview
 
-This Ionic Vue application extends the standard Vue implementation with Capacitor plugins for mobile platform support:
+The app extends the Vue SDK example with Capacitor-specific adapters. On mobile platforms, `CapacitorStorage` replaces localStorage with `@capacitor/preferences`, and authentication redirects are handled via `@capacitor/inappbrowser` instead of standard browser navigation. The `useStrivacity` composable provides reactive authentication state and methods throughout the application.
 
-#### 1. Additional Dependencies
+## Requirements
 
-The Ionic version includes additional Capacitor packages for mobile platform functionality (see [package.json](./package.json)):
+- Vue: 3+
+- Ionic: 8+
+- Capacitor: 7+
+- Node.js: 20 LTS+
 
-```json
-{
-	"@strivacity/sdk-vue": "*",
-	"@capacitor/app": "^7.0.1",
-	"@capacitor/inappbrowser": "2.2.0",
-	"@capacitor/preferences": "^7.0.1"
-}
+## Install
+
+```bash
+pnpm install
 ```
 
-These packages provide:
+Create a `.env.local` file in the repository root:
 
-- **@capacitor/app**: App lifecycle and state management for mobile platforms
-- **@capacitor/inappbrowser**: In-app browser functionality for authentication flows
-- **@capacitor/preferences**: Native storage capabilities for secure token management
+```env
+VITE_MODE=redirect
+VITE_ISSUER=your-cluster-domain
+VITE_CLIENT_ID=your-client-id
+VITE_SCOPES=openid profile email
+VITE_REDIRECT_URI=http://localhost:4200/callback
+```
 
-#### 2. Enhanced SDK Configuration
+Then start the development server:
 
-The Ionic version includes Capacitor-specific storage and HTTP client implementations (see [src/main.ts](./src/main.ts)):
+```bash
+# Web
+pnpm app:ionic-vue:serve
+
+# Android
+pnpm app:ionic-vue:android:run
+
+# iOS
+pnpm app:ionic-vue:ios:run
+```
+
+## Usage
+
+### Initialization
+
+The SDK is configured in `src/main.ts` using `createStrivacitySDK()`. Platform detection is used to select the appropriate storage and URL/callback handlers. The app also dynamically imports `bundle.js` from the configured issuer domain, which registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
 
 ```typescript
-import { Preferences } from '@capacitor/preferences';
+import { createApp } from 'vue';
+import { createStrivacitySDK, DefaultLogging, type SDKOptions, type SDKStorage, type SDKHttpClient } from '@strivacity/sdk-vue';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { InAppBrowser } from '@capacitor/inappbrowser';
+import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-vue';
 
-// Custom HTTP client for mobile platforms
-class CapacitorHttpClient extends SDKHttpClient {
-	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
+const isNative = Capacitor.getPlatform() !== 'web';
+
+class CapacitorHttpClient implements SDKHttpClient {
+	async request(url: string, options: RequestInit = {}): Promise<Response> {
 		const response = await CapacitorHttp.request({
 			url,
-			method: options?.method || 'GET',
-			headers: (options?.headers as Record<string, string>) || {},
-			data: options?.body,
-			webFetchExtra: options,
+			method: (options.method as string) ?? 'GET',
+			headers: options.headers as Record<string, string>,
+			data: options.body,
 		});
-
-		return {
-			headers: new Headers(response.headers),
-			ok: response.status >= 200 && response.status < 300,
-			status: response.status,
-			statusText: '',
-			url: response.url,
-			json: () => Promise.resolve(response.data),
-			text: () => Promise.resolve(response.data),
-		};
+		return new Response(JSON.stringify(response.data), { status: response.status, headers: response.headers });
 	}
 }
 
-// Native storage implementation
-class CapacitorStorage extends SDKStorage {
+class CapacitorStorage implements SDKStorage {
 	async get(key: string): Promise<string | null> {
 		const { value } = await Preferences.get({ key });
 		return value;
 	}
-
 	async set(key: string, value: string): Promise<void> {
 		await Preferences.set({ key, value });
 	}
-
-	async delete(key: string): Promise<void> {
+	async remove(key: string): Promise<void> {
 		await Preferences.remove({ key });
 	}
 }
-```
 
-#### 2. Platform-Aware SDK Options
-
-The configuration includes platform detection for handling authentication flows differently on web vs mobile:
-
-```typescript
-const sdk = createStrivacitySDK({
-	// ...other config
-	storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
-	async urlHandler(url, responseMode) {
-		if (Capacitor.getPlatform() === 'web') {
-			return redirectUrlHandler(url, responseMode);
-		} else {
-			await InAppBrowser.openInWebView({ url, options: DefaultWebViewOptions });
-		}
-	},
-	async callbackHandler(url, responseMode) {
-		if (Capacitor.getPlatform() !== 'web') {
-			// InAppBrowser navigation listener implementation
-			return new Promise(async (resolve, reject) => {
-				// Mobile-specific callback handling with navigation listeners
-			});
-		} else {
-			return redirectCallbackHandler(url, responseMode);
-		}
-	},
-});
-```
-
-### 3. Enhanced Authentication Pages
-
-Both login and register pages include mobile-specific fallback handling:
-
-#### Login Page Enhancements ([src/pages/login.page.vue](./src/pages/login.page.vue)):
-
-```vue
-<script lang="ts" setup>
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
-import { DefaultWebViewOptions, InAppBrowser } from '@capacitor/inappbrowser';
-import { redirectUrlHandler } from '@strivacity/sdk-core/utils/handlers';
-
-onMounted(async () => {
-	if (sdk.options.mode === 'redirect') {
-		await login();
-
-		// Mobile platform token exchange
-		if (Capacitor.getPlatform() !== 'web') {
-			const params = await sdk.options.callbackHandler!(sdk.options.redirectUri, sdk.options.responseMode || 'fragment');
-			await sdk.tokenExchange(params);
-			await router.push('/profile');
-		}
-	}
-});
-
-const onFallback = async (error: FallbackError) => {
-	if (error.url) {
-		if (Capacitor.getPlatform() === 'web') {
-			return redirectUrlHandler(error.url.toString());
-		} else {
-			// InAppBrowser implementation for mobile platforms
-			await InAppBrowser.openInWebView({
-				url: error.url.toString(),
-				options: DefaultWebViewOptions,
-			});
-
-			const params = await new Promise<Record<string, string>>(async (resolve, reject) => {
-				let navigationListener: PluginListenerHandle | null = null;
-				let finishListener: PluginListenerHandle | null = null;
-				let userCancelled = true;
-
-				// Navigation event listeners for mobile authentication flow
-				navigationListener = await InAppBrowser.addListener('browserPageNavigationCompleted', async (event) => {
-					// Handle redirect URI navigation
-					if (event.url?.startsWith(sdk.options.redirectUri)) {
-						// Extract and process authentication parameters
-						userCancelled = false;
-						await InAppBrowser.close();
-						resolve(params);
-					}
-				});
-
-				finishListener = await InAppBrowser.addListener('browserClosed', async () => {
-					if (userCancelled) {
-						reject(new Error('InAppBrowser flow cancelled by user.'));
-					}
-				});
-			});
-
-			// Handle authentication result
-			if (params.session_id) {
-				await router.push(`/callback?session_id=${params.session_id}`);
-			} else {
-				await sdk.tokenExchange(params);
-				await router.push('/profile');
-			}
-		}
-	}
-};
-</script>
-```
-
-#### Register Page Enhancements ([src/pages/register.page.vue](./src/pages/register.page.vue)):
-
-The register page includes identical mobile platform enhancements with the same InAppBrowser handling and platform detection logic.
-
-### 4. Key Differences from Standard Vue Implementation
-
-| Feature                 | Standard Vue          | Ionic Vue                                                           |
-| ----------------------- | --------------------- | ------------------------------------------------------------------- |
-| **Storage**             | LocalStorage only     | Platform-aware: LocalStorage (web) / Capacitor Preferences (mobile) |
-| **HTTP Client**         | Standard fetch        | Platform-aware: fetch (web) / CapacitorHttp (mobile)                |
-| **Authentication Flow** | Web redirects only    | Platform-aware: redirects (web) / InAppBrowser (mobile)             |
-| **URL Handling**        | Browser navigation    | Platform-aware: browser (web) / InAppBrowser (mobile)               |
-| **Callback Handling**   | URL parameter parsing | Platform-aware: URL parsing (web) / navigation listeners (mobile)   |
-| **Session Management**  | Browser-based         | Native device storage integration                                   |
-
-### 5. Mobile Platform Features
-
-- **Native Storage**: Uses Capacitor Preferences API for secure token storage on mobile devices
-- **InAppBrowser Integration**: Handles authentication flows within the app context on mobile platforms
-- **Platform Detection**: Automatically detects and adapts behavior for web, iOS, and Android platforms
-- **Navigation Listeners**: Monitors InAppBrowser navigation events for authentication callback handling
-- **User Cancellation Handling**: Properly handles user-initiated authentication flow cancellations
-- **Session Management**: Platform-appropriate session handling with native capabilities
-
-## Strivacity SDK - Vue Example App
-
-This example application demonstrates how to integrate the Strivacity SDK into a Vue 3 application using Vue Router for navigation and the Composition API for modern Vue development patterns.
-
-## Key Features and Implementation
-
-### 1. Vue Dependencies
-
-This Vue application uses the Strivacity Vue SDK for authentication (see [package.json](./package.json)):
-
-```json
-{
-	"@strivacity/sdk-vue": "*"
-}
-```
-
-### 2. Plugin-Based Integration
-
-The application uses Vue's plugin system to integrate the Strivacity SDK throughout the application (see [src/main.ts](./src/main.ts)):
-
-```typescript
-import { createApp } from 'vue';
-import { createStrivacitySDK } from '@strivacity/sdk-vue';
-
-const app = createApp(AppComponent);
-const sdk = createStrivacitySDK({
+const options: SDKOptions = {
 	mode: import.meta.env.VITE_MODE,
 	issuer: import.meta.env.VITE_ISSUER,
 	scopes: import.meta.env.VITE_SCOPES.split(' '),
 	clientId: import.meta.env.VITE_CLIENT_ID,
 	redirectUri: import.meta.env.VITE_REDIRECT_URI,
 	storageTokenName: 'sty.session.vue',
-});
+	logging: DefaultLogging,
+	storage: isNative ? CapacitorStorage : undefined,
+	httpClient: isNative ? CapacitorHttpClient : undefined,
+	urlHandler: isNative ? async (url) => InAppBrowser.openInWebView({ url }) : redirectUrlHandler,
+	callbackHandler: isNative
+		? () =>
+				new Promise((resolve) => {
+					/* InAppBrowser navigation listener */
+				})
+		: redirectCallbackHandler,
+};
 
-app.use(sdk);
+const app = createApp(App);
+app.use(createStrivacitySDK(options));
 app.use(router);
+app.mount('#app');
 ```
 
-### 3. Composition API Integration
-
-The application leverages Vue's Composition API through the `useStrivacity` composable for accessing authentication state (see [src/components/app.component.vue](./src/components/app.component.vue)):
+Components access authentication state through the `useStrivacity` composable — identical to the Vue example app:
 
 ```vue
-<script setup>
-import { useStrivacity } from '@strivacity/sdk-vue';
+<script lang="ts" setup>
 import { computed } from 'vue';
+import { useStrivacity } from '@strivacity/sdk-vue';
 
 const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-const userName = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`);
+const firstName = computed(() => idTokenClaims.value?.given_name ?? '');
 </script>
 
 <template>
 	<div v-if="loading">Loading...</div>
-	<div v-else-if="isAuthenticated">Welcome, {{ userName }}!</div>
+	<div v-else-if="isAuthenticated">Welcome, {{ firstName }}!</div>
 </template>
 ```
 
-### 4. Logging
+### Login / Register
 
-You can enable SDK logging or plug in your own logger.
+`src/pages/LoginPage.vue` and `src/pages/RegisterPage.vue` initiate the authentication flow. The active mode determines how the UI is rendered:
 
-- Enable default logging by adding `logging: DefaultLogging` to the SDK options in [src/main.ts](./src/main.ts). The default logger writes to the browser console and automatically prefixes messages with an `xEventId` property when available
+- **`redirect`** — `login()` is called on mount; the user is taken to the identity provider (or InAppBrowser on mobile).
+- **`popup`** — `login()` is called on mount; authentication happens in a popup window.
+- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
+- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
 
-```ts
-import { createApp } from 'vue';
-import { router } from './router';
-import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
+`src/pages/CallbackPage.vue` handles the response from the identity provider. It calls `handleCallback()` and navigates to `/profile` on success.
 
-const app = createApp(AppComponent);
-const sdk = createStrivacitySDK({
-	// ...other options
-	logging: DefaultLogging, // enable built-in console logging
-});
+### Refresh token
 
-app.use(sdk);
-app.use(router);
+Token refresh runs automatically when the SDK detects an expired access token. The `refresh` method is also available via the composable for manual invocation:
+
+```vue
+<script lang="ts" setup>
+import { useStrivacity } from '@strivacity/sdk-vue';
+
+const { refresh } = useStrivacity();
+</script>
 ```
 
-- Provide a custom logger by implementing the `SDKLogging` interface (methods: `debug`, `info`, `warn`, `error`). An optional `xEventId` property is honored for log correlation. See the built-in implementation for reference in [packages/sdk-core/src/utils/Logging.ts](../../packages/sdk-core/src/utils/Logging.ts).
+### Revoke session / logout
 
-```ts
+`src/pages/RevokePage.vue` revokes the current session tokens without a full logout, then returns to the home page.
+
+`src/pages/LogoutPage.vue` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin.
+
+### Resume an externally-initiated flow
+
+`src/pages/EntryPage.vue` handles flows started by an external process (e.g. password reset, magic link, invite). On mount it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow.
+
+The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
+
+You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
+
+## Logging
+
+Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
+
+```typescript
+import { DefaultLogging } from '@strivacity/sdk-vue';
+
+// ...within your SDK options:
+logging: DefaultLogging,
+```
+
+The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
+
+To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
+
+```typescript
 import type { SDKLogging } from '@strivacity/sdk-vue';
 
 export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// e.g., send to your logging pipeline
 		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
 	}
 	info(message: string): void {
@@ -302,123 +200,34 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your logger class in the SDK options:
-
-```ts
-import { createStrivacitySDK } from '@strivacity/sdk-vue';
+```typescript
 import { MyLogger } from './logging/MyLogger';
 
-const sdk = createStrivacitySDK({
-	// ...other options
-	logging: MyLogger,
-});
+// ...within your SDK options:
+logging: MyLogger,
 ```
 
-### 5. Vue Router Integration
+## Pages
 
-The application uses Vue Router for client-side navigation with route-based authentication guards (see [src/router/index.ts](./src/router/index.ts)):
+| Page     | Path                         | Description                                                                                                                                                        |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `src/pages/HomePage.vue`     | Public landing page. Displays user info when authenticated.                                                                                                        |
+| Login    | `src/pages/LoginPage.vue`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
+| Register | `src/pages/RegisterPage.vue` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
+| Callback | `src/pages/CallbackPage.vue` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
+| Entry    | `src/pages/EntryPage.vue`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
+| Profile  | `src/pages/ProfilePage.vue`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                                 |
+| Revoke   | `src/pages/RevokePage.vue`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
+| Logout   | `src/pages/LogoutPage.vue`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
 
-```typescript
-import { createRouter, createWebHistory } from 'vue-router';
+## Vulnerability Reporting
 
-const router = createRouter({
-	history: createWebHistory(),
-	routes: [
-		{ path: '/', component: Home },
-		{ path: '/login', component: Login },
-		{ path: '/register', component: Register },
-		{ path: '/callback', component: Callback },
-		{ path: '/profile', component: Profile, meta: { requiresAuth: true } },
-		{ path: '/logout', component: Logout, meta: { requiresAuth: true } },
-	],
-});
-```
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-## Installation and Setup
+## License
 
-### 1. Install Dependencies
+This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-```bash
-pnpm install
-```
+## Contributing
 
-### 2. Environment Variables Setup
-
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:3000/callback
-VITE_MODE=redirect
-```
-
-### 3. Running the Application
-
-```bash
-pnpm app:vue:serve
-```
-
-## Architecture Overview
-
-### SDK Integration
-
-The Strivacity SDK is integrated as a Vue plugin, providing global access to authentication functionality through the `useStrivacity` composable (see [src/main.ts](./src/main.ts)).
-
-### Component Patterns
-
-Vue components can access authentication state reactively using the Composition API:
-
-```vue
-<script setup>
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const { loading, isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
-</script>
-```
-
-### Pages
-
-Brief, purpose-oriented descriptions of route components under src/pages — what they do, expected behavior, and how they integrate mobile-aware flows (Capacitor / InAppBrowser) via the SDK / composables.
-
-- src/pages/home.page.vue
-  - Purpose: Landing / home page. Publicly accessible; introduces the app and links to login/register.
-  - Behavior: Displays public content and, when authenticated, brief user info from useStrivacity(). Should be fast and accessible without auth.
-  - Usage: const { loading, isAuthenticated, idTokenClaims } = useStrivacity(); use computed refs and v-if for conditional UI.
-
-- src/pages/login.page.vue
-  - Purpose: Login page / entry point for authentication flows.
-  - Behavior: Triggers sdk.login() (redirect/popup depending on options). On web this usually redirects; on mobile open InAppBrowser and exchange tokens when the callback is received.
-  - Usage: onMounted(async () => { await login(); /_ handle mobile token exchange if needed _/ }); use sdk.options.callbackHandler(...) and sdk.tokenExchange(params) for mobile flows.
-
-- src/pages/register.page.vue
-  - Purpose: Registration page (if supported).
-  - Behavior: Starts a registration flow or shows a form that calls backend/SDK to create a user. Mobile flows use InAppBrowser fallback like login.
-  - Usage: call registration API or sdk.register(), then login/redirect as appropriate.
-
-- src/pages/entry.page.vue
-  - Purpose: Entry page for link-driven flows (deep links or external links) that start server/SDK-driven operations.
-  - Behavior: Calls sdk.entry(); it returns an object `{ session_id: string; short_app_id?: string }`. Forward these as query params using `new URLSearchParams(data)` to `/callback`; otherwise navigate to home. Show loading and error states.
-  - Usage: onMounted/async setup: const data = await sdk.entry(); handle returned params and `router.push`.
-
-- src/pages/callback.page.vue
-  - Purpose: OAuth / OpenID Connect callback handler — identity provider returns here.
-  - Behavior: Reads query params (code, state, session_id) from the router, finalizes authentication via sdk.tokenExchange or sdk.handleCallback, then redirects to the intended route (e.g., /profile).
-  - Note: Keep this route unprotected so external providers and InAppBrowser flows can return.
-  - Usage: onMounted(async () => { const params = parseQuery(...) ; await sdk.tokenExchange(params); router.push('/profile'); });
-
-- src/pages/profile.page.vue
-  - Purpose: Protected user profile page.
-  - Behavior: Require authentication (router guard or component-level check). Displays idTokenClaims and other user data from useStrivacity; optionally fetch server data using the session.
-  - Usage: const { idTokenClaims, logout } = useStrivacity(); show claims and provide logout button that calls logout().
-
-- src/pages/revoke.page.vue
-  - Purpose: Revoke tokens or sessions (optional advanced session management).
-  - Behavior: Calls SDK or backend revoke API to invalidate refresh tokens/sessions, surfaces success/error, then logs out or redirects.
-  - Usage: await sdk.revoke(params) or call backend, then call logout() / router.push('/') on success.
-
-- src/pages/logout.page.vue
-  - Purpose: Initiates logout and clears the session.
-  - Behavior: Calls sdk.logout(), clears client/native storage (Capacitor Preferences) and redirects to home or login. Implement as an onMounted action that shows progress and navigates away.
-  - Usage: onMounted(async () => { await logout(); router.push('/'); });
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).

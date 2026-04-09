@@ -1,6 +1,6 @@
 import type { SDKOptions, SDKStorage, SDKHttpClient, SDKLogging, ExtraRequestArgs } from '../types';
 import { redirectUrlHandler, redirectCallbackHandler } from '../utils/handlers';
-import { EmbeddedFlowHandler } from '../utils/EmbeddedFlowHandler';
+import { EmbeddedFlowHandler } from '../handlers/EmbeddedFlowHandler';
 import { BaseFlow } from './BaseFlow';
 
 export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {

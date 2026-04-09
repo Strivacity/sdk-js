@@ -1,6 +1,6 @@
 import { type MockInstance, vi, describe, test, expect, beforeEach } from 'vitest';
 import { type SDKOptions, type ExtraRequestArgs, initFlow } from '../../src';
-import { type EmbeddedFlowHandler } from '../../src/utils/EmbeddedFlowHandler';
+import { type EmbeddedFlowHandler } from '../../src/handlers/EmbeddedFlowHandler';
 import { DefaultLogging } from '../../src/utils/Logging';
 
 import { mockLocalStorage } from '@strivacity/testing/mocks/storages';
@@ -29,10 +29,10 @@ describe('EmbeddedFlowHandler', () => {
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
 		};
 		const loggingSpy = {
-			debug: vi.spyOn(flow.logging!, 'debug'),
-			info: vi.spyOn(flow.logging!, 'info'),
-			warn: vi.spyOn(flow.logging!, 'warn'),
-			error: vi.spyOn(flow.logging!, 'error'),
+			debug: vi.spyOn(flow.logging, 'debug'),
+			info: vi.spyOn(flow.logging, 'info'),
+			warn: vi.spyOn(flow.logging, 'warn'),
+			error: vi.spyOn(flow.logging, 'error'),
 			get xEventId() {
 				return flow.logging!.xEventId;
 			},

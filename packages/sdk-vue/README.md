@@ -1,11 +1,21 @@
 # @strivacity/sdk-vue
 
-> **The SDK supports Vue version 3 and above**
+A Vue 3 plugin that integrates Strivacity's policy-driven authentication journeys into your application using the OAuth 2.0 PKCE flow. Supports `redirect`, `popup`, `native`, and `embedded` modes.
 
-## Example Apps
+See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+
+## Overview
+
+This SDK allows you to integrate Strivacity's policy-driven journeys into your Vue 3 application. It wraps the `@strivacity/sdk-core` library as a Vue plugin and exposes a `useStrivacity` composable that provides reactive authentication state and methods throughout your application. The SDK uses the OAuth 2.0 PKCE flow to authenticate with Strivacity. For detailed configuration options, available modes, and advanced usage refer to the [`@strivacity/sdk-core` documentation](https://github.com/Strivacity/sdk-js/blob/main/packages/sdk-core/README.md).
+
+## Demo Application
 
 - [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
 - [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
+
+## Requirements
+
+- Vue.js: 3+
 
 ## Install
 
@@ -15,7 +25,9 @@ npm install @strivacity/sdk-vue
 
 ## Usage
 
-### Add this to your main file
+### Initialization
+
+Register the SDK as a Vue plugin using `createStrivacitySDK` in your application's entry point:
 
 ```js
 import { createApp } from 'vue';
@@ -24,7 +36,7 @@ import { createStrivacitySDK } from '@strivacity/sdk-vue';
 
 const app = createApp(App);
 const sdk = createStrivacitySDK({
-	mode: 'redirect', // or 'popup' or 'native'
+	mode: 'redirect', // or 'popup', 'native', 'embedded'
 	issuer: 'https://<YOUR_DOMAIN>',
 	scopes: ['openid', 'profile'],
 	clientId: '<YOUR_CLIENT_ID>',
@@ -35,24 +47,21 @@ app.use(sdk);
 app.mount('#app');
 ```
 
-## Example Apps
+Use the `useStrivacity` composable in any component to access authentication state:
 
-- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
-- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-vue)
+```vue
+<script setup>
+import { useStrivacity } from '@strivacity/sdk-vue';
 
-### How to use the SDK in your components
+const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+</script>
+```
 
-#### Redirect or popup mode
+### Redirect / Popup mode
 
-When using redirect or popup mode, the authentication flow involves two main components: a login page that initiates the authentication process, and a callback page that handles the response from the identity provider.
+In `redirect` mode the user is taken to the identity provider in the same window; in `popup` mode authentication happens in a popup. Both are initiated the same way from code.
 
-In **redirect mode**, users are redirected to the identity provider's login page in the same browser window. After successful authentication, they are redirected back to your application's callback URL.
-
-In **popup mode**, the authentication happens in a popup window, allowing the main application to remain open while the user authenticates.
-
-##### Login page example
-
-The login page is where users start the authentication process. This component automatically triggers the login flow when the page loads, redirecting users to the identity provider for authentication.
+#### Login page example
 
 ```vue
 <script setup>
@@ -73,9 +82,9 @@ onMounted(() => {
 </template>
 ```
 
-##### Callback page example
+#### Callback page example
 
-The callback page handles the response from the identity provider after successful authentication. It processes the authentication result, extracts the tokens, and redirects users to their intended destination (typically a protected page like a profile or dashboard).
+The callback page handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
 
 ```vue
 <script setup>
@@ -103,11 +112,7 @@ onMounted(async () => {
 </template>
 ```
 
-##### Profile page example
-
-The profile page displays user information and authentication details after successful login. It uses the `useStrivacity` composable to access the authentication state and display relevant data such as access tokens, ID token claims, and expiration status.
-
-We check if the user is authenticated and display their profile information. If the user is not authenticated, we redirect them to the login page.
+#### Profile page example
 
 ```vue
 <script setup>
@@ -120,33 +125,23 @@ const { loading, isAuthenticated, accessToken, accessTokenExpired, accessTokenEx
 	<section>
 		<h1 v-if="loading">Loading...</h1>
 		<dl v-else>
-			<dt>
-				<strong>accessToken</strong>
-			</dt>
+			<dt><strong>accessToken</strong></dt>
 			<dd>
 				<pre>{{ JSON.stringify(accessToken) }}</pre>
 			</dd>
-			<dt>
-				<strong>refreshToken</strong>
-			</dt>
+			<dt><strong>refreshToken</strong></dt>
 			<dd>
 				<pre>{{ JSON.stringify(refreshToken) }}</pre>
 			</dd>
-			<dt>
-				<strong>accessTokenExpired</strong>
-			</dt>
+			<dt><strong>accessTokenExpired</strong></dt>
 			<dd>
 				<pre>{{ JSON.stringify(accessTokenExpired) }}</pre>
 			</dd>
-			<dt>
-				<strong>accessTokenExpirationDate</strong>
-			</dt>
+			<dt><strong>accessTokenExpirationDate</strong></dt>
 			<dd>
 				<pre>{{ accessTokenExpirationDate ? new Date(accessTokenExpirationDate * 1000).toLocaleString() : JSON.stringify(null) }}</pre>
 			</dd>
-			<dt>
-				<strong>claims</strong>
-			</dt>
+			<dt><strong>claims</strong></dt>
 			<dd>
 				<pre>{{ JSON.stringify(idTokenClaims, null, 2) }}</pre>
 			</dd>
@@ -155,11 +150,9 @@ const { loading, isAuthenticated, accessToken, accessTokenExpired, accessTokenEx
 </template>
 ```
 
-##### Logout page example
+#### Logout page example
 
-The logout page handles user logout by terminating their session. The `postLogoutRedirectUri` parameter is optional and specifies where users should be redirected after logout. If not provided, users will be redirected to the identity provider's logout page.
-
-This URI must be configured in the Admin Console as an allowed post-logout redirect URI for your application.
+The `postLogoutRedirectUri` parameter is optional and specifies where users are redirected after logout. This URI must be configured in the Admin Console as an allowed post-logout redirect URI.
 
 ```vue
 <script setup>
@@ -186,9 +179,7 @@ onMounted(async () => {
 </template>
 ```
 
-##### Component example
-
-Here's a simple component example that demonstrates how to use the SDK in a component with login/logout functionality:
+#### Component example
 
 ```vue
 <script setup>
@@ -211,15 +202,11 @@ const name = computed(() => `${idTokenClaims.value?.given_name} ${idTokenClaims.
 </template>
 ```
 
-#### Native mode
+### Native mode
 
-If you are using `native` mode, you can use the `StyLoginRenderer` component to render the login UI.
+In `native` mode the `StyLoginRenderer` component renders the authentication UI inline using your custom widget components. You can define custom components for each input type; see [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/vue/src/components/widgets).
 
-To customize the UI components used in the authentication flows, define the `widgets` object in your component.
-
-##### Example widgets
-
-The example widgets use SCSS for styling and Luxon for date handling. You'll need to install these dependencies:
+The example widgets use SCSS for styling and Luxon for date handling:
 
 ```bash
 npm install sass luxon
@@ -256,84 +243,47 @@ export const widgets = {
 };
 ```
 
-You can find example widgets here: [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/vue/src/components/widgets)
+#### Login page example
 
-##### Login page example
-
-The native mode login page provides a fully customizable authentication experience rendered directly within your application. Unlike redirect or popup modes, native mode keeps users on your site throughout the entire authentication process using the `StyLoginRenderer` component.
-
-This example demonstrates how to handle session management, implement callback functions for various authentication events, and manage URL parameters for session continuity.
+The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
 
 ```vue
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FallbackError, useStrivacity, type LoginFlowState } from '@strivacity/sdk-vue';
-import { widgets } from './components/widgets'; // Import your custom widgets
+import { widgets } from './components/widgets';
 
 const router = useRouter();
-const { options, login } = useStrivacity();
 const sessionId = ref<string | null>(null);
 
-/**
- * Extract session_id from URL parameters and clean up the URL
- * This is necessary for maintaining session state across external login providers
- */
-onMounted(() => {
-	if (window.location.search !== '') {
-		const url = new URL(window.location.href);
-		const sid = url.searchParams.get('session_id');
-		sessionId.value = sid;
-		url.search = '';
-		window.history.replaceState({}, '', url.toString());
-	}
-});
+if (window.location.search !== '') {
+	const url = new URL(window.location.href);
+	sessionId.value = url.searchParams.get('session_id');
+	url.search = '';
+	history.replaceState({}, '', url.toString());
+}
 
-/**
- * Called when authentication is successful
- * Redirects user to the profile page
- */
 const onLogin = async () => {
 	await router.push('/profile');
 };
 
-/**
- * Called when native flow cannot handle the authentication
- * Falls back to redirect mode by navigating to the provided URL
- * @param error - FallbackError containing the fallback URL and message
- */
 const onFallback = (error: FallbackError) => {
 	if (error.url) {
-		console.log(`Fallback: ${error.url}`);
 		window.location.href = error.url.toString();
 	} else {
-		console.error(`FallbackError without URL: ${error.message}`);
 		alert(error);
 	}
 };
 
-/**
- * Called when an error occurs during the authentication process
- * @param error - Error message describing what went wrong
- */
 const onError = (error: string) => {
-	console.error(`Error: ${error}`);
 	alert(error);
 };
 
-/**
- * Called when the authentication flow wants to display a global message
- * @param message - Message to display to the user
- */
 const onGlobalMessage = (message: string) => {
 	alert(message);
 };
 
-/**
- * Called when the authentication flow transitions between states
- * Useful for tracking flow progress and inject custom logic such as logging or analytics
- * @param params - Object containing previous and current flow states
- */
 const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
 	console.log('previousState', previousState);
 	console.log('state', state);
@@ -353,11 +303,9 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 </template>
 ```
 
-##### Callback page example
+#### Callback page example
 
-The native mode callback page handles authentication responses when external identity providers redirect back to your application. This page checks for session IDs in the URL parameters and either continues the native flow or falls back to standard callback handling.
-
-This component is essential for handling social login providers (like Google, Facebook, etc.) that require redirect-based authentication even within native mode flows.
+When a `session_id` is present in the URL the native flow is resumed by forwarding it to the login page. Otherwise the standard `handleCallback()` path is used:
 
 ```vue
 <script setup>
@@ -365,7 +313,7 @@ import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStrivacity } from '@strivacity/sdk-vue';
 
-const query = computed(() => (typeof window !== 'undefined' ? Object.fromEntries(new URLSearchParams(window.location.search)) : {}));
+const query = computed(() => Object.fromEntries(new URLSearchParams(window.location.search)));
 const router = useRouter();
 const { handleCallback } = useStrivacity();
 
@@ -400,13 +348,123 @@ onMounted(async () => {
 </template>
 ```
 
-##### Profile page example
+#### Entry page example
+
+The entry page processes flows started by an external process (e.g. password reset) by calling `entry()` to extract the necessary parameters to resume the flow and forwarding them to the login page:
+
+```vue
+<script setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStrivacity } from '@strivacity/sdk-vue';
+
+const router = useRouter();
+const { entry } = useStrivacity();
+
+onMounted(async () => {
+	try {
+		const data = await entry();
+
+		if (data && Object.keys(data).length > 0) {
+			await router.push(`/callback?${new URLSearchParams(data).toString()}`);
+		} else {
+			await router.push('/');
+		}
+	} catch (error) {
+		console.error('Entry failed:', error);
+		await router.push('/');
+	}
+});
+</script>
+```
+
+#### Profile page example
 
 Same as the profile page example in redirect/popup mode.
 
-##### Logout page example
+#### Logout page example
 
 Same as the logout page example in redirect/popup mode.
+
+### Embedded mode
+
+In `embedded` mode the `<sty-login>` web component (loaded via `bundle.js` from the cluster) handles rendering. Import the bundle at application startup to register the Strivacity web components:
+
+```js
+import { createApp } from 'vue';
+import App from './App.vue';
+import { createStrivacitySDK } from '@strivacity/sdk-vue';
+
+void import(`${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+
+const app = createApp(App);
+const sdk = createStrivacitySDK({
+	mode: 'embedded',
+	issuer: 'https://<YOUR_DOMAIN>',
+	scopes: ['openid', 'profile'],
+	clientId: '<YOUR_CLIENT_ID>',
+	redirectUri: '<YOUR_REDIRECT_URI>',
+});
+
+app.use(sdk);
+app.mount('#app');
+```
+
+#### Login page example
+
+The login page extracts `session_id` and `short_app_id` from the URL on load and passes them to the `<sty-login>` web component. The bundle registers `<sty-login>`, `<sty-notifications>`, and `<sty-language-selector>` as custom elements.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStrivacity } from '@strivacity/sdk-vue';
+
+const router = useRouter();
+const shortAppId = ref<string | null>(null);
+const sessionId = ref<string | null>(null);
+
+if (location.search !== '') {
+	const url = new URL(window.location.href);
+	shortAppId.value = url.searchParams.get('short_app_id');
+	sessionId.value = url.searchParams.get('session_id');
+	url.search = '';
+	history.replaceState({}, '', url.toString());
+}
+
+const onLogin = async () => {
+	await router.push('/profile');
+};
+const onClose = () => {
+	location.reload();
+};
+const onError = (event: CustomEvent) => {
+	alert(event.detail);
+};
+</script>
+
+<template>
+	<sty-notifications></sty-notifications>
+	<sty-login :shortAppId="shortAppId" :sessionId="sessionId" @close="onClose" @login="onLogin" @error="onError($event.detail)"></sty-login>
+	<sty-language-selector></sty-language-selector>
+</template>
+```
+
+#### Callback page example
+
+Same as the callback page example in native mode.
+
+#### Entry page example
+
+Same as the entry page example in native mode.
+
+#### Profile page example
+
+Same as the profile page example in native mode.
+
+#### Logout page example
+
+Same as the logout page example in native mode.
 
 ## Logging
 
@@ -417,27 +475,23 @@ The SDK supports optional logging to help you debug authentication flows and mon
 Enable the default console logger by adding the `logging` option when creating the SDK:
 
 ```js
-import { createApp } from 'vue';
 import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
 
-const app = createApp(App);
 const sdk = createStrivacitySDK({
 	mode: 'redirect',
 	issuer: 'https://<YOUR_DOMAIN>',
 	scopes: ['openid', 'profile'],
 	clientId: '<YOUR_CLIENT_ID>',
 	redirectUri: '<YOUR_REDIRECT_URI>',
-	logging: DefaultLogging, // Enable built-in console logging
+	logging: DefaultLogging,
 });
-
-app.use(sdk);
 ```
 
 The default logger writes to the browser console and automatically prefixes messages with a correlation ID when available (via the `xEventId` property).
 
 ### Creating a Custom Logger
 
-You can provide your own logger by implementing the `SDKLogging` interface with four methods: `debug`, `info`, `warn`, and `error`. An optional `xEventId` property is honored for log correlation.
+Implement the `SDKLogging` interface and pass your class to the `logging` option:
 
 ```typescript
 import type { SDKLogging } from '@strivacity/sdk-vue';
@@ -446,7 +500,6 @@ export class MyLogger implements SDKLogging {
 	xEventId?: string;
 
 	debug(message: string): void {
-		// Send to your logging pipeline
 		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
 	}
 
@@ -464,168 +517,110 @@ export class MyLogger implements SDKLogging {
 }
 ```
 
-Then register your custom logger when creating the SDK:
-
 ```js
 import { createStrivacitySDK } from '@strivacity/sdk-vue';
 import { MyLogger } from './logging/MyLogger';
 
 const sdk = createStrivacitySDK({
-	mode: 'redirect',
-	issuer: 'https://<YOUR_DOMAIN>',
-	scopes: ['openid', 'profile'],
-	clientId: '<YOUR_CLIENT_ID>',
-	redirectUri: '<YOUR_REDIRECT_URI>',
-	logging: MyLogger, // Use your custom logger
+	// ...other options
+	logging: MyLogger,
 });
 ```
 
-### Logger Interface
-
-The `SDKLogging` interface requires the following methods:
-
-- **`debug(message: string): void`** - Log debug-level messages
-- **`info(message: string): void`** - Log informational messages
-- **`warn(message: string): void`** - Log warning messages
-- **`error(message: string, error: Error): void`** - Log error messages with error objects
-
-The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
+The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
 
 ## API Documentation
 
-#### `useStrivacity` composable
+### `useStrivacity` composable
 
 ```typescript
 useStrivacity<T extends PopupContext | RedirectContext | NativeContext>(): T;
 ```
 
-You can choose between `PopupContext`, `RedirectContext`, or `NativeContext` using the `mode` option when configuring the SDK.
+The composable returns a different context type depending on the `mode` configured when creating the SDK.
 
-**Properties**
+**Shared properties (all modes)**
 
-- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: Returns the SDK instance based on the configured mode.
-- **`loading: Ref<boolean>`**: Indicates if the session is being loaded.
-- **`options: SDKOptions`**: The configured options for the SDK.
-- **`isAuthenticated: Ref<boolean>`**: Indicates whether the user is authenticated.
-- **`idTokenClaims: Ref<IdTokenClaims | null>`**: Claims from the ID token, or null if not available.
-- **`accessToken: Ref<string | null>`**: The access token, or null if not available.
-- **`refreshToken: Ref<string | null>`**: The refresh token, or null if not available.
-- **`accessTokenExpired: Ref<boolean>`**: Indicates if the access token has expired.
-- **`accessTokenExpirationDate: Ref<number | null>`**: Expiration date of the access token, or null if not set.
+- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: The underlying SDK flow instance.
+- **`loading: Ref<boolean>`**: `true` while the session is being initialized.
+- **`options: SDKOptions`**: The configured SDK options.
+- **`isAuthenticated: Ref<boolean>`**: `true` when the user has a valid session.
+- **`idTokenClaims: Ref<IdTokenClaims | null>`**: Claims from the ID token, or `null` if not authenticated.
+- **`accessToken: Ref<string | null>`**: The current access token.
+- **`refreshToken: Ref<string | null>`**: The current refresh token.
+- **`accessTokenExpired: Ref<boolean>`**: `true` when the access token has expired.
+- **`accessTokenExpirationDate: Ref<number | null>`**: Expiration timestamp (Unix ms) of the access token.
 
 ---
 
 **Type: `RedirectContext`**
 
-Represents the available methods for redirect-based interactions.
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process by redirecting the user to the identity provider.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a redirect flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a redirect flow.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a redirect flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the identity provider.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login by redirecting to the identity provider.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a redirect flow.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback after redirect.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow (e.g. `session_id`, `short_app_id`).
 
 ---
 
 **Type: `PopupContext`**
 
-Represents the available methods for popup-based interactions.
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates the login process using a popup window.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<void>`**: Registers a new user using a popup flow.
-  - `options` (optional): Configuration options for registration.
-- **`refresh(): Promise<void>`**: Refreshes the user's session using a popup.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens using a popup flow.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user using a popup window.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a popup-based authentication or token exchange.
-  - `url` (optional): The URL to handle for the callback.
+- **`login(options?: LoginOptions): Promise<void>`**: Initiates login using a popup window.
+- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a popup.
+- **`refresh(): Promise<void>`**: Refreshes the user's session.
+- **`revoke(): Promise<void>`**: Revokes the current session tokens.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via popup.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
 
 ---
 
 **Type: `NativeContext`**
 
-Represents the available methods for native-based interactions.
-
-- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates the login process using a native flow.
-  - `options` (optional): Configuration options for login.
-- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Registers a new user using a native flow.
-  - `options` (optional): Configuration options for registration.
+- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates login using the native flow.
+- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Initiates registration using the native flow.
 - **`refresh(): Promise<void>`**: Refreshes the user's session.
 - **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs out the user by redirecting to the logout page.
-  - `options` (optional): Configuration options for logout.
-- **`handleCallback(url?: string): Promise<void>`**: Handles the callback after a redirect-based authentication. This will be called automatically by the native flow handler during fallback.
-  - `url` (optional): The URL to handle for the callback.
+- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
+- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
+- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
 
-#### `StyLoginRenderer` component
+---
 
-The `StyLoginRenderer` component is used in native mode to render the authentication UI directly within your application. It provides a fully customizable login experience using your own UI components.
+### `StyLoginRenderer` component
 
-```typescript
-StyLoginRenderer: Vue.Component<{
-	params?: NativeParams;
-	widgets?: PartialRecord<WidgetType, Vue.Component>;
-	sessionId?: string | null;
-	onLogin?: (claims?: IdTokenClaims | null) => void;
-	onFallback?: (error: FallbackError) => void;
-	onError?: (error: any) => void;
-	onGlobalMessage?: (message: string) => void;
-	onBlockReady?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
-}>;
-```
+Used in `native` mode to render the authentication UI with your own widget components.
 
-**Properties**
+**Props**
 
-- **`params?: NativeParams`** (optional): Additional parameters to pass to the native login flow. These parameters can include custom configuration options for the authentication process.
-
-- **`widgets?: PartialRecord<WidgetType, Vue.Component>`** (optional): A collection of Vue components that define the UI widgets used in the authentication flow. Each widget type (input, button, layout, etc.) can be customized with your own components.
-
-- **`sessionId?: string | null`** (optional): The session ID for continuing an existing authentication session. This is typically extracted from URL parameters when returning from external identity providers.
+- **`params?: NativeParams`**: Additional parameters for the native login flow.
+- **`widgets?: PartialRecord<WidgetType, Vue.Component>`**: Custom Vue components for each widget type used in the flow.
+- **`sessionId?: string | null`**: Session ID for resuming an existing authentication session. Typically extracted from URL parameters when returning from an external identity provider.
 
 **Events**
 
-- **`@login?: (claims?: IdTokenClaims | null) => void`** (optional): Event emitted when authentication is successful. Receives the ID token claims as a parameter.
+- **`@login`**: Emitted on successful authentication. Receives `IdTokenClaims | null`.
+- **`@fallback`**: Emitted when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
+- **`@error`**: Emitted when an error occurs during authentication.
+- **`@global-message`**: Emitted when the flow wants to display a global message (e.g. account lockout warning).
+- **`@block-ready`**: Emitted on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
 
-- **`@fallback?: (error: FallbackError) => void`** (optional): Event emitted when the native flow cannot handle the authentication and needs to fall back to redirect mode. The error parameter contains the fallback URL.
+## Vulnerability Reporting
 
-- **`@error?: (error: any) => void`** (optional): Event emitted when an error occurs during the authentication process. Use this to handle and display error messages to users.
+The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
 
-- **`@global-message?: (message: string) => void`** (optional): Event emitted when the authentication flow wants to display a global message to the user (e.g., account lockout warnings, validation messages).
+## License
 
-- **`@block-ready?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void`** (optional): Event emitted when the authentication flow transitions between states. Useful for tracking progress, implementing custom logging, or injecting analytics. Receives both the previous and current flow states.
+@strivacity/sdk-vue is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
-**Widget Types**
+## Contributing
 
-The `widgets` prop accepts the following widget types:
-
-- `checkbox`: For checkbox input fields
-- `date`: For date input fields
-- `input`: For text input fields
-- `layout`: For layout containers and form structure
-- `loading`: For loading indicators
-- `multiSelect`: For multi-select dropdown fields
-- `passcode`: For passcode input fields
-- `password`: For password input fields
-- `phone`: For phone number input fields
-- `select`: For single-select dropdown fields
-- `static`: For static text and display elements
-- `submit`: For form submission buttons
-
-Each widget component receives props specific to its type and function within the authentication flow.
-
-## Links
-
-- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/vue)
+Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
 
 ## Migrating to v3.0
 
 ### Entry API Major Changes
 
-Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. To see examples of these changes, check the apps folder in this repository.
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.

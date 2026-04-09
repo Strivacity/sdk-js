@@ -130,6 +130,10 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 	ngOnDestroy(): void {
 		this.subscriptions.unsubscribe();
 		this.clearAndDestroyComponents();
+		this.widgetService.loading$.next(false);
+		this.widgetService.state$.next({});
+		this.widgetService.forms$.next({});
+		this.widgetService.messages$.next({});
 	}
 
 	async init() {

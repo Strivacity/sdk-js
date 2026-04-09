@@ -32,7 +32,7 @@ export let isAuthenticated: () => Promise<boolean> = () => Promise.resolve(false
  * @returns {Plugin} A Vue plugin that can be installed in the application.
  */
 export const createStrivacitySDK = (options: SDKOptions) => {
-	const sdk = initFlow(options);
+	const sdk = initFlow(options) as NativeFlow | PopupFlow | RedirectFlow;
 
 	const plugin = {
 		install: (app: App) => {
