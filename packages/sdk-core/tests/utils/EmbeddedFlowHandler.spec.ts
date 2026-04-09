@@ -29,10 +29,10 @@ describe('EmbeddedFlowHandler', () => {
 			sendTokenRequest: vi.spyOn<unknown>(flow, 'sendTokenRequest'),
 		};
 		const loggingSpy = {
-			debug: vi.spyOn(flow.logging!, 'debug'),
-			info: vi.spyOn(flow.logging!, 'info'),
-			warn: vi.spyOn(flow.logging!, 'warn'),
-			error: vi.spyOn(flow.logging!, 'error'),
+			debug: vi.spyOn(flow.logging, 'debug'),
+			info: vi.spyOn(flow.logging, 'info'),
+			warn: vi.spyOn(flow.logging, 'warn'),
+			error: vi.spyOn(flow.logging, 'error'),
 			get xEventId() {
 				return flow.logging!.xEventId;
 			},

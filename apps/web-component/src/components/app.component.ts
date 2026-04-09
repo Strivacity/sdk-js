@@ -7,6 +7,7 @@ import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
 
 void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
 
+// @ts-expect-error: Ignore type error
 globalThis.sdk = initFlow({
 	mode: import.meta.env.VITE_MODE,
 	issuer: import.meta.env.VITE_ISSUER,
@@ -97,6 +98,8 @@ export class AppComponent extends LitElement {
 		{
 			path: '/profile',
 			enter: async () => {
+				// @ts-expect-error: Ignore type error
+				// eslint-disable-next-line @typescript-eslint/await-thenable
 				this.isAuthenticated = await globalThis.sdk.isAuthenticated;
 
 				if (!this.isAuthenticated) {
@@ -130,6 +133,8 @@ export class AppComponent extends LitElement {
 	}
 
 	async init() {
+		// @ts-expect-error: Ignore type error
+		// eslint-disable-next-line @typescript-eslint/await-thenable
 		this.isAuthenticated = await globalThis.sdk.isAuthenticated;
 
 		if (this.isAuthenticated) {
