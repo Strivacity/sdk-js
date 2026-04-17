@@ -19,7 +19,7 @@ export class CustomNativeFlowHandler extends NativeFlowHandler {
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/start', location.origin).toString(), {
 			method: 'POST',
 			credentials: 'include',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', 'Accept-language': '*' },
 			body: JSON.stringify(this.params),
 		});
 
@@ -79,7 +79,7 @@ export class CustomNativeFlowHandler extends NativeFlowHandler {
 
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/finalize', location.origin).toString(), {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.sessionId}` },
+			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
 			body: JSON.stringify(Object.fromEntries(redirectUri.searchParams)),
 			credentials: 'include',
 		});

@@ -36,6 +36,11 @@ export class LoginPage implements OnInit, OnDestroy {
 			const url = new URL(window.location.href);
 			this.shortAppId = url.searchParams.get('short_app_id');
 			this.sessionId = url.searchParams.get('session_id');
+
+			if (url.searchParams.has('language')) {
+				this.extraParams.uiLocales = [url.searchParams.get('language')!];
+			}
+
 			url.search = '';
 			history.replaceState({}, '', url.toString());
 		}

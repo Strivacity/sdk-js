@@ -284,15 +284,15 @@ logging: MyLogger,
 
 ## Pages
 
-| Page     | Path                                         | Description                                                                                                                                                      |
-| -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home     | `src/components/pages/home.component.ts`     | Public landing page. Displays user info when authenticated.                                                                                                      |
-| Login    | `src/components/pages/login.component.ts`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing embedded flow.                    |
-| Register | `src/components/pages/register.component.ts` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.           |
-| Callback | `src/components/pages/callback.component.ts` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow. |
-| Profile  | `src/components/pages/profile.component.ts`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                               |
-| Revoke   | `src/components/pages/revoke.component.ts`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                              |
-| Logout   | `src/components/pages/logout.component.ts`   | Terminates the user's session and redirects to the home page after logout.                                                                                       |
+| Page     | Path                                         | Description                                                                                                                                                                                                 |
+| -------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home     | `src/components/pages/home.component.ts`     | Public landing page. Displays user info when authenticated.                                                                                                                                                 |
+| Login    | `src/components/pages/login.component.ts`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing embedded flow. An optional `language` URL parameter overrides the UI locale. |
+| Register | `src/components/pages/register.component.ts` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter. Also accepts an optional `language` URL parameter to override the UI locale.              |
+| Callback | `src/components/pages/callback.component.ts` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.                                            |
+| Profile  | `src/components/pages/profile.component.ts`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                                                                          |
+| Revoke   | `src/components/pages/revoke.component.ts`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                                                         |
+| Logout   | `src/components/pages/logout.component.ts`   | Terminates the user's session and redirects to the home page after logout.                                                                                                                                  |
 
 ## Vulnerability Reporting
 

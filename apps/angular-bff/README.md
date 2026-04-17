@@ -263,12 +263,12 @@ Brief, purpose-oriented descriptions of the components under src/app/pages — w
 
 - src/app/pages/login.component.ts
   - Purpose: Login page / entry point for authentication flows.
-  - Behavior: Triggers the SDK login flow (redirect/popup depending on configuration). If already authenticated, typically navigate to /profile.
+  - Behavior: Triggers the SDK login flow (redirect/popup depending on configuration). If already authenticated, typically navigate to /profile. An optional `language` URL parameter overrides the UI locale.
   - Usage: const strivacity = inject(StrivacityService); call strivacity.login(); check strivacity.isAuthenticated() and navigate when appropriate.
 
 - src/app/pages/register.component.ts
   - Purpose: Registration page (if supported).
-  - Behavior: Initiates a registration flow via the SDK or backend. On success either sign-in or navigate to login.
+  - Behavior: Initiates a registration flow via the SDK or backend. Supports the same optional `language` URL parameter as the login page to override the UI locale. On success either sign-in or navigate to login.
   - Usage: inject(StrivacityService) or use a form + backend call, then call login/redirect as needed.
 
 - src/app/pages/entry.component.ts

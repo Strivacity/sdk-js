@@ -51,6 +51,11 @@ export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {
 
 		const response = await this.httpClient.request<string | Record<string, string>>(
 			`${this.options.issuer}/provider/flow/entry?${entryUrl.searchParams.toString()}`,
+			{
+				headers: {
+					'Accept-Language': '*',
+				},
+			},
 		);
 
 		if (!response.ok) {
@@ -86,6 +91,7 @@ export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {
 
 		const shortAppId = uri.searchParams.get('short_app_id');
 		const sessionId = uri.searchParams.get('session_id');
+		const language = uri.searchParams.get('language') || navigator.language;
 
 		if (!shortAppId) {
 			const error = new Error('"short_app_id" is missing from the response');
@@ -98,7 +104,7 @@ export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {
 			throw error;
 		}
 
-		return { session_id: sessionId, short_app_id: shortAppId };
+		return { session_id: sessionId, short_app_id: shortAppId, language: language };
 	}
 
 	/**

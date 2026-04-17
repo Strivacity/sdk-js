@@ -307,7 +307,7 @@ describe('NativeFlowHandler', () => {
 
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/init`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({}),
 				credentials: 'include',
 			});
@@ -330,7 +330,7 @@ describe('NativeFlowHandler', () => {
 			expect(loggingSpy.debug).toHaveBeenCalledWith('Submitting form: formId');
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/form/formId`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({ key: 'value' }),
 				credentials: 'include',
 			});
@@ -358,7 +358,7 @@ describe('NativeFlowHandler', () => {
 			expect(loggingSpy.debug).toHaveBeenCalledWith('Finalizing login flow session');
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/oauth2/finalize`, {
 				method: 'GET',
-				headers: { Authorization: `Bearer sessionId` },
+				headers: { Authorization: `Bearer sessionId`, 'Accept-language': '*' },
 				credentials: 'include',
 			});
 			expect(spies.tokenExchange).toHaveBeenCalledWith({ code: '1234' });
@@ -380,7 +380,7 @@ describe('NativeFlowHandler', () => {
 
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/init`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({}),
 				credentials: 'include',
 			});
@@ -404,7 +404,7 @@ describe('NativeFlowHandler', () => {
 
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/init`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({}),
 				credentials: 'include',
 			});
@@ -430,7 +430,7 @@ describe('NativeFlowHandler', () => {
 
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/init`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({}),
 				credentials: 'include',
 			});
@@ -454,7 +454,7 @@ describe('NativeFlowHandler', () => {
 
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/flow/api/v1/init`, {
 				method: 'POST',
-				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json' },
+				headers: { Authorization: 'Bearer sessionId', 'Content-Type': 'application/json', 'Accept-language': 'en-US' },
 				body: JSON.stringify({}),
 				credentials: 'include',
 			});

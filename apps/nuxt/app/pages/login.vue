@@ -20,6 +20,10 @@ if (window.location.search !== '') {
 	shortAppId.value = url.searchParams.get('short_app_id');
 	sessionId.value = url.searchParams.get('session_id');
 
+	if (url.searchParams.has('language')) {
+		extraParams.uiLocales = [url.searchParams.get('language')!];
+	}
+
 	url.search = '';
 	history.replaceState({}, '', url.toString());
 }

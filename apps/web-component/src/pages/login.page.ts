@@ -21,12 +21,25 @@ export class LoginPage extends LitElement {
 		super.connectedCallback();
 
 		if (globalThis.sdk.options.mode === 'redirect' || globalThis.sdk.options.mode === 'popup') {
-			void globalThis.sdk.login({
+			const extraParams = {
 				loginHint: import.meta.env?.VITE_LOGIN_HINT,
 				acrValues: import.meta.env?.VITE_ACR_VALUES?.split(' '),
 				uiLocales: import.meta.env?.VITE_UI_LOCALES?.split(' '),
 				audiences: import.meta.env?.VITE_AUDIENCES?.split(' '),
-			});
+			};
+
+			if (window.location.search !== '') {
+				const url = new URL(window.location.href);
+
+				if (url.searchParams.has('language')) {
+					extraParams.uiLocales = [url.searchParams.get('language')!];
+				}
+
+				url.search = '';
+				history.replaceState({}, '', url.toString());
+			}
+
+			void globalThis.sdk.login(extraParams);
 		}
 	}
 

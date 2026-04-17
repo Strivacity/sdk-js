@@ -233,7 +233,7 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` from the URL on load, cleans up the URL, and passes it to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
+The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
 
 ```svelte
 <!-- src/routes/login/+page.svelte -->

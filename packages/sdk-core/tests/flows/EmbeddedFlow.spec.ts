@@ -738,15 +738,16 @@ describe('EmbeddedFlow', () => {
 				flow.httpClient.request = vi.fn().mockResolvedValue({
 					ok: true,
 					status: 200,
-					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234&short_app_id=short123'),
+					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234&short_app_id=short123&language=en-US'),
 				});
 
 				const data = await flow.entry('http://localhost:4200/entry');
 
 				expect(flow.httpClient.request).toHaveBeenCalledWith(
 					`${flow.options.issuer}/provider/flow/entry?sdk=web-embedded&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
+					{ headers: { 'Accept-Language': '*' } },
 				);
-				expect(data).toEqual({ session_id: 'abcd1234', short_app_id: 'short123' });
+				expect(data).toEqual({ session_id: 'abcd1234', short_app_id: 'short123', language: 'en-US' });
 			});
 
 			test('should get back session_id and short_app_id from response.url when text() throws', async () => {
@@ -755,13 +756,13 @@ describe('EmbeddedFlow', () => {
 				flow.httpClient.request = vi.fn().mockResolvedValue({
 					ok: true,
 					status: 200,
-					url: 'https://brandtegrity.io/entry?session_id=xyz789&short_app_id=short456',
+					url: 'https://brandtegrity.io/entry?session_id=xyz789&short_app_id=short456&language=en-US',
 					text: () => Promise.reject(new Error('Invalid text')),
 				});
 
 				const data = await flow.entry('http://localhost:4200/entry');
 
-				expect(data).toEqual({ session_id: 'xyz789', short_app_id: 'short456' });
+				expect(data).toEqual({ session_id: 'xyz789', short_app_id: 'short456', language: 'en-US' });
 			});
 
 			test('should throw error on failed request with status 400 and error object', async () => {

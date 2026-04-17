@@ -180,14 +180,14 @@ logging: MyLogger,
 
 ## Pages
 
-| Page     | Path                        | Description                                                                                                                                           |
-| -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home     | `src/app/page.tsx`          | Public landing page. Displays user info when authenticated.                                                                                           |
-| Login    | `src/app/login/page.tsx`    | Fully custom headless login UI. Renders forms by hand based on the `LoginFlowState` screen. Accepts an optional `session_id` URL parameter to resume. |
-| Callback | `src/app/callback/page.tsx` | Handles the identity provider's redirect response and completes the authorization flow.                                                               |
-| Profile  | `src/app/profile/page.tsx`  | Protected page showing the authenticated user's session details and token information.                                                                |
-| Revoke   | `src/app/revoke/page.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                   |
-| Logout   | `src/app/logout/page.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                            |
+| Page     | Path                        | Description                                                                                                                                                                                                              |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home     | `src/app/page.tsx`          | Public landing page. Displays user info when authenticated.                                                                                                                                                              |
+| Login    | `src/app/login/page.tsx`    | Fully custom headless login UI. Renders forms by hand based on the `LoginFlowState` screen. Accepts an optional `session_id` URL parameter to resume and an optional `language` URL parameter to override the UI locale. |
+| Callback | `src/app/callback/page.tsx` | Handles the identity provider's redirect response and completes the authorization flow.                                                                                                                                  |
+| Profile  | `src/app/profile/page.tsx`  | Protected page showing the authenticated user's session details and token information.                                                                                                                                   |
+| Revoke   | `src/app/revoke/page.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                                                                      |
+| Logout   | `src/app/logout/page.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                                                                                               |
 
 ## Vulnerability Reporting
 

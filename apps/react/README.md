@@ -242,7 +242,7 @@ export const Entry = () => {
 
 The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path.
 
-The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login.
+The login page extracts `session_id`, `short_app_id`, and `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
 
 You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
 
@@ -291,16 +291,16 @@ logging: MyLogger,
 
 ## Pages
 
-| Page     | Path                     | Description                                                                                                                                                        |
-| -------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Home     | `src/pages/Home.tsx`     | Public landing page. Displays user info when authenticated.                                                                                                        |
-| Login    | `src/pages/Login.tsx`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
-| Register | `src/pages/Register.tsx` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
-| Callback | `src/pages/Callback.tsx` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
-| Entry    | `src/pages/Entry.tsx`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
-| Profile  | `src/pages/Profile.tsx`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                                 |
-| Revoke   | `src/pages/Revoke.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
-| Logout   | `src/pages/Logout.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
+| Page     | Path                     | Description                                                                                                                                                                                                                      |
+| -------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home     | `src/pages/Home.tsx`     | Public landing page. Displays user info when authenticated.                                                                                                                                                                      |
+| Login    | `src/pages/Login.tsx`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. An optional `language` URL parameter overrides the UI locale. |
+| Register | `src/pages/Register.tsx` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter. Also accepts an optional `language` URL parameter to override the UI locale.                                   |
+| Callback | `src/pages/Callback.tsx` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.                                                                 |
+| Entry    | `src/pages/Entry.tsx`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                                                                                            |
+| Profile  | `src/pages/Profile.tsx`  | Protected page showing the authenticated user's session details and token information. Redirects to `/login` if not authenticated.                                                                                               |
+| Revoke   | `src/pages/Revoke.tsx`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                                                                              |
+| Logout   | `src/pages/Logout.tsx`   | Terminates the user's session and redirects to the home page after logout.                                                                                                                                                       |
 
 ## Vulnerability Reporting
 

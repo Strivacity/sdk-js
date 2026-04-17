@@ -56,6 +56,11 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 
 		const response = await this.httpClient.request<string | Record<string, string>>(
 			`${this.options.issuer}/provider/flow/entry?${entryUrl.searchParams.toString()}`,
+			{
+				headers: {
+					'Accept-Language': '*',
+				},
+			},
 		);
 
 		if (!response.ok) {
@@ -90,6 +95,7 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 		}
 
 		const sessionId = uri.searchParams.get('session_id');
+		const language = uri.searchParams.get('language') || navigator.language;
 
 		if (!sessionId) {
 			const error = new Error('Session ID not found in entry response');
@@ -97,7 +103,7 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 			throw error;
 		}
 
-		return { session_id: sessionId };
+		return { session_id: sessionId, language: language };
 	}
 
 	/**
