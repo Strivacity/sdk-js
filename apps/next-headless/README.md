@@ -22,6 +22,7 @@ pnpm install
 Create a `.env.local` file in the repository root:
 
 ```env
+VITE_MODE=native
 VITE_ISSUER=your-cluster-domain
 VITE_CLIENT_ID=your-client-id
 VITE_SCOPES=openid profile email
