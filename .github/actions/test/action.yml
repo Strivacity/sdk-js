@@ -27,19 +27,23 @@ runs:
       run: |
         TARGET="${{ inputs.target }}"
         TARGET_NAME="${TARGET//:/ }"
+        TARGET_SLUG="${TARGET_NAME// /-}"
         echo "target_name=$TARGET_NAME" >> $GITHUB_OUTPUT
+        echo "target_slug=$TARGET_SLUG" >> $GITHUB_OUTPUT
 
     - name: Run tests
       id: test
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        NODE_OPTIONS: --max-old-space-size=8192
       run: pnpm run ${{ inputs.target }} --configuration=ci
 
     - name: Git check
       uses: ./.github/actions/git-check
 
     - name: Test report
-      uses: dorny/test-reporter@v2.3.0
+      uses: dorny/test-reporter@v3
       if: inputs.test-report && (success() || contains(fromJson('["success", "failure"]'), steps.test.outcome))
       with:
         name: Test report (${{ steps.target.outputs.target_name }})
@@ -48,7 +52,7 @@ runs:
 
     - shell: bash
       id: prefixed-test-artifacts
-      if: inputs.test-artifacts && (success() || failure())
+      if: inputs.test-artifacts && (success() || contains(fromJson('["success", "failure"]'), steps.test.outcome))
       run: |
         EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
         echo "test-artifacts<<$EOF" >> $GITHUB_OUTPUT
@@ -56,8 +60,8 @@ runs:
         echo "$EOF" >> $GITHUB_OUTPUT
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       if: inputs.test-artifacts && (success() || failure())
       with:
-        name: Test results (${{ steps.target.outputs.target_name }})
+        name: test-results-${{ steps.target.outputs.target_slug }}
         path: ${{ steps.prefixed-test-artifacts.outputs.test-artifacts }}

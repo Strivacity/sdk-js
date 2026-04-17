@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     branches:
-    - main
+      - main
 
 jobs:
   publish:
@@ -11,7 +11,6 @@ jobs:
     permissions:
       contents: read
       id-token: write # needed for provenance data generation
-    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -26,9 +25,6 @@ jobs:
         run: |
           git config --global user.email "opensource@strivacity.com"
           git config --global user.name "strivacity"
-          npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish
         run: pnpm nx release publish --access=public
