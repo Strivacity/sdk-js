@@ -228,7 +228,7 @@ onMounted(async () => {
 </script>
 ```
 
-The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login. The `short_app_id` is used in `embedded` mode to identify the application within the `<sty-login>` web component:
+The login page extracts `session_id`, `short_app_id`, and `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login. The `short_app_id` is used in `embedded` mode to identify the application within the `<sty-login>` web component. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language:
 
 ```vue
 <script setup>
@@ -299,16 +299,16 @@ const sdk = createStrivacitySDK({
 
 ## Pages
 
-| Page     | Path                          | Description                                                                                                                                                        |
-| -------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Home     | `src/pages/index.page.vue`    | Public landing page. Displays user info when authenticated.                                                                                                        |
-| Login    | `src/pages/login.page.vue`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. |
-| Register | `src/pages/register.page.vue` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter passed to the authentication request.             |
-| Callback | `src/pages/callback.page.vue` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.   |
-| Entry    | `src/pages/entry.page.vue`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                              |
-| Profile  | `src/pages/profile.page.vue`  | Protected page showing the authenticated user's session details and token information.                                                                             |
-| Revoke   | `src/pages/revoke.page.vue`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                |
-| Logout   | `src/pages/logout.page.vue`   | Terminates the user's session and redirects to the home page after logout.                                                                                         |
+| Page     | Path                          | Description                                                                                                                                                                                                                      |
+| -------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home     | `src/pages/index.page.vue`    | Public landing page. Displays user info when authenticated.                                                                                                                                                                      |
+| Login    | `src/pages/login.page.vue`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. An optional `language` URL parameter overrides the UI locale. |
+| Register | `src/pages/register.page.vue` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter. Also accepts an optional `language` URL parameter to override the UI locale.                                   |
+| Callback | `src/pages/callback.page.vue` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.                                                                 |
+| Entry    | `src/pages/entry.page.vue`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                                                                                            |
+| Profile  | `src/pages/profile.page.vue`  | Protected page showing the authenticated user's session details and token information.                                                                                                                                           |
+| Revoke   | `src/pages/revoke.page.vue`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                                                                              |
+| Logout   | `src/pages/logout.page.vue`   | Terminates the user's session and redirects to the home page after logout.                                                                                                                                                       |
 
 ## Vulnerability Reporting
 

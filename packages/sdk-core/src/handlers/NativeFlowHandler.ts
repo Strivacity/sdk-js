@@ -33,7 +33,11 @@ export class NativeFlowHandler extends BaseFlowHandler {
 
 		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
-		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), { method: 'GET', credentials: 'include' });
+		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), {
+			method: 'GET',
+			credentials: 'include',
+			headers: { 'Accept-language': '*' },
+		});
 
 		if (!response.ok) {
 			const error = new Error(`Authorization request failed with status ${response.status}`);
@@ -78,6 +82,10 @@ export class NativeFlowHandler extends BaseFlowHandler {
 			throw error;
 		}
 
+		if (uri.searchParams.has('language')) {
+			this.locale = uri.searchParams.get('language')!;
+		}
+
 		this.sessionId = uri.searchParams.get('session_id');
 
 		return this.submitForm();
@@ -95,7 +103,7 @@ export class NativeFlowHandler extends BaseFlowHandler {
 
 		const response = await this.sdk.httpClient.request(finalizeUrl.toString(), {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${this.sessionId}` },
+			headers: { Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
 			credentials: 'include',
 		});
 		const redirectUri = new URL(await response.text());
@@ -134,7 +142,7 @@ export class NativeFlowHandler extends BaseFlowHandler {
 			new URL(`/flow/api/v1/${formId ? `form/${formId}` : 'init'}`, this.sdk.options.issuer).toString(),
 			{
 				method: 'POST',
-				headers: { Authorization: `Bearer ${this.sessionId}`, 'Content-Type': 'application/json' },
+				headers: { Authorization: `Bearer ${this.sessionId}`, 'Content-Type': 'application/json', 'Accept-language': this.locale },
 				body: JSON.stringify(body),
 				credentials: 'include',
 			},

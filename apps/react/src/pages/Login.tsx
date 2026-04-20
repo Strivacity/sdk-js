@@ -25,6 +25,11 @@ export const Login = () => {
 			const sid = url.searchParams.get('session_id');
 			setShortAppId(sAppId);
 			setSessionId(sid);
+
+			if (url.searchParams.has('language')) {
+				extraParams.uiLocales = [url.searchParams.get('language')!];
+			}
+
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}

@@ -245,7 +245,7 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` and `short_app_id` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one.
+The login page extracts `session_id`, `short_app_id`, and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
 
 ```vue
 <script setup lang="ts">
@@ -412,7 +412,7 @@ app.mount('#app');
 
 #### Login page example
 
-The login page extracts `session_id` and `short_app_id` from the URL on load and passes them to the `<sty-login>` web component. The bundle registers `<sty-login>`, `<sty-notifications>`, and `<sty-language-selector>` as custom elements.
+The login page extracts `session_id`, `short_app_id`, and optionally `language` from the URL on load and passes them to the `<sty-login>` web component. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language. The bundle registers `<sty-login>`, `<sty-notifications>`, and `<sty-language-selector>` as custom elements.
 
 ```vue
 <script setup lang="ts">

@@ -9,6 +9,15 @@ export abstract class BaseFlowHandler {
 	 */
 	protected sessionId: string | null = null;
 
+	/**
+	 * The locale to use for the authentication flow.
+	 *
+	 * Defaults to the browser's language setting.
+	 *
+	 * @type {string}
+	 */
+	locale!: string;
+
 	constructor(
 		/**
 		 * The SDK instance.
@@ -22,7 +31,9 @@ export abstract class BaseFlowHandler {
 		 * @type {NativeParams} [options={}]
 		 */
 		protected params: NativeParams = {},
-	) {}
+	) {
+		this.locale = params.uiLocales?.[0] || navigator.language;
+	}
 
 	/**
 	 * Starts a new session.

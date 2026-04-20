@@ -38,7 +38,11 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 
 		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
-		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), { method: 'GET', credentials: 'include' });
+		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), {
+			method: 'GET',
+			credentials: 'include',
+			headers: { 'Accept-language': '*' },
+		});
 
 		if (!response.ok) {
 			const error = new Error(`Authorization request failed with status ${response.status}`);
@@ -77,6 +81,10 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 			throw error;
 		}
 
+		if (uri.searchParams.has('language')) {
+			this.locale = uri.searchParams.get('language')!;
+		}
+
 		this.shortAppId = uri.searchParams.get('short_app_id');
 		this.sessionId = uri.searchParams.get('session_id');
 
@@ -104,7 +112,7 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 
 		const response = await this.sdk.httpClient.request(finalizeUrl.toString(), {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${this.sessionId}` },
+			headers: { Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
 			credentials: 'include',
 		});
 		const redirectUri = new URL(await response.text());

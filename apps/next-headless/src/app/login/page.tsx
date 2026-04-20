@@ -88,6 +88,11 @@ export default function Login() {
 				const url = new URL(window.location.href);
 				const sid = url.searchParams.get('session_id');
 				setSessionId(sid);
+
+				if (url.searchParams.has('language')) {
+					extraParams.uiLocales = [url.searchParams.get('language')!];
+				}
+
 				url.search = '';
 				window.history.replaceState({}, '', url.toString());
 			}

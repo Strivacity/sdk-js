@@ -84,7 +84,7 @@ In `native` mode, `login()` returns a `NativeFlowHandler` instance that drives t
 
 #### Login page example
 
-The login page extracts `session_id` from the URL on load and passes it to `startSession()` to resume an existing flow or start a new one:
+The login page extracts `session_id` and optionally `language` from the URL on load and passes them to `startSession()` to resume an existing flow or start a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language:
 
 ```js
 import { initFlow } from '@strivacity/sdk-core';

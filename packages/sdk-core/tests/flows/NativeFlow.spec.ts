@@ -731,15 +731,16 @@ describe('NativeFlow', () => {
 				flow.httpClient.request = vi.fn().mockResolvedValue({
 					ok: true,
 					status: 200,
-					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234'),
+					text: () => Promise.resolve('https://brandtegrity.io/entry?session_id=abcd1234&language=en-US'),
 				});
 
 				const data = await flow.entry('http://localhost:4200/entry');
 
 				expect(flow.httpClient.request).toHaveBeenCalledWith(
 					`${flow.options.issuer}/provider/flow/entry?sdk=web&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
+					{ headers: { 'Accept-Language': '*' } },
 				);
-				expect(data).toEqual({ session_id: 'abcd1234' });
+				expect(data).toEqual({ session_id: 'abcd1234', language: 'en-US' });
 			});
 
 			test('should get back session_id from response.url when text() throws', async () => {
@@ -748,13 +749,13 @@ describe('NativeFlow', () => {
 				flow.httpClient.request = vi.fn().mockResolvedValue({
 					ok: true,
 					status: 200,
-					url: 'https://brandtegrity.io/entry?session_id=xyz789',
+					url: 'https://brandtegrity.io/entry?session_id=xyz789&language=en-US',
 					text: () => Promise.reject(new Error('Invalid text')),
 				});
 
 				const data = await flow.entry('http://localhost:4200/entry');
 
-				expect(data).toEqual({ session_id: 'xyz789' });
+				expect(data).toEqual({ session_id: 'xyz789', language: 'en-US' });
 			});
 
 			test('should throw error on failed request with status 400 and error object', async () => {

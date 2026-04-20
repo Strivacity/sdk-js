@@ -22,6 +22,10 @@
 		shortAppId = $page.url.searchParams.get('short_app_id');
 		sessionId = $page.url.searchParams.get('session_id');
 
+		if ($page.url.searchParams.has('language')) {
+			extraParams.uiLocales = [$page.url.searchParams.get('language')!];
+		}
+
 		history.replaceState({}, '', $page.url.pathname);
 	}
 
