@@ -1,3 +1,13 @@
+## 3.0.1 (2026-04-20)
+
+### 🩹 Fixes
+
+- handle language parameter from response body url correctly ([e42294b](https://github.com/Strivacity/sdk-js/commit/e42294b))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 3.0.1
+
 # 3.0.0 (2026-04-09)
 
 ### 🚀 Features
