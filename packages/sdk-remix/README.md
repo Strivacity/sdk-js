@@ -485,6 +485,55 @@ export class MyLogger implements SDKLogging {
 
 The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
 
+## HTTP Client
+
+The SDK uses a built-in `fetch`-based HTTP client for all requests. You can replace it with your own implementation by extending `SDKHttpClient` and passing your class via the `httpClient` option. This is useful when you need to attach custom headers (e.g. `x-sty-app-id`) to every outgoing request or route traffic through a proxy.
+
+### Adding custom headers to every request
+
+```tsx
+import { StyAuthProvider, SDKHttpClient, type HttpClientResponse, type SDKOptions } from '@strivacity/sdk-remix';
+
+class CustomHttpClient extends SDKHttpClient {
+	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
+		const mergedOptions: RequestInit = {
+			...options,
+			headers: {
+				'x-sty-app-id': 'my-app',
+				...(options?.headers as Record<string, string>),
+			},
+		};
+
+		const response = await fetch(url, mergedOptions);
+
+		return {
+			headers: response.headers,
+			ok: response.ok,
+			status: response.status,
+			statusText: response.statusText,
+			url: response.url,
+			json: async () => (await response.json()) as T,
+			text: async () => await response.text(),
+		};
+	}
+}
+
+const options: SDKOptions = {
+	// ...other options
+	httpClient: CustomHttpClient,
+};
+```
+
+Any header you add inside `request()` is automatically included in every SDK request
+
+### CORS configuration
+
+For custom request headers to reach the Strivacity cluster, the cluster must be configured to explicitly allow them. Add the header name(s) to the **Access-Control-Allow-Headers** list in the cluster settings. Without this, browsers will block the preflight `OPTIONS` request and the SDK call will fail with a CORS error.
+
+```
+Access-Control-Allow-Headers: x-sty-app-id, <any other custom headers>
+```
+
 ## API Documentation
 
 ### `useStrivacity` hook
