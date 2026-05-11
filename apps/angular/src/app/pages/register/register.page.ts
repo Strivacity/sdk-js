@@ -18,6 +18,7 @@ export class RegisterPage implements OnInit, OnDestroy {
 	readonly subscription = new Subscription();
 	shortAppId: string | null = null;
 	sessionId: string | null = null;
+	language: string | null = null;
 	options: SDKOptions;
 	extraParams: ExtraRequestArgs = {
 		prompt: 'create',
@@ -39,7 +40,7 @@ export class RegisterPage implements OnInit, OnDestroy {
 			this.sessionId = url.searchParams.get('session_id');
 
 			if (url.searchParams.has('language')) {
-				this.extraParams.uiLocales = [url.searchParams.get('language')!];
+				this.language = url.searchParams.get('language');
 			}
 
 			url.search = '';
@@ -97,5 +98,9 @@ export class RegisterPage implements OnInit, OnDestroy {
 
 	onBlockReady(_events: { previousState: LoginFlowState; state: LoginFlowState }) {
 		// You can handle block ready events here
+	}
+
+	onLanguageChange(language: string | null) {
+		this.language = language;
 	}
 }

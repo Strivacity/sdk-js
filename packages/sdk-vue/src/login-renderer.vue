@@ -14,11 +14,13 @@ const props = withDefaults(
 	defineProps<{
 		params?: NativeParams;
 		widgets?: PartialRecord<WidgetType, Component>;
+		language?: string | null;
 		sessionId?: string | null;
 	}>(),
 	{
 		params: () => ({}),
 		widgets: () => ({}),
+		language: navigator.language,
 		sessionId: null,
 	},
 );
@@ -30,6 +32,7 @@ const emit = defineEmits<{
 	error: [any];
 	globalMessage: [string];
 	blockReady: [{ previousState: LoginFlowState; state: LoginFlowState }];
+	'update:language': [string | null];
 }>();
 
 const WidgetRenderer = defineComponent({
@@ -98,7 +101,8 @@ provide<NativeFlowContextValue>('nativeFlowContext', {
 
 onMounted(async () => {
 	try {
-		const data = await loginHandler.startSession(props.sessionId);
+		const data = await loginHandler.startSession(props.sessionId, props.language);
+		emit('update:language', loginHandler.language);
 
 		if (data) {
 			await handleResponse(data);

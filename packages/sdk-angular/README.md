@@ -387,13 +387,15 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
+The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it is passed to the renderer which uses it for the authentication UI and emits the resolved language via `(languageChange)`.
 
 ```html
 <!-- login.component.html -->
 <sty-login-renderer
 	[widgets]="widgets"
 	[sessionId]="sessionId"
+	[language]="language"
+	(languageChange)="onLanguageChange($event)"
 	(login)="onLogin()"
 	(fallback)="onFallback($event)"
 	(error)="onError($event)"
@@ -418,6 +420,7 @@ import { widgets } from './components/widgets';
 export class LoginComponent implements OnInit {
 	widgets = widgets;
 	sessionId: string | null = null;
+	language: string | null = null;
 
 	constructor(private router: Router) {}
 
@@ -425,6 +428,11 @@ export class LoginComponent implements OnInit {
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
 			this.sessionId = url.searchParams.get('session_id');
+
+			if (url.searchParams.has('language')) {
+				this.language = url.searchParams.get('language');
+			}
+
 			url.search = '';
 			history.replaceState({}, '', url.toString());
 		}
@@ -453,6 +461,10 @@ export class LoginComponent implements OnInit {
 	onBlockReady({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }): void {
 		console.log('previousState', previousState);
 		console.log('state', state);
+	}
+
+	onLanguageChange(language: string | null): void {
+		this.language = language;
 	}
 }
 ```
@@ -793,6 +805,7 @@ Used in `native` mode to render the authentication UI with your own widget compo
 - **`params?: NativeParams`**: Additional parameters for the native login flow.
 - **`widgets?: PartialRecord<WidgetType, Type<any>>`**: Custom Angular components for each widget type used in the flow.
 - **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
+- **`language?: string | null`**: Language tag (e.g. `"en-US"`) for the authentication UI. Defaults to `navigator.language`. After the session starts the component emits the resolved language via `(languageChange)`. See the [Translations](https://docs.strivacity.com/docs/translations) page to learn about language precedence implemented by the product.
 
 **Outputs**
 
@@ -801,6 +814,7 @@ Used in `native` mode to render the authentication UI with your own widget compo
 - **`(error)`**: Emitted when an error occurs during authentication.
 - **`(globalMessage)`**: Emitted when the flow wants to display a global message (e.g. account lockout warning).
 - **`(blockReady)`**: Emitted on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
+- **`(languageChange)`**: Emitted after the session starts with the resolved language string.
 
 ## Vulnerability Reporting
 

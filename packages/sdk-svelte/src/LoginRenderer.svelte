@@ -21,22 +21,26 @@
 		params,
 		widgets,
 		sessionId = null,
+		language = null,
 		onlogin,
 		onfallback,
 		onclose,
 		onerror,
 		onglobalmessage,
 		onblockready,
+		onlanguagechange,
 	}: {
 		params?: NativeParams;
 		widgets?: PartialRecord<WidgetType, Component>;
 		sessionId?: string | null;
+		language?: string | null;
 		onlogin?: (claims?: IdTokenClaims | null) => void;
 		onfallback?: (error: FallbackError) => void;
 		onclose?: () => void;
 		onerror?: (error: any) => void;
 		onglobalmessage?: (message: string) => void;
 		onblockready?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
+		onlanguagechange?: (language: string | null) => void;
 	} = $props();
 
 	const { sdk } = useStrivacity<NativeContext>();
@@ -204,7 +208,8 @@
 
 	onMount(async () => {
 		try {
-			const data = await loginHandler?.startSession(sessionId);
+			const data = await loginHandler?.startSession(sessionId, language);
+			onlanguagechange?.(loginHandler.language);
 
 			if (data) {
 				await handleResponse(data);

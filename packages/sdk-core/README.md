@@ -255,10 +255,14 @@ import { CustomNativeFlow } from './CustomNativeFlow';
 export class CustomNativeFlowHandler extends NativeFlowHandler {
 	declare sdk: CustomNativeFlow;
 
-	override async startSession(sessionId?: string | null): Promise<LoginFlowState | void> {
+	override async startSession(sessionId?: string | null, language?: string | null): Promise<LoginFlowState | void> {
 		if (sessionId) {
 			this.sessionId = sessionId;
 			return this.submitForm();
+		}
+
+		if (language) {
+			this.language = language;
 		}
 
 		const response = await this.sdk.httpClient.request(new URL('/api/session/start', location.origin).toString(), {

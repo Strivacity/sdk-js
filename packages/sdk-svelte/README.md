@@ -233,7 +233,7 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
+The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it is passed to the renderer which uses it for the authentication UI and calls `onlanguagechange` with the resolved language.
 
 ```svelte
 <!-- src/routes/login/+page.svelte -->
@@ -243,10 +243,16 @@ import { StyLoginRenderer, type FallbackError, type LoginFlowState } from '@stri
 import { widgets } from '$lib/components/widgets';
 
 let sessionId: string | null = null;
+let language: string | null = null;
 
 if (window.location.search !== '') {
 	const url = new URL(window.location.href);
 	sessionId = url.searchParams.get('session_id');
+
+	if (url.searchParams.has('language')) {
+		language = url.searchParams.get('language');
+	}
+
 	url.search = '';
 	history.replaceState({}, '', url.toString());
 }
@@ -280,11 +286,13 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 <StyLoginRenderer
 	{widgets}
 	{sessionId}
-	on:login={onLogin}
-	on:fallback={({ detail }) => onFallback(detail)}
-	on:error={({ detail }) => onError(detail)}
-	on:globalMessage={({ detail }) => onGlobalMessage(detail)}
-	on:blockReady={({ detail }) => onBlockReady(detail)}
+	{language}
+	onlanguagechange={(lang) => (language = lang)}
+	onlogin={onLogin}
+	onfallback={({ detail }) => onFallback(detail)}
+	onerror={({ detail }) => onError(detail)}
+	onglobalmessage={({ detail }) => onGlobalMessage(detail)}
+	onblockready={({ detail }) => onBlockReady(detail)}
 />
 ```
 
@@ -577,14 +585,16 @@ Used in `native` mode to render the authentication UI with your own widget compo
 - **`params?: NativeParams`**: Additional parameters for the native login flow.
 - **`widgets?: PartialRecord<WidgetType, SvelteComponent>`**: Custom Svelte components for each widget type used in the flow.
 - **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
+- **`language?: string | null`**: Language tag (e.g. `"en-US"`) for the authentication UI. Defaults to `navigator.language`. After the session starts the component calls `onlanguagechange` with the resolved language. See the [Translations](https://docs.strivacity.com/docs/translations) page to learn about language precedence implemented by the product.
 
 **Events**
 
-- **`on:login`**: Dispatched on successful authentication. Receives `IdTokenClaims | null`.
-- **`on:fallback`**: Dispatched when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
-- **`on:error`**: Dispatched when an error occurs during authentication.
-- **`on:globalMessage`**: Dispatched when the flow wants to display a global message (e.g. account lockout warning).
-- **`on:blockReady`**: Dispatched on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
+- **`onlogin`**: Called on successful authentication. Receives `IdTokenClaims | null`.
+- **`onfallback`**: Called when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
+- **`onerror`**: Called when an error occurs during authentication.
+- **`onglobalmessage`**: Called when the flow wants to display a global message (e.g. account lockout warning).
+- **`onblockready`**: Called on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
+- **`onlanguagechange`**: Called after the session starts with the resolved language string.
 
 ## Vulnerability Reporting
 

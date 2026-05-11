@@ -15,6 +15,7 @@ import { widgets } from '../../components/widgets';
 export class RegisterPage {
 	readonly widgets = widgets;
 	sessionId: string | null = null;
+	language: string | null = null;
 	extraParams: ExtraRequestArgs = {
 		prompt: 'create',
 		loginHint: (import.meta as unknown as ImportMeta).env.VITE_LOGIN_HINT,
@@ -32,7 +33,7 @@ export class RegisterPage {
 			this.sessionId = url.searchParams.get('session_id');
 
 			if (url.searchParams.has('language')) {
-				this.extraParams.uiLocales = [url.searchParams.get('language')!];
+				this.language = url.searchParams.get('language');
 			}
 
 			url.search = '';
@@ -66,5 +67,9 @@ export class RegisterPage {
 
 	onBlockReady(_events: { previousState: LoginFlowState; state: LoginFlowState }) {
 		// You can handle block ready events here
+	}
+
+	onLanguageChange(language: string | null) {
+		this.language = language;
 	}
 }

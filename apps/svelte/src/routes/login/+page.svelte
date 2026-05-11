@@ -11,6 +11,7 @@
 	const { sdk, login } = useStrivacity();
 	let shortAppId = $state<string | null>(null);
 	let sessionId = $state<string | null>(null);
+	let language = $state<string | null>(null);
 	const extraParams: ExtraRequestArgs = {
 		loginHint: import.meta.env.VITE_LOGIN_HINT,
 		acrValues: import.meta.env.VITE_ACR_VALUES ? import.meta.env.VITE_ACR_VALUES.split(' ') : undefined,
@@ -23,7 +24,7 @@
 		sessionId = $page.url.searchParams.get('session_id');
 
 		if ($page.url.searchParams.has('language')) {
-			extraParams.uiLocales = [$page.url.searchParams.get('language')!];
+			language = $page.url.searchParams.get('language');
 		}
 
 		history.replaceState({}, '', $page.url.pathname);
@@ -93,6 +94,8 @@
 			params={extraParams}
 			{widgets}
 			{sessionId}
+			{language}
+			onlanguagechange={(lang) => (language = lang)}
 			onfallback={onFallback}
 			onclose={onClose}
 			onlogin={onLogin}

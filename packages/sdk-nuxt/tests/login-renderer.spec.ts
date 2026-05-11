@@ -299,15 +299,16 @@ describe('StyLoginRenderer', () => {
 
 		test('calls startSession on mount w/ sessionId', async () => {
 			const sessionId = 'test-session-123';
-			component = await componentFactory({ sessionId });
+			const language = 'de-DE';
+			component = await componentFactory({ sessionId, language });
 
-			expect(mockLoginHandler.startSession).toHaveBeenCalledWith(sessionId);
+			expect(mockLoginHandler.startSession).toHaveBeenCalledWith(sessionId, language);
 		});
 
 		test('calls startSession w/ null when no sessionId provided', async () => {
 			component = await componentFactory();
 
-			expect(mockLoginHandler.startSession).toHaveBeenCalledWith(null);
+			expect(mockLoginHandler.startSession).toHaveBeenCalledWith(null, 'en-US');
 		});
 
 		test('emits fallback correctly', async () => {

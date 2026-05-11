@@ -358,7 +358,7 @@ describe('NativeFlowHandler', () => {
 			expect(loggingSpy.debug).toHaveBeenCalledWith('Finalizing login flow session');
 			expect(spies.httpClient).toHaveBeenCalledWith(`${options.issuer}/oauth2/finalize`, {
 				method: 'GET',
-				headers: { Authorization: `Bearer sessionId`, 'Accept-language': '*' },
+				headers: { Authorization: `Bearer sessionId`, 'Accept-language': 'en-US' },
 				credentials: 'include',
 			});
 			expect(spies.tokenExchange).toHaveBeenCalledWith({ code: '1234' });

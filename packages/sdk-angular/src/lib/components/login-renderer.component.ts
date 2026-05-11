@@ -27,6 +27,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	@Input({ required: true }) widgets!: Record<WidgetType, Type<any>>;
 	@Input() sessionId?: string | null;
+	@Input() language?: string | null;
 	@Input() params: NativeParams = {};
 
 	@Output('login') readonly onLogin = new EventEmitter<IdTokenClaims | null | undefined>();
@@ -36,6 +37,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 	@Output('error') readonly onError = new EventEmitter<any>();
 	@Output('globalMessage') readonly onGlobalMessage = new EventEmitter<string>();
 	@Output('blockReady') readonly onBlockReady = new EventEmitter<{ previousState: LoginFlowState; state: LoginFlowState }>();
+	@Output('languageChange') readonly onLanguageChange = new EventEmitter<string | null>();
 
 	@ViewChild('container', { read: ViewContainerRef, static: true }) readonly $containerRef!: ViewContainerRef;
 
@@ -140,7 +142,7 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 		try {
 			this.loginHandler = this.authService.sdk.login(this.params);
 
-			const data = (await this.loginHandler.startSession(this.sessionId)) as LoginFlowState;
+			const data = (await this.loginHandler.startSession(this.sessionId, this.language)) as LoginFlowState;
 			const previousState = JSON.parse(JSON.stringify(this.widgetService.state$.value));
 			const newState = {
 				hostedUrl: data?.hostedUrl ?? this.widgetService.state$.value.hostedUrl,
@@ -151,6 +153,8 @@ export class StyLoginRenderer implements OnInit, OnDestroy {
 				messages: data?.messages ?? {},
 				branding: data?.branding ?? this.widgetService.state$.value.branding,
 			};
+
+			this.onLanguageChange.emit(this.loginHandler.language);
 
 			if (await this.authService.sdk.isAuthenticated) {
 				this.onLogin.emit(this.authService.sdk.idTokenClaims);

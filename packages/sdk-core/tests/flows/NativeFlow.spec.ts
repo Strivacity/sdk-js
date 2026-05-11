@@ -738,7 +738,6 @@ describe('NativeFlow', () => {
 
 				expect(flow.httpClient.request).toHaveBeenCalledWith(
 					`${flow.options.issuer}/provider/flow/entry?sdk=web&client_id=${flow.options.clientId}&redirect_uri=${encodeURIComponent(flow.options.redirectUri)}`,
-					{ headers: { 'Accept-Language': '*' } },
 				);
 				expect(data).toEqual({ session_id: 'abcd1234', language: 'en-US' });
 			});

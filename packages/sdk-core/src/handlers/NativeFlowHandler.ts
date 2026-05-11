@@ -8,14 +8,19 @@ export class NativeFlowHandler extends BaseFlowHandler {
 	 * Starts a new session.
 	 *
 	 * @param {string} [sessionId] - The session ID to start the session with. If not provided, a new session will be created.
+	 * @param {string} [language] - The language to use for the authentication flow. If not provided, the browser's language setting will be used.
 	 * @returns {Promise<LoginFlowState | void>}
 	 *
 	 * @throws {Error} Throws an error if callback handler is not defined, redirect URI is invalid, authorization error occurs, or session ID is missing.
 	 */
-	async startSession(sessionId?: string | null): Promise<LoginFlowState | void> {
+	async startSession(sessionId?: string | null, language?: string | null): Promise<LoginFlowState | void> {
 		if (this.sdk.logging) {
 			this.sdk.logging.xEventId = undefined;
 			this.sdk.logging.info('Starting login flow session');
+		}
+
+		if (language) {
+			this.language = language;
 		}
 
 		if (sessionId) {
@@ -36,7 +41,7 @@ export class NativeFlowHandler extends BaseFlowHandler {
 		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), {
 			method: 'GET',
 			credentials: 'include',
-			headers: { 'Accept-language': '*' },
+			headers: { 'Accept-language': this.language },
 		});
 
 		if (!response.ok) {
@@ -83,7 +88,7 @@ export class NativeFlowHandler extends BaseFlowHandler {
 		}
 
 		if (uri.searchParams.has('language')) {
-			this.locale = uri.searchParams.get('language')!;
+			this.language = uri.searchParams.get('language')!;
 		}
 
 		this.sessionId = uri.searchParams.get('session_id');
@@ -103,7 +108,10 @@ export class NativeFlowHandler extends BaseFlowHandler {
 
 		const response = await this.sdk.httpClient.request(finalizeUrl.toString(), {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
+			headers: {
+				Authorization: `Bearer ${this.sessionId}`,
+				'Accept-language': this.language,
+			},
 			credentials: 'include',
 		});
 		const redirectUri = new URL(await response.text());
@@ -142,7 +150,11 @@ export class NativeFlowHandler extends BaseFlowHandler {
 			new URL(`/flow/api/v1/${formId ? `form/${formId}` : 'init'}`, this.sdk.options.issuer).toString(),
 			{
 				method: 'POST',
-				headers: { Authorization: `Bearer ${this.sessionId}`, 'Content-Type': 'application/json', 'Accept-language': this.locale },
+				headers: {
+					Authorization: `Bearer ${this.sessionId}`,
+					'Content-Type': 'application/json',
+					'Accept-language': this.language,
+				},
 				body: JSON.stringify(body),
 				credentials: 'include',
 			},
