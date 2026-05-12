@@ -13,7 +13,10 @@ export class CustomEmbeddedFlowHandler extends EmbeddedFlowHandler {
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/start', location.origin).toString(), {
 			method: 'POST',
 			credentials: 'include',
-			headers: { 'Content-Type': 'application/json', 'Accept-language': '*' },
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept-language': this.language,
+			},
 			body: JSON.stringify(this.params),
 		});
 
@@ -77,7 +80,11 @@ export class CustomEmbeddedFlowHandler extends EmbeddedFlowHandler {
 
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/finalize', location.origin).toString(), {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.sessionId}`,
+				'Accept-language': this.language,
+			},
 			body: JSON.stringify(Object.fromEntries(redirectUri.searchParams)),
 			credentials: 'include',
 		});

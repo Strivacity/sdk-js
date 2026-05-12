@@ -10,13 +10,13 @@ export abstract class BaseFlowHandler {
 	protected sessionId: string | null = null;
 
 	/**
-	 * The locale to use for the authentication flow.
+	 * The language to use for the authentication flow.
 	 *
 	 * Defaults to the browser's language setting.
 	 *
 	 * @type {string}
 	 */
-	locale!: string;
+	language!: string;
 
 	constructor(
 		/**
@@ -32,18 +32,19 @@ export abstract class BaseFlowHandler {
 		 */
 		protected params: NativeParams = {},
 	) {
-		this.locale = params.uiLocales?.[0] || navigator.language;
+		this.language = navigator.language;
 	}
 
 	/**
 	 * Starts a new session.
 	 *
 	 * @param {string} [sessionId] - The session ID to start the session with. If not provided, a new session will be created.
+	 * @param {string} [language] - The language to use for the authentication flow. If not provided, the browser's language setting will be used.
 	 * @returns {Promise<LoginFlowState | void>}
 	 *
 	 * @throws {Error} Throws an error if callback handler is not defined, redirect URI is invalid, authorization error occurs, or session ID is missing.
 	 */
-	abstract startSession(sessionId?: string | null): Promise<LoginFlowState | void>;
+	abstract startSession(sessionId?: string | null, language?: string | null): Promise<LoginFlowState | void>;
 
 	/**
 	 * Finalizes the session using the provided [finalizeUrl].

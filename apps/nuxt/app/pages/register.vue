@@ -8,6 +8,7 @@ const router = useRouter();
 const { sdk, register } = useStrivacity();
 const shortAppId = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
+const language = ref<string | null>(null);
 const extraParams: ExtraRequestArgs = {
 	prompt: 'create',
 	loginHint: runtimeConfig.public.LOGIN_HINT,
@@ -22,7 +23,7 @@ if (window.location.search !== '') {
 	sessionId.value = url.searchParams.get('session_id');
 
 	if (url.searchParams.has('language')) {
-		extraParams.uiLocales = [url.searchParams.get('language')!];
+		language.value = url.searchParams.get('language');
 	}
 
 	url.search = '';
@@ -82,6 +83,7 @@ const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlow
 		<Suspense v-else-if="sdk.options.mode === 'native'">
 			<template #default>
 				<StyLoginRenderer
+					v-model:language="language"
 					:widgets="widgets"
 					:session-id="sessionId"
 					:params="extraParams"

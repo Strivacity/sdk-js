@@ -290,7 +290,7 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
+The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it is passed to the renderer which uses it for the authentication UI and calls `onLanguageChange` with the resolved language.
 
 ```tsx
 'use client';
@@ -303,11 +303,17 @@ import { widgets } from '@/components/widgets';
 export default function Login() {
 	const router = useRouter();
 	const [sessionId, setSessionId] = useState<string | null>(null);
+	const [language, setLanguage] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (window.location.search !== '') {
 			const url = new URL(window.location.href);
 			setSessionId(url.searchParams.get('session_id'));
+
+			if (url.searchParams.has('language')) {
+				setLanguage(url.searchParams.get('language'));
+			}
+
 			url.search = '';
 			window.history.replaceState({}, '', url.toString());
 		}
@@ -342,6 +348,8 @@ export default function Login() {
 		<StyLoginRenderer
 			widgets={widgets}
 			sessionId={sessionId}
+			language={language}
+			onLanguageChange={(lang) => setLanguage(lang)}
 			onFallback={onFallback}
 			onLogin={() => void onLogin()}
 			onError={onError}
@@ -642,6 +650,7 @@ Used in `native` mode to render the authentication UI with your own widget compo
 - **`params?: NativeParams`**: Additional parameters for the native login flow.
 - **`widgets?: PartialRecord<WidgetType, React.ComponentType>`**: Custom React components for each widget type used in the flow.
 - **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
+- **`language?: string | null`**: Language tag (e.g. `"en-US"`) for the authentication UI. Defaults to `navigator.language`. After the session starts the component calls `onLanguageChange` with the resolved language. See the [Translations](https://docs.strivacity.com/docs/translations) page to learn about language precedence implemented by the product.
 
 **Event callbacks**
 
@@ -650,6 +659,7 @@ Used in `native` mode to render the authentication UI with your own widget compo
 - **`onError`**: Called when an error occurs during authentication.
 - **`onGlobalMessage`**: Called when the flow wants to display a global message (e.g. account lockout warning).
 - **`onBlockReady`**: Called on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
+- **`onLanguageChange`**: Called after the session starts with the resolved language string.
 
 ## Vulnerability Reporting
 

@@ -12,6 +12,7 @@ export default function Login() {
 	const [urlHandled, setUrlHandled] = useState<boolean>(false);
 	const [shortAppId, setShortAppId] = useState<string | null>(null);
 	const [sessionId, setSessionId] = useState<string | null>(null);
+	const [language, setLanguage] = useState<string | null>(null);
 	const loginRef = useRef<(HTMLElement & { __cleanup: () => void }) | null>(null);
 
 	const extraParams: ExtraRequestArgs = {
@@ -30,7 +31,7 @@ export default function Login() {
 			setSessionId(sid);
 
 			if (url.searchParams.has('language')) {
-				extraParams.uiLocales = [url.searchParams.get('language')!];
+				setLanguage(url.searchParams.get('language'));
 			}
 
 			url.search = '';
@@ -124,6 +125,8 @@ export default function Login() {
 						params={extraParams}
 						widgets={widgets}
 						sessionId={sessionId}
+						language={language}
+						onLanguageChange={(lang) => setLanguage(lang)}
 						onFallback={onFallback}
 						onClose={onClose}
 						onLogin={() => void onLogin()}

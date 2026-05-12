@@ -61,17 +61,20 @@ export const StyLoginRenderer: React.FC<{
 	params?: NativeParams;
 	widgets?: PartialRecord<WidgetType, React.ComponentType<any>>;
 	sessionId?: string | null;
+	language?: string | null;
 	onLogin?: (claims?: IdTokenClaims | null) => void;
 	onFallback?: (error: FallbackError) => void;
 	onClose?: () => void;
 	onError?: (error: any) => void;
 	onGlobalMessage?: (message: string) => void;
 	onBlockReady?: ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => void;
+	onLanguageChange?: (language: string | null) => void;
 }> = (props) => {
-	const { params, widgets, sessionId, onLogin, onFallback, onClose, onError, onGlobalMessage, onBlockReady } = {
+	const { params, widgets, sessionId, language, onLogin, onFallback, onClose, onError, onGlobalMessage, onBlockReady, onLanguageChange } = {
 		params: {},
 		widgets: {},
 		sessionId: null,
+		language: null,
 		...props,
 	};
 	const { sdk } = useStrivacity<NativeContext>();
@@ -204,7 +207,7 @@ export const StyLoginRenderer: React.FC<{
 
 		void (async () => {
 			try {
-				const data = await loginHandlerRef.current?.startSession(sessionId);
+				const data = await loginHandlerRef.current?.startSession(sessionId, language);
 				const previousState = structuredClone(state);
 				const newState: LoginFlowState = {
 					hostedUrl: data?.hostedUrl ?? state.hostedUrl,
@@ -215,6 +218,8 @@ export const StyLoginRenderer: React.FC<{
 					messages: data?.messages ?? {},
 					branding: data?.branding ?? state.branding,
 				};
+
+				onLanguageChange?.(loginHandlerRef.current?.language ?? null);
 
 				if (await sdk.isAuthenticated) {
 					onLogin?.(sdk.idTokenClaims);

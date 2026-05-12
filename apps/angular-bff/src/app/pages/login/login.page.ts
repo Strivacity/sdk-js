@@ -17,6 +17,7 @@ export class LoginPage {
 	readonly widgets = widgets;
 	shortAppId: string | null = null;
 	sessionId: string | null = null;
+	language: string | null = null;
 	mode: SDKOptions['mode'] = 'embedded';
 	extraParams: ExtraRequestArgs = {
 		loginHint: (import.meta as unknown as ImportMeta).env.VITE_LOGIN_HINT,
@@ -36,7 +37,7 @@ export class LoginPage {
 			this.sessionId = url.searchParams.get('session_id');
 
 			if (url.searchParams.has('language')) {
-				this.extraParams.uiLocales = [url.searchParams.get('language')!];
+				this.language = url.searchParams.get('language');
 			}
 
 			url.search = '';
@@ -70,5 +71,9 @@ export class LoginPage {
 
 	onBlockReady(_events: { previousState: LoginFlowState; state: LoginFlowState }) {
 		// You can handle block ready events here
+	}
+
+	onLanguageChange(language: string | null) {
+		this.language = language;
 	}
 }

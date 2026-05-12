@@ -20,6 +20,8 @@
 		[params]="extraParams"
 		[widgets]="widgets"
 		[sessionId]="sessionId"
+		[language]="language"
+		(languageChange)="onLanguageChange($event)"
 		(fallback)="onFallback($event)"
 		(close)="onClose($event)"
 		(login)="onLogin()"

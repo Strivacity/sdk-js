@@ -230,7 +230,7 @@ export const widgets = {
 
 #### Login page example
 
-The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it overrides `uiLocales` to display the authentication UI in the specified language.
+The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it is passed to the renderer which uses it for the authentication UI and emits the resolved language back via `v-model:language`.
 
 ```vue
 <script setup lang="ts">
@@ -240,10 +240,16 @@ import { widgets } from '~/components/widgets';
 
 const router = useRouter();
 const sessionId = ref<string | null>(null);
+const language = ref<string | null>(null);
 
 if (window.location.search !== '') {
 	const url = new URL(window.location.href);
 	sessionId.value = url.searchParams.get('session_id');
+
+	if (url.searchParams.has('language')) {
+		language.value = url.searchParams.get('language');
+	}
+
 	url.search = '';
 	history.replaceState({}, '', url.toString());
 }
@@ -276,6 +282,7 @@ const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState;
 
 <template>
 	<StyLoginRenderer
+		v-model:language="language"
 		:widgets="widgets"
 		:session-id="sessionId"
 		@fallback="onFallback"
@@ -568,6 +575,7 @@ Auto-imported in `native` mode to render the authentication UI with your own wid
 - **`params?: NativeParams`**: Additional parameters for the native login flow.
 - **`widgets?: PartialRecord<WidgetType, Vue.Component>`**: Custom Vue components for each widget type used in the flow.
 - **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
+- **`language?: string | null`**: Language tag (e.g. `"en-US"`) for the authentication UI. Defaults to `navigator.language`. Supports two-way binding via `v-model:language` — after the session starts the component emits the resolved language back to the parent. See the [Translations](https://docs.strivacity.com/docs/translations) page to learn about language precedence implemented by the product.
 
 **Events**
 
@@ -576,6 +584,7 @@ Auto-imported in `native` mode to render the authentication UI with your own wid
 - **`@error`**: Emitted when an error occurs during authentication.
 - **`@global-message`**: Emitted when the flow wants to display a global message (e.g. account lockout warning).
 - **`@block-ready`**: Emitted on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
+- **`@update:language`**: Emitted after the session starts with the resolved language string. Used automatically by `v-model:language`.
 
 ## Vulnerability Reporting
 

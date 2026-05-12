@@ -15,7 +15,6 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 	/**
 	 * Starts a new session.
 	 *
-	 * @param {string} [sessionId] - The session ID to start the session with. If not provided, a new session will be created.
 	 * @returns {Promise<void>}
 	 *
 	 * @throws {Error} Throws an error if callback handler is not defined, redirect URI is invalid, authorization error occurs, or session ID is missing.
@@ -41,7 +40,7 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 		const response = await this.sdk.httpClient.request(authorizationUrl.toString(), {
 			method: 'GET',
 			credentials: 'include',
-			headers: { 'Accept-language': '*' },
+			headers: { 'Accept-language': this.language },
 		});
 
 		if (!response.ok) {
@@ -82,7 +81,7 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 		}
 
 		if (uri.searchParams.has('language')) {
-			this.locale = uri.searchParams.get('language')!;
+			this.language = uri.searchParams.get('language')!;
 		}
 
 		this.shortAppId = uri.searchParams.get('short_app_id');
@@ -112,7 +111,10 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 
 		const response = await this.sdk.httpClient.request(finalizeUrl.toString(), {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
+			headers: {
+				Authorization: `Bearer ${this.sessionId}`,
+				'Accept-language': this.language,
+			},
 			credentials: 'include',
 		});
 		const redirectUri = new URL(await response.text());

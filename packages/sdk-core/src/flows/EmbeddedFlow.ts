@@ -51,11 +51,6 @@ export class EmbeddedFlow extends BaseFlow<SDKOptions, ExtraRequestArgs> {
 
 		const response = await this.httpClient.request<string | Record<string, string>>(
 			`${this.options.issuer}/provider/flow/entry?${entryUrl.searchParams.toString()}`,
-			{
-				headers: {
-					'Accept-Language': '*',
-				},
-			},
 		);
 
 		if (!response.ok) {

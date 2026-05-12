@@ -56,11 +56,6 @@ export class NativeFlow extends BaseFlow<SDKOptions, NativeParams> {
 
 		const response = await this.httpClient.request<string | Record<string, string>>(
 			`${this.options.issuer}/provider/flow/entry?${entryUrl.searchParams.toString()}`,
-			{
-				headers: {
-					'Accept-Language': '*',
-				},
-			},
 		);
 
 		if (!response.ok) {

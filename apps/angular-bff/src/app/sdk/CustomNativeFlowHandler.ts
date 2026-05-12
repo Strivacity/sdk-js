@@ -5,10 +5,14 @@ import { CustomNativeFlow } from './CustomNativeFlow';
 export class CustomNativeFlowHandler extends NativeFlowHandler {
 	declare sdk: CustomNativeFlow;
 
-	override async startSession(sessionId?: string | null): Promise<LoginFlowState | void> {
+	override async startSession(sessionId?: string | null, language?: string | null): Promise<LoginFlowState | void> {
 		if (this.sdk.logging) {
 			this.sdk.logging.xEventId = undefined;
 			this.sdk.logging.info('Starting login flow session');
+		}
+
+		if (language) {
+			this.language = language;
 		}
 
 		if (sessionId) {
@@ -19,7 +23,10 @@ export class CustomNativeFlowHandler extends NativeFlowHandler {
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/start', location.origin).toString(), {
 			method: 'POST',
 			credentials: 'include',
-			headers: { 'Content-Type': 'application/json', 'Accept-language': '*' },
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept-language': this.language,
+			},
 			body: JSON.stringify(this.params),
 		});
 
@@ -79,7 +86,11 @@ export class CustomNativeFlowHandler extends NativeFlowHandler {
 
 		const response = await this.sdk.httpClient.request<Record<string, string>>(new URL('/api/session/finalize', location.origin).toString(), {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.sessionId}`, 'Accept-language': '*' },
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.sessionId}`,
+				'Accept-language': this.language,
+			},
 			body: JSON.stringify(Object.fromEntries(redirectUri.searchParams)),
 			credentials: 'include',
 		});
