@@ -1,3 +1,14 @@
+## 3.0.2 (2026-05-12)
+
+### 🩹 Fixes
+
+- language parameter added to the login renderer component ([c8f18d9](https://github.com/Strivacity/sdk-js/commit/c8f18d9))
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 3.0.2
+- Updated testing to 3.0.2
+
 ## 3.0.1 (2026-04-20)
 
 ### 🩹 Fixes
