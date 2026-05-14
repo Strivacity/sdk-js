@@ -229,6 +229,7 @@ export async function entrySession(params: Record<string, string> = {}) {
 
 	const sessionId = uri.searchParams.get('session_id');
 	const shortAppId = uri.searchParams.get('short_app_id') as string;
+	const language = uri.searchParams.get('language') as string;
 
 	if (!sessionId) {
 		const error = new Error('Session ID not found in entry response');
@@ -236,7 +237,7 @@ export async function entrySession(params: Record<string, string> = {}) {
 		throw error;
 	}
 
-	return { session_id: sessionId, short_app_id: shortAppId };
+	return { session_id: sessionId, short_app_id: shortAppId, language: language };
 }
 
 export async function finalizeSession(sessionId?: string, params: Record<string, string> = {}) {
