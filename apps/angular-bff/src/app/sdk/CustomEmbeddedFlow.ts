@@ -140,7 +140,7 @@ export class CustomEmbeddedFlow extends EmbeddedFlow {
 			throw error;
 		}
 
-		const { session_id, short_app_id } = await response.json();
+		const { session_id, short_app_id, language } = await response.json();
 
 		if (!short_app_id) {
 			const error = new Error('Short App ID not found in entry response');
@@ -153,6 +153,6 @@ export class CustomEmbeddedFlow extends EmbeddedFlow {
 			throw error;
 		}
 
-		return { session_id, short_app_id };
+		return { session_id: session_id, short_app_id: short_app_id, language: language };
 	}
 }
