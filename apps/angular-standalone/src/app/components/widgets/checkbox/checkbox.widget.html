@@ -1,0 +1,18 @@
+<div>
+	<input
+		[id]="config.id"
+		[name]="config.id"
+		[readonly]="config.readonly"
+		[required]="validator?.required"
+		[checked]="!!value"
+		type="checkbox"
+		size="1"
+		(change)="onChange($event)"
+	/>
+	@if (config.label) {
+	<label [for]="config.id" class="label">{{ config.label }}</label>
+	}
+</div>
+@if (errorMessage) {
+<small class="error">{{ errorMessage }}</small>
+}

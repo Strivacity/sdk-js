@@ -3,13 +3,12 @@
 import { Component, OnDestroy, OnInit, SkipSelf } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SDKOptions, StrivacityAuthService, FallbackError, StyLoginRenderer, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
+import { SDKOptions, StrivacityAuthService, FallbackError, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
 import { type ImportMeta } from '../../app.config';
 import { widgets } from '../../components/widgets';
 
 @Component({
-	standalone: true,
-	imports: [StyLoginRenderer],
+	standalone: false,
 	selector: 'app-register-page',
 	templateUrl: './register.page.html',
 })

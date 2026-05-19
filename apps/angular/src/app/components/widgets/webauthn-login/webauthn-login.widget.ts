@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { PasskeyLoginWidget as WebAuthnLoginWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService, getCredential } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-webauthn-login-widget',
 	templateUrl: './webauthn-login.widget.html',
 	styleUrls: ['./webauthn-login.widget.scss'],

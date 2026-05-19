@@ -29,6 +29,8 @@
     "sdk:core:test": "nx run sdk-core:test",
     "app:angular:serve": "nx run app-angular:serve",
     "app:angular:build": "nx run app-angular:build",
+    "app:angular-standalone:serve": "nx run app-angular-standalone:serve",
+    "app:angular-standalone:build": "nx run app-angular-standalone:build",
     "app:backend:serve": "nx run app-backend:serve",
     "app:backend:build": "nx run app-backend:build",
     "app:angular-bff:serve": "nx run app-angular-bff:serve",

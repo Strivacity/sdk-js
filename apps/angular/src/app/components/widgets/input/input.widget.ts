@@ -1,12 +1,10 @@
 import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { InputWidget as InputWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-input-widget',
 	templateUrl: './input.widget.html',
 	styleUrls: ['./input.widget.scss'],

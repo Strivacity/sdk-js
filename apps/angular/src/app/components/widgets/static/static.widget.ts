@@ -1,11 +1,9 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { StaticWidget as StaticWidgetConfig } from '@strivacity/sdk-core';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-static-widget',
 	templateUrl: './static.widget.html',
 	styleUrls: ['./static.widget.scss'],

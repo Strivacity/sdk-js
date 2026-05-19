@@ -1,13 +1,11 @@
 import { Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { DateWidget as DateWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 import { DateTime } from 'luxon';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-date-widget',
 	templateUrl: './date.widget.html',
 	styleUrls: ['./date.widget.scss'],
