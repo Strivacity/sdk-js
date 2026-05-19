@@ -192,29 +192,5 @@
     "vue-tsc": "^3.1.7",
     "webpack": "~5.99.9",
     "zone.js": "~0.16.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "@strivacity/sdk-angular": "workspace:*",
-      "@strivacity/sdk-core": "workspace:*",
-      "@strivacity/sdk-next": "workspace:*",
-      "@strivacity/sdk-nuxt": "workspace:*",
-      "@strivacity/sdk-svelte": "workspace:*",
-      "@strivacity/sdk-react": "workspace:*",
-      "@strivacity/sdk-remix": "workspace:*",
-      "@strivacity/sdk-vue": "workspace:*",
-      "@strivacity/testing": "workspace:*"
-    },
-    "ignoredBuiltDependencies": [
-      "lmdb",
-      "msgpackr-extract",
-      "sharp"
-    ],
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "msw",
-      "nx",
-      "simple-git-hooks"
-    ]
   }
 }

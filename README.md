@@ -54,7 +54,7 @@ This is a pnpm monorepo. It contains:
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) LTS
-- [pnpm](https://pnpm.io/) 10+
+- [pnpm](https://pnpm.io/) 11+
 
 ---
 
