@@ -1,10 +1,8 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-loading-widget',
 	templateUrl: './loading.widget.html',
 	styleUrls: ['./loading.widget.scss'],

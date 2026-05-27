@@ -1,0 +1,19 @@
+@if (config.label) {
+<label [for]="config.id" class="label">{{ config.label }}</label>
+}
+<input
+	[id]="config.id"
+	[name]="config.id"
+	[type]="config.type"
+	[value]="value"
+	autocomplete="tel"
+	inputmode="tel"
+	[readonly]="disabled"
+	[required]="validator?.required"
+	size="1"
+	(change)="onChange($event)"
+	(keydown.enter)="onKeyDown($event)"
+/>
+@if (errorMessage) {
+<small class="error">{{ errorMessage }}</small>
+}

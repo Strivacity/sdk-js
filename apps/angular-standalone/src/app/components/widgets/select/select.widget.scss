@@ -1,0 +1,30 @@
+[data-widget='select'] {
+	display: flex;
+	flex-direction: column;
+	margin-block-start: 1rem;
+
+	.label {
+		margin-block-end: 0.25rem;
+	}
+
+	input {
+		transform: scale(1.4);
+		margin-inline-end: 0.5rem;
+		accent-color: #5d21ab;
+		outline-color: #5d21ab;
+	}
+
+	.item {
+		display: flex;
+		align-items: center;
+
+		+ .item {
+			margin-block-start: 0.5rem;
+		}
+	}
+
+	.error {
+		margin-block-start: 0.25rem;
+		color: #e40c0c;
+	}
+}

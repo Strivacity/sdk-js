@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { SelectWidget as SelectWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-select-widget',
 	templateUrl: './select.widget.html',
 	styleUrls: ['./select.widget.scss'],

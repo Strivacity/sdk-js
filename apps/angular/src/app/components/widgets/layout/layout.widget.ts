@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { LayoutWidget as LayoutWidgetType } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-layout-widget',
 	templateUrl: './layout.widget.html',
 	styleUrls: ['./layout.widget.scss'],

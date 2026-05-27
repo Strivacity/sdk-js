@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { SubmitWidget as SubmitWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-submit-widget',
 	templateUrl: './submit.widget.html',
 	styleUrls: ['./submit.widget.scss'],

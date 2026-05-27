@@ -29,6 +29,8 @@
     "sdk:core:test": "nx run sdk-core:test",
     "app:angular:serve": "nx run app-angular:serve",
     "app:angular:build": "nx run app-angular:build",
+    "app:angular-standalone:serve": "nx run app-angular-standalone:serve",
+    "app:angular-standalone:build": "nx run app-angular-standalone:build",
     "app:backend:serve": "nx run app-backend:serve",
     "app:backend:build": "nx run app-backend:build",
     "app:angular-bff:serve": "nx run app-angular-bff:serve",
@@ -192,29 +194,5 @@
     "vue-tsc": "^3.1.7",
     "webpack": "~5.99.9",
     "zone.js": "~0.16.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "@strivacity/sdk-angular": "workspace:*",
-      "@strivacity/sdk-core": "workspace:*",
-      "@strivacity/sdk-next": "workspace:*",
-      "@strivacity/sdk-nuxt": "workspace:*",
-      "@strivacity/sdk-svelte": "workspace:*",
-      "@strivacity/sdk-react": "workspace:*",
-      "@strivacity/sdk-remix": "workspace:*",
-      "@strivacity/sdk-vue": "workspace:*",
-      "@strivacity/testing": "workspace:*"
-    },
-    "ignoredBuiltDependencies": [
-      "lmdb",
-      "msgpackr-extract",
-      "sharp"
-    ],
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "msw",
-      "nx",
-      "simple-git-hooks"
-    ]
   }
 }

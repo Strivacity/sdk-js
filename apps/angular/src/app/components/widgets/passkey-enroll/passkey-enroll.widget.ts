@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { PasskeyEnrollWidget as PasskeyEnrollWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService, createCredential } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-passkey-enroll-widget',
 	templateUrl: './passkey-enroll.widget.html',
 	styleUrls: ['./passkey-enroll.widget.scss'],

@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: true,
+	standalone: false,
 	selector: 'app-entry-page',
 	templateUrl: './entry.page.html',
 })

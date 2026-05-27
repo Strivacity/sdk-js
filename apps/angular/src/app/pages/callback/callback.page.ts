@@ -4,7 +4,7 @@ import { Subscription } from 'rxjs';
 import { type RedirectFlow, StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: true,
+	standalone: false,
 	selector: 'app-callback-page',
 	templateUrl: './callback.page.html',
 })

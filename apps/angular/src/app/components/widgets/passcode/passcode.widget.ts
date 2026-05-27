@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { PasscodeWidget as PasscodeWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-passcode-widget',
 	templateUrl: './passcode.widget.html',
 	styleUrls: ['./passcode.widget.scss'],

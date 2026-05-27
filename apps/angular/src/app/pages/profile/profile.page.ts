@@ -1,13 +1,11 @@
 import { Component, SkipSelf } from '@angular/core';
-import { DatePipe, JsonPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { Session, StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: true,
+	standalone: false,
 	selector: 'app-profile-page',
 	templateUrl: './profile.page.html',
-	imports: [JsonPipe, DatePipe],
 })
 export class ProfilePage {
 	readonly subscription = new Subscription();

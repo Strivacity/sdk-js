@@ -4,7 +4,7 @@ import { Subscription, firstValueFrom } from 'rxjs';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: true,
+	standalone: false,
 	selector: 'app-logout-page',
 	templateUrl: './logout.page.html',
 })

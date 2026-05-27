@@ -1,12 +1,10 @@
 import { Component, Input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import type { CloseWidget as CloseWidgetConfig } from '@strivacity/sdk-core';
 import { StrivacityWidgetService } from '@strivacity/sdk-angular';
 
 @Component({
+	standalone: false,
 	encapsulation: ViewEncapsulation.None,
-	standalone: true,
-	imports: [CommonModule],
 	selector: 'app-close-widget',
 	templateUrl: './close.widget.html',
 	styleUrls: ['./close.widget.scss'],
