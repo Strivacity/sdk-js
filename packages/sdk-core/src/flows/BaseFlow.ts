@@ -250,7 +250,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			this.logging?.debug('No session found in storage');
 		}
 
-		if (this.session && this.accessToken && this.idTokenClaims) {
+		if (this.session && this.accessToken) {
 			this.dispatchEvent('sessionLoaded', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
 			this.logging?.debug('Session loaded from storage');
 		}
@@ -339,13 +339,13 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 
 		const session = this.session;
 
+		await this.storage.delete(this.options.storageTokenName!);
+		this.session = null;
+
 		if (!session?.id_token) {
 			this.logging?.debug('Logout called without session');
 			return;
 		}
-
-		await this.storage.delete(this.options.storageTokenName!);
-		this.session = null;
 
 		const url = new URL(await this.metadata.endSessionEndpoint);
 
@@ -398,7 +398,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 
 			await this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
 
-			if (this.accessToken && this.refreshToken && this.idTokenClaims) {
+			if (this.accessToken && this.refreshToken) {
 				this.dispatchEvent('tokenRefreshed', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
 				this.logging?.info('Session refreshed successfully');
 			}
@@ -533,10 +533,6 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 
 		Object.assign(this.session, await response.json());
 
-		if (this.session.id_token) {
-			this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
-		}
-
 		if (this.session.error) {
 			const error = new Error(`${this.session.error}: ${this.session.error_description}`);
 			this.logging?.error('Validation failed', error);
@@ -547,25 +543,31 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			this.logging?.error('Validation failed', error);
 			throw error;
 		}
-		if (this.session.claims?.nonce !== state.nonce) {
-			const error = new Error('Invalid nonce');
-			this.logging?.error('Validation failed', error);
-			throw error;
-		}
-		if (this.session.claims?.iss !== (await this.metadata.issuer)) {
-			const error = new Error('Invalid iss');
-			this.logging?.error('Validation failed', error);
-			throw error;
-		}
-		if (Array.isArray(this.session.claims?.aud) ? this.session.claims?.aud[0] !== this.options.clientId : this.session.claims?.aud !== this.options.clientId) {
-			const error = new Error('Invalid aud');
-			this.logging?.error('Validation failed', error);
-			throw error;
+		if (this.session.id_token) {
+			this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
+
+			if (this.session.claims?.nonce !== state.nonce) {
+				const error = new Error('Invalid nonce');
+				this.logging?.error('Validation failed', error);
+				throw error;
+			}
+			if (this.session.claims?.iss !== (await this.metadata.issuer)) {
+				const error = new Error('Invalid iss');
+				this.logging?.error('Validation failed', error);
+				throw error;
+			}
+			if (
+				Array.isArray(this.session.claims?.aud) ? this.session.claims?.aud[0] !== this.options.clientId : this.session.claims?.aud !== this.options.clientId
+			) {
+				const error = new Error('Invalid aud');
+				this.logging?.error('Validation failed', error);
+				throw error;
+			}
 		}
 
 		await this.storage.set(this.options.storageTokenName!, JSON.stringify(this.session));
 
-		if (this.accessToken && this.idTokenClaims) {
+		if (this.accessToken) {
 			this.dispatchEvent('loggedIn', [{ accessToken: this.accessToken, refreshToken: this.refreshToken, claims: this.idTokenClaims }]);
 
 			if (this.logging) {

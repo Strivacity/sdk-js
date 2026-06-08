@@ -34,7 +34,10 @@ export class NativeFlowHandler extends BaseFlowHandler {
 		authorizationUrl.searchParams.append('sdk', this.params.sdk || 'web');
 		authorizationUrl.searchParams.append('state', state.id);
 		authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
-		authorizationUrl.searchParams.append('nonce', state.nonce);
+
+		if (this.sdk.options.scopes?.includes('openid')) {
+			authorizationUrl.searchParams.append('nonce', state.nonce);
+		}
 
 		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 

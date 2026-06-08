@@ -87,6 +87,26 @@ describe('EmbeddedFlowHandler', () => {
 			expect(handler.shortAppId).toEqual('shortAppId');
 		});
 
+		test('should not include nonce in authorization URL when openid scope is missing', async () => {
+			const { handler, spies } = spyInitFlow({ ...options, scopes: ['profile'] });
+
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ authorization_endpoint: `${options.issuer}/oauth2/auth` }),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				text: () => Promise.resolve(`${options.redirectUri}?session_id=sessionId&short_app_id=shortAppId`),
+			});
+
+			await handler.startSession();
+
+			const authorizationUrl = new URL(spies.httpClient.mock.calls[1][0]);
+
+			expect(authorizationUrl.searchParams.has('nonce')).toBe(false);
+			expect(authorizationUrl.searchParams.get('code_challenge')).toBeTruthy();
+		});
+
 		describe('should call tokenExchange during fast path', () => {
 			test('w/ valid url', async () => {
 				const { handler, spies, loggingSpy } = spyInitFlow(options);

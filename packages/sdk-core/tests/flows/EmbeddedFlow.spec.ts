@@ -368,7 +368,7 @@ describe('EmbeddedFlow', () => {
 
 				await flow.logout();
 
-				expect(storage.spies.delete).not.toHaveBeenCalled();
+				expect(storage.spies.delete).toHaveBeenCalled();
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).not.toHaveBeenCalledWith('logoutInitiated', expect.anything());
 				expect(spies.urlHandler).not.toHaveBeenCalled();

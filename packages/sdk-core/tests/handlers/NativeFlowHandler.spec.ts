@@ -97,6 +97,30 @@ describe('NativeFlowHandler', () => {
 			expect(response).toEqual({ forms: [] });
 		});
 
+		test('should not include nonce in authorization URL when openid scope is missing', async () => {
+			const { handler, spies } = spyInitFlow({ ...options, scopes: ['profile'] });
+
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ authorization_endpoint: `${options.issuer}/oauth2/auth` }),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				text: () => Promise.resolve(`${options.redirectUri}?session_id=sessionId`),
+			});
+			spies.httpClient.mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve({ forms: [] }),
+			});
+
+			await handler.startSession();
+
+			const authorizationUrl = new URL(spies.httpClient.mock.calls[1][0]);
+
+			expect(authorizationUrl.searchParams.has('nonce')).toBe(false);
+			expect(authorizationUrl.searchParams.get('code_challenge')).toBeTruthy();
+		});
+
 		test('should continue session w/ sessionId', async () => {
 			const { handler, spies } = spyInitFlow(options);
 

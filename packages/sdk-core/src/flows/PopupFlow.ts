@@ -37,7 +37,11 @@ export class PopupFlow extends BaseFlow<SDKOptions, PopupParams> {
 
 		url.searchParams.append('state', state.id);
 		url.searchParams.append('code_challenge', state.codeChallenge);
-		url.searchParams.append('nonce', state.nonce);
+
+		if (this.options.scopes?.includes('openid')) {
+			url.searchParams.append('nonce', state.nonce);
+		}
+
 		url.searchParams.append('display', 'popup');
 
 		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
