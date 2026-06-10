@@ -79,7 +79,10 @@ export async function startSession(params: ExtraRequestArgs = {}) {
 
 	authorizationUrl.searchParams.append('state', state.id);
 	authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
-	authorizationUrl.searchParams.append('nonce', state.nonce);
+
+	if (options.scopes?.includes('openid')) {
+		authorizationUrl.searchParams.append('nonce', state.nonce);
+	}
 
 	const response = await fetch(authorizationUrl.toString(), {
 		method: 'GET',
@@ -300,10 +303,6 @@ export async function finalizeSession(sessionId?: string, params: Record<string,
 	console.log(`  access_token:  ${session.access_token ?? '(none)'}`);
 	console.log(`  refresh_token: ${session.refresh_token ?? '(none)'}`);
 
-	if (session.id_token) {
-		session.claims = jwt.decode<IdTokenClaims>(session.id_token);
-	}
-
 	if (session.error) {
 		const error = new OAuthError(session.error, session.error_description ?? '');
 		console.error('Validation failed', error);
@@ -314,20 +313,24 @@ export async function finalizeSession(sessionId?: string, params: Record<string,
 		console.error('Validation failed', error);
 		throw error;
 	}
-	if (session.claims?.nonce !== state.nonce) {
-		const error = new Error('Invalid nonce');
-		console.error('Validation failed', error);
-		throw error;
-	}
-	if (session.claims?.iss !== metadata.issuer) {
-		const error = new Error('Invalid iss');
-		console.error('Validation failed', error);
-		throw error;
-	}
-	if (Array.isArray(session.claims?.aud) ? session.claims?.aud[0] !== options.clientId : session.claims?.aud !== options.clientId) {
-		const error = new Error('Invalid aud');
-		console.error('Validation failed', error);
-		throw error;
+	if (session.id_token) {
+		session.claims = jwt.decode<IdTokenClaims>(session.id_token);
+
+		if (session.claims?.nonce !== state.nonce) {
+			const error = new Error('Invalid nonce');
+			console.error('Validation failed', error);
+			throw error;
+		}
+		if (session.claims?.iss !== metadata.issuer) {
+			const error = new Error('Invalid iss');
+			console.error('Validation failed', error);
+			throw error;
+		}
+		if (Array.isArray(session.claims?.aud) ? session.claims?.aud[0] !== options.clientId : session.claims?.aud !== options.clientId) {
+			const error = new Error('Invalid aud');
+			console.error('Validation failed', error);
+			throw error;
+		}
 	}
 
 	const id = crypto.randomUUID();

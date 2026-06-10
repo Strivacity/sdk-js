@@ -450,7 +450,7 @@ describe('PopupFlow', () => {
 
 				await flow.logout();
 
-				expect(storage.spies.delete).not.toHaveBeenCalled();
+				expect(storage.spies.delete).toHaveBeenCalled();
 				expect(spies.waitToInitialize).toHaveBeenCalledTimes(1);
 				expect(spies.dispatchEvent).not.toHaveBeenCalledWith('logoutInitiated', expect.anything());
 				expect(spies.urlHandler).not.toHaveBeenCalled();
@@ -932,6 +932,19 @@ describe('PopupFlow', () => {
 				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
 
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid aud');
+			});
+
+			test('should skip nonce, iss and aud validation when openid scope is missing', async () => {
+				const state = await storage.generateState();
+				const session = storage.generateSession({ scope: 'profile' }, null);
+				const { flow, spies } = spyInitFlow({ ...options, scopes: ['profile'] });
+
+				session.id_token = null;
+				storage.spies.set.mockClear();
+				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
+
+				await expect(flow.tokenExchange({ code: 'code', state: state.id })).resolves.toBeUndefined();
+				expect(storage.spies.set).toHaveBeenCalledWith('sty.session', expect.any(String));
 			});
 
 			test('should throw error when token exchange response is not ok', async () => {

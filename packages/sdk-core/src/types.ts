@@ -746,7 +746,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims extracted from the ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the handler completes, or void if no asynchronous operation is needed.
 	 */
-	loggedIn: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims }) => Promise<void> | void;
+	loggedIn: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims | null }) => Promise<void> | void;
 
 	/**
 	 * Handler called when login has been initiated.
@@ -763,7 +763,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims associated with the ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the logout initiation process is complete, or void if no asynchronous operation is needed.
 	 */
-	logoutInitiated: (params?: { idToken?: string; claims?: IdTokenClaims }) => Promise<void> | void;
+	logoutInitiated: (params?: { idToken?: string; claims?: IdTokenClaims | null }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a user session has been successfully loaded.
@@ -774,7 +774,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims associated with the ID token in the session.
 	 * @returns {Promise<void> | void} A promise that resolves when the session loading is complete, or void if no asynchronous operation is needed.
 	 */
-	sessionLoaded: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims }) => Promise<void> | void;
+	sessionLoaded: (params?: { accessToken?: string; refreshToken?: string | null; claims?: IdTokenClaims | null }) => Promise<void> | void;
 
 	/**
 	 * Handler called when an access token has been successfully refreshed.
@@ -785,7 +785,7 @@ export type EventFunctions = {
 	 * @param {IdTokenClaims} params.claims - The claims extracted from the new ID token.
 	 * @returns {Promise<void> | void} A promise that resolves when the token refresh is complete, or void if no asynchronous operation is needed.
 	 */
-	tokenRefreshed: (params?: { accessToken?: string; refreshToken?: string; claims?: IdTokenClaims }) => Promise<void> | void;
+	tokenRefreshed: (params?: { accessToken?: string; refreshToken?: string; claims?: IdTokenClaims | null }) => Promise<void> | void;
 
 	/**
 	 * Handler called when a token refresh operation fails.

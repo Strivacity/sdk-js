@@ -33,7 +33,10 @@ export class EmbeddedFlowHandler extends BaseFlowHandler {
 		authorizationUrl.searchParams.append('sdk', 'web-embedded');
 		authorizationUrl.searchParams.append('state', state.id);
 		authorizationUrl.searchParams.append('code_challenge', state.codeChallenge);
-		authorizationUrl.searchParams.append('nonce', state.nonce);
+
+		if (this.sdk.options.scopes?.includes('openid')) {
+			authorizationUrl.searchParams.append('nonce', state.nonce);
+		}
 
 		await this.sdk.storage.set(`sty.${state.id}`, JSON.stringify(state));
 

@@ -37,7 +37,10 @@ export class RedirectFlow extends BaseFlow<SDKOptions, RedirectParams> {
 
 		url.searchParams.append('state', state.id);
 		url.searchParams.append('code_challenge', state.codeChallenge);
-		url.searchParams.append('nonce', state.nonce);
+
+		if (this.options.scopes?.includes('openid')) {
+			url.searchParams.append('nonce', state.nonce);
+		}
 
 		await this.storage.set(`sty.${state.id}`, JSON.stringify(state));
 
