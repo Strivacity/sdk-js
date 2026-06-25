@@ -1,7 +1,11 @@
 export class FallbackError extends Error {
-	constructor(public url: URL) {
+	constructor(
+		public url: URL,
+		message?: string,
+	) {
 		super('Fallback occurred');
 		this.name = 'FallbackError';
+		this.message = message ? `Fallback occurred: ${message}` : 'Fallback occurred';
 	}
 }
 
@@ -25,4 +29,41 @@ export class PopupClosedError extends Error {
 		this.name = 'PopupClosedError';
 		Object.setPrototypeOf(this, PopupClosedError.prototype);
 	}
+}
+
+export class UnsupportedFlowError extends Error {
+	constructor(message = 'Unsupported flow mode') {
+		super(message);
+		this.name = 'UnsupportedFlowError';
+		Object.setPrototypeOf(this, UnsupportedFlowError.prototype);
+	}
+}
+
+export class SDKNotInitializedError extends Error {
+	constructor(message = 'SDK not initialized') {
+		super(message);
+		this.name = 'SDKNotInitializedError';
+		Object.setPrototypeOf(this, SDKNotInitializedError.prototype);
+	}
+}
+
+export class NotAuthenticatedError extends Error {
+	constructor(message = 'Not authenticated') {
+		super(message);
+		this.name = 'NotAuthenticatedError';
+		Object.setPrototypeOf(this, NotAuthenticatedError.prototype);
+	}
+}
+
+export class MyAccountApiError extends Error {
+	readonly body: unknown;
+
+	constructor(message: string, status: number, body: unknown) {
+		super(message);
+		this.status = status;
+		this.body = body;
+		this.name = 'MyAccountApiError';
+	}
+
+	public readonly status: number;
 }

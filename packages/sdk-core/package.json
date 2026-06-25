@@ -8,6 +8,7 @@
     "type": "git",
     "url": "https://github.com/Strivacity/sdk-js"
   },
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -17,11 +18,23 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
+    "./flows": {
+      "types": "./dist/flows/index.d.ts",
+      "import": "./dist/flows/index.mjs",
+      "require": "./dist/flows/index.cjs",
+      "default": "./dist/flows/index.mjs"
+    },
     "./flows/*": {
       "types": "./dist/flows/*.d.ts",
       "import": "./dist/flows/*.mjs",
       "require": "./dist/flows/*.cjs",
       "default": "./dist/flows/*.mjs"
+    },
+    "./handlers": {
+      "types": "./dist/handlers/index.d.ts",
+      "import": "./dist/handlers/index.mjs",
+      "require": "./dist/handlers/index.cjs",
+      "default": "./dist/handlers/index.mjs"
     },
     "./handlers/*": {
       "types": "./dist/handlers/*.d.ts",
@@ -29,17 +42,41 @@
       "require": "./dist/handlers/*.cjs",
       "default": "./dist/handlers/*.mjs"
     },
+    "./storages": {
+      "types": "./dist/storages/index.d.ts",
+      "import": "./dist/storages/index.mjs",
+      "require": "./dist/storages/index.cjs",
+      "default": "./dist/storages/index.mjs"
+    },
     "./storages/*": {
       "types": "./dist/storages/*.d.ts",
       "import": "./dist/storages/*.mjs",
       "require": "./dist/storages/*.cjs",
       "default": "./dist/storages/*.mjs"
     },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.mjs",
+      "require": "./dist/utils/index.cjs",
+      "default": "./dist/utils/index.mjs"
+    },
     "./utils/*": {
       "types": "./dist/utils/*.d.ts",
       "import": "./dist/utils/*.mjs",
       "require": "./dist/utils/*.cjs",
       "default": "./dist/utils/*.mjs"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.mjs",
+      "require": "./dist/types/index.cjs",
+      "default": "./dist/types/index.mjs"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/types/*.mjs",
+      "require": "./dist/types/*.cjs",
+      "default": "./dist/types/*.mjs"
     }
   },
   "typesVersions": {

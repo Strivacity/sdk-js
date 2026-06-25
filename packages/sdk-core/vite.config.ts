@@ -1,27 +1,27 @@
-import { resolve, relative, extname } from 'node:path';
+import { resolve, extname, relative } from 'node:path';
+import { globSync } from 'node:fs';
 import { defineConfig } from 'vite';
-import { glob } from 'glob';
-import dtsPlugin from 'vite-plugin-dts';
+import dtsPlugin from 'unplugin-dts/vite';
 
 export default defineConfig({
 	plugins: [
 		dtsPlugin({
 			tsconfigPath: './tsconfig.app.json',
 			entryRoot: './src',
-			include: ['./src'],
 		}),
 	],
 	build: {
-		reportCompressedSize: true,
 		emptyOutDir: true,
+		reportCompressedSize: true,
 		sourcemap: true,
 		rollupOptions: {
 			preserveEntrySignatures: 'allow-extension',
 			external: [/@strivacity/],
 			input: Object.fromEntries(
-				glob
-					.sync('./src/**/*.ts', { ignore: ['**/*.d.ts'] })
-					.map((file) => [relative('./src', file.slice(0, file.length - extname(file).length)), resolve(file)]),
+				globSync('./src/**/*.ts', { exclude: ['**/*.d.ts'] }).map((file) => [
+					relative('./src', file.slice(0, file.length - extname(file).length)),
+					resolve(file),
+				]),
 			),
 			output: [
 				{
