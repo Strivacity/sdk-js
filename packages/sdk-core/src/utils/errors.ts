@@ -1,7 +1,11 @@
 export class FallbackError extends Error {
-	constructor(public url: URL) {
+	constructor(
+		public url: URL,
+		message?: string,
+	) {
 		super('Fallback occurred');
 		this.name = 'FallbackError';
+		this.message = message ? `Fallback occurred: ${message}` : 'Fallback occurred';
 	}
 }
 
@@ -24,5 +28,13 @@ export class PopupClosedError extends Error {
 		super(message);
 		this.name = 'PopupClosedError';
 		Object.setPrototypeOf(this, PopupClosedError.prototype);
+	}
+}
+
+export class UnsupportedFlowError extends Error {
+	constructor(message = 'Unsupported flow mode') {
+		super(message);
+		this.name = 'UnsupportedFlowError';
+		Object.setPrototypeOf(this, UnsupportedFlowError.prototype);
 	}
 }
