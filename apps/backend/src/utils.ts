@@ -42,7 +42,7 @@ export async function getAuthorizationUrl(params: ExtraRequestArgs = {}): Promis
 	url.searchParams.append('response_mode', 'query');
 	url.searchParams.append('scope', options.scopes?.join(' ') || '');
 	url.searchParams.append('code_challenge_method', 'S256');
-	url.searchParams.append('sdk', 'web');
+	url.searchParams.append('sdk', import.meta.env.VITE_MODE === 'embedded' ? 'web-embedded' : 'web');
 
 	if (params.prompt) {
 		url.searchParams.append('prompt', params.prompt);
