@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "name": "@strivacity/vite",
+  "version": "3.0.2",
+  "type": "module",
+  "license": "UNLICENSED",
+  "author": "strivacity<opensource@strivacity.com>",
+  "exports": {
+    "./plugins": "./plugins/index.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "plugins": [
+        "./plugins/index.ts"
+      ]
+    }
+  }
+}

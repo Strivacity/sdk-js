@@ -12,6 +12,7 @@ overrides:
   '@strivacity/sdk-remix': workspace:*
   '@strivacity/sdk-vue': workspace:*
   '@strivacity/testing': workspace:*
+  '@strivacity/vite': workspace:*
 shellEmulator: true
 autoInstallPeers: false
 shamefullyHoist: true
@@ -22,4 +23,6 @@ allowBuilds:
   simple-git-hooks: true
   lmdb: false
   msgpackr-extract: false
-  sharp: false
+  sharp: true
+  unrs-resolver: false
+  bcrypt: true
