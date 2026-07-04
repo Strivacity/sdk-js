@@ -2,9 +2,11 @@ import { resolve, relative, extname } from 'node:path';
 import { defineConfig } from 'vite';
 import { glob } from 'glob';
 import dtsPlugin from 'vite-plugin-dts';
+import { preserveDirectivesPlugin } from '@strivacity/vite/plugins';
 
 export default defineConfig({
 	plugins: [
+		preserveDirectivesPlugin(),
 		dtsPlugin({
 			tsconfigPath: './tsconfig.app.json',
 			entryRoot: './src',
@@ -17,10 +19,10 @@ export default defineConfig({
 		sourcemap: true,
 		rollupOptions: {
 			preserveEntrySignatures: 'allow-extension',
-			external: [/@strivacity/, /^react*/],
+			external: [/@strivacity/, /^react/, /^next/],
 			input: Object.fromEntries(
 				glob
-					.sync('./src/**/*.tsx', { ignore: ['**/*.d.ts'] })
+					.sync('./src/**/*.{ts,tsx}', { ignore: ['**/*.d.ts'] })
 					.map((file) => [relative('./src', file.slice(0, file.length - extname(file).length)), resolve(file)]),
 			),
 			output: [
