@@ -6,5 +6,4 @@ export const sdkOptions: SDKInitConfig = {
 	clientId: process.env.CLIENT_ID as SDKOptions['clientId'],
 	scopes: process.env.SCOPES?.split(' ') as SDKOptions['scopes'],
 	redirectUri: process.env.REDIRECT_URI as SDKOptions['redirectUri'],
-	redirectForTokenExchange: true,
 };

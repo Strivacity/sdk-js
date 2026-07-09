@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 import Link from 'next/link';
+import { RefreshLink } from './lib/RefreshLink';
 import { sdk } from './lib/auth/server';
-import { AuthProvider } from './lib/auth/provider';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ async function App({ children }: { children: React.ReactNode }) {
 	const name = session ? `${session.claims?.given_name} ${session.claims?.family_name}` : null;
 
 	return (
-		<>
+		<div id="app">
 			<header>
 				<div>{session ? <strong>Welcome, {name}!</strong> : null}</div>
 				<div>
@@ -23,6 +23,7 @@ async function App({ children }: { children: React.ReactNode }) {
 							<Link href="/profile" data-button="profile">
 								Profile
 							</Link>
+							<RefreshLink data-button="refresh">Refresh</RefreshLink>
 							<a href="/auth/revoke" data-button="revoke">
 								Revoke
 							</a>
@@ -32,10 +33,10 @@ async function App({ children }: { children: React.ReactNode }) {
 						</>
 					) : (
 						<>
-							<a href={process.env.MODE === 'embedded' ? '/login' : '/auth/login'} data-button="login">
+							<a href="/auth/login" data-button="login">
 								Login
 							</a>
-							<a href={process.env.MODE === 'embedded' ? '/register' : '/auth/register'} data-button="register">
+							<a href="/auth/register" data-button="register">
 								Register
 							</a>
 						</>
@@ -43,7 +44,7 @@ async function App({ children }: { children: React.ReactNode }) {
 				</div>
 			</header>
 			{children}
-		</>
+		</div>
 	);
 }
 
@@ -51,11 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="en-US">
 			<body>
-				<div id="app">
-					<AuthProvider>
-						<App>{children}</App>
-					</AuthProvider>
-				</div>
+				<App>{children}</App>
 			</body>
 		</html>
 	);

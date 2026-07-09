@@ -7,7 +7,5 @@ export const sdk = createServerSDK({
 	storageTokenName: 'sty.session.next',
 	logging: createDefaultLogging(),
 	secret: process.env.SECRET as string,
-	postLoginRedirectUri: '/profile',
-	postLogoutRedirectUri: '/',
 	protectedRoutes: ['/profile'],
 });

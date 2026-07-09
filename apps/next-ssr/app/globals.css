@@ -51,3 +51,87 @@ sty-language-selector {
 	margin: 0 auto;
 	width: 360px;
 }
+
+/* Profile page */
+
+.profile {
+	max-width: 640px;
+	margin: 2rem auto;
+	font-family: monospace;
+	font-size: 13px;
+}
+
+.profile-dl {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 4px 16px;
+	margin: 0;
+}
+
+.profile-dl dt {
+	color: #888888;
+}
+
+.profile-dl dd {
+	margin: 0;
+	white-space: nowrap;
+}
+
+.profile-hr {
+	margin: 1.5rem 0;
+	border: none;
+	border-top: 1px solid #e0e0e0;
+}
+
+.profile-actions {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 1rem;
+}
+
+.profile-section-title {
+	margin-bottom: 0.75rem;
+	font-weight: bold;
+}
+
+.profile-muted {
+	color: #888888;
+	margin: 0;
+}
+
+.devices-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.devices-table thead tr {
+	color: #888888;
+	text-align: left;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.devices-table th {
+	padding: 4px 8px;
+	font-weight: normal;
+}
+
+.devices-table th:first-child {
+	padding-left: 0;
+}
+
+.devices-table tbody tr {
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.devices-table td {
+	padding: 4px 8px;
+}
+
+.devices-table td:first-child {
+	padding-left: 0;
+	color: #555555;
+}
+
+.devices-table td.muted {
+	color: #888888;
+}

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
 	// output: 'export',
 	// reactStrictMode: false,
 	trailingSlash: false,
+	allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io'],
 	distDir: './dist',
 	env: {
 		MODE: process.env.VITE_MODE,

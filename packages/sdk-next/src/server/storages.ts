@@ -8,6 +8,7 @@ import { buildCookieString } from './utils';
 declare global {
 	interface StrivacityFramework {
 		stateStore: Map<string, string>;
+		accessTokenStore: Map<string, string>;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-namespace
@@ -19,6 +20,7 @@ declare global {
 
 globalThis.sty ??= {} as typeof globalThis.sty;
 globalThis.sty.stateStore ??= new Map<string, string>();
+globalThis.sty.accessTokenStore ??= new Map<string, string>();
 
 /**
  * Reads cookie value(s) for a given key directly from a NextRequest or PagesRouterRequest, without calling `cookies()` from next/headers.
