@@ -43,7 +43,7 @@ export type IntrospectionResult = {
 	[key: string]: unknown;
 };
 
-export const CUSTOM_MFA_ID = 'b0c3efb0-b82f-42a2-a4fc-8a454a9049e3';
+export const CUSTOM_MFA_ID = '7104709f-13f2-43ca-a031-92261b73e8c0';
 
 /**
  * Fetches an admin access token using client credentials flow.
