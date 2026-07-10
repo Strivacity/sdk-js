@@ -1,9 +1,13 @@
 /// <reference types="vite/client" />
 
-declare namespace JSX {
-	interface IntrinsicElements {
-		'sty-notifications': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-		'sty-login': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-		'sty-language-selector': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+export {};
+
+declare module 'react' {
+	// eslint-disable-next-line @typescript-eslint/no-namespace
+	namespace JSX {
+		interface IntrinsicElements {
+			'sty-app-configuration': ElementProps<LitElement>;
+			'sty-app-token-field': ElementProps<LitElement>;
+		}
 	}
 }

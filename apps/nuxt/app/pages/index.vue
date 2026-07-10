@@ -1,5 +1,5 @@
 <template>
 	<section>
-		<h1>Framework: Nuxt</h1>
+		<h1>@strivacity/sdk-nuxt</h1>
 	</section>
 </template>

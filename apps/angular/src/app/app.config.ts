@@ -1,13 +1,10 @@
-export interface ImportMeta {
-	env: {
-		VITE_MODE: 'redirect' | 'popup' | 'native';
-		VITE_ISSUER: string;
-		VITE_SCOPES: string;
-		VITE_CLIENT_ID: string;
-		VITE_REDIRECT_URI: string;
-		VITE_LOGIN_HINT: string;
-		VITE_ACR_VALUES: string;
-		VITE_UI_LOCALES: string;
-		VITE_AUDIENCES: string;
-	};
-}
+import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { provideStrivacity } from '@strivacity/sdk-angular';
+import { routes } from './app.routes';
+import { baseSdkOptions } from '../options';
+
+export const appConfig: ApplicationConfig = {
+	providers: [provideBrowserGlobalErrorListeners(), provideRouter(routes), provideClientHydration(withEventReplay()), provideStrivacity(baseSdkOptions)],
+};

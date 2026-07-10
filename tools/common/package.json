@@ -1,0 +1,34 @@
+{
+  "name": "@strivacity/common",
+  "version": "3.0.2",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "strivacity<opensource@strivacity.com>",
+  "type": "module",
+  "typesVersions": {
+    "*": {
+      "components/*": [
+        "./components/*.ts"
+      ],
+      "styles/*.css": [
+        "./styles/*.css"
+      ],
+      "styles/*.scss": [
+        "./styles/*.scss"
+      ],
+      "utils/*": [
+        "./utils/*.ts"
+      ],
+      "vite/*": [
+        "./vite/*.ts"
+      ]
+    }
+  },
+  "exports": {
+    "./components/*": "./components/*.ts",
+    "./styles/*.css": "./styles/*.css",
+    "./styles/*.scss": "./styles/*.scss",
+    "./utils/*": "./utils/*.ts",
+    "./vite/*": "./vite/*.ts"
+  }
+}

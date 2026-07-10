@@ -1,28 +1,19 @@
-<script lang="ts" setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+<script setup lang="ts">
+import type { NativeFlow } from '@strivacity/sdk-nuxt';
 
 const router = useRouter();
-const { entry } = useStrivacity();
+const { sdk, entry } = useStrivacity<NativeFlow>();
 
 onMounted(async () => {
 	try {
-		const data = await entry();
-
-		if (data && Object.keys(data).length > 0) {
-			await router.push(`/callback?${new URLSearchParams(data).toString()}`);
-		} else {
-			await router.push('/');
-		}
+		const params = await entry();
+		const url = new URL('/login', globalThis.location.origin);
+		url.search = new URLSearchParams(params).toString();
+		globalThis.location.href = url.toString();
 	} catch (error) {
-		alert(error);
-		await router.push('/');
+		await router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 	}
 });
 </script>
 
-<template>
-	<section>
-		<h1>Redirecting...</h1>
-	</section>
-</template>
+<template></template>

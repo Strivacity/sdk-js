@@ -5,22 +5,30 @@
   "sourceRoot": "apps/angular/src",
   "targets": {
     "build": {
-      "builder": "",
-      "executor": "@angular-builders/custom-webpack:browser",
+      "executor": "@angular/build:application",
       "dependsOn": ["sdk-angular:build"],
-      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "apps/angular/dist",
-        "deleteOutputPath": false,
-        "index": "apps/angular/src/index.html",
-        "main": "apps/angular/src/main.ts",
-        "polyfills": ["zone.js"],
-        "tsConfig": "apps/angular/tsconfig.json",
-        "customWebpackConfig": {
-          "path": "apps/angular/webpack.config.cjs"
+        "browser": "apps/angular/src/main.ts",
+        "tsConfig": "apps/angular/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/angular/public"
+          }
+        ],
+        "styles": ["@strivacity/common/styles/globals.css"],
+        "server": "apps/angular/src/main.server.ts",
+        "outputMode": "server",
+        "security": {
+          "allowedHosts": []
+        },
+        "ssr": {
+          "entry": "apps/angular/src/server/server.ts"
         }
       },
       "configurations": {
+        "production": {},
         "development": {
           "optimization": false,
           "extractLicenses": false,
@@ -30,7 +38,7 @@
       "defaultConfiguration": "development"
     },
     "serve": {
-      "executor": "@angular-builders/custom-webpack:dev-server",
+      "executor": "@angular/build:dev-server",
       "dependsOn": ["sdk-angular:build"],
       "configurations": {
         "production": {
@@ -41,15 +49,6 @@
         }
       },
       "defaultConfiguration": "development"
-    },
-    "serve-static": {
-      "executor": "@nx/web:file-server",
-      "options": {
-        "buildTarget": "app-angular:build",
-        "port": 4200,
-        "staticFilePath": "dist/apps/angular/browser",
-        "spa": true
-      }
     }
   }
 }

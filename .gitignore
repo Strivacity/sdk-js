@@ -1,4 +1,5 @@
 .angular/
+.astro/
 .cache/
 .data/
 .next/
@@ -8,7 +9,6 @@
 .output/
 .svelte-kit/
 .pnpm-store/
-apps/remix/build/
 out/
 out-tsc/
 coverages/

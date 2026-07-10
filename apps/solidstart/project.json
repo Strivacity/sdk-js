@@ -1,0 +1,62 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-solidstart",
+  "projectType": "application",
+  "sourceRoot": "apps/solidstart/src",
+  "targets": {
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/solidstart",
+        "command": "tsc --noEmit --project ./tsconfig.json"
+      },
+      "dependsOn": ["sdk-solid:build"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/solidstart",
+        "command": "vite dev"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/solidstart",
+        "command": "vite build"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    }
+  }
+}

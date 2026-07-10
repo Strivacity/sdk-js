@@ -1,48 +1,50 @@
-import { Component, SkipSelf } from '@angular/core';
+import { Component, type OnInit, PLATFORM_ID, RESPONSE_INIT, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { type RedirectFlow, StrivacityAuthService } from '@strivacity/sdk-angular';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: false,
 	selector: 'app-callback-page',
 	templateUrl: './callback.page.html',
 })
-export class CallbackPage {
-	readonly subscription = new Subscription();
-	error: string | null = null;
-	errorDescription: string | null = null;
-
-	constructor(
-		protected route: ActivatedRoute,
-		protected router: Router,
-		@SkipSelf() protected strivacityAuthService: StrivacityAuthService<RedirectFlow>,
-	) {}
+export class CallbackPage implements OnInit {
+	readonly authService = inject(StrivacityAuthService);
+	readonly router = inject(Router);
+	readonly route = inject(ActivatedRoute);
+	readonly platformId = inject(PLATFORM_ID);
+	readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
 	ngOnInit(): void {
-		const url = new URL(location.href);
+		// This demo shows both session modes side by side.
+		// in your own app, keep only the branch matching your `serverSessionUri` setting.
+		if (this.authService.sdk.options.serverSessionUri) {
+			const query = new URLSearchParams(this.route.snapshot.queryParams as Record<string, string>).toString();
+			const url = `/auth/callback${query ? `?${query}` : ''}`;
 
-		if (url.searchParams.has('session_id')) {
-			void this.router.navigate(['/login'], { queryParams: url.searchParams });
+			if (isPlatformBrowser(this.platformId)) {
+				globalThis.location.href = url;
+			} else if (this.responseInit) {
+				this.responseInit.status = 302;
+				this.responseInit.headers = new Headers({ Location: url });
+			}
+		} else if (isPlatformBrowser(this.platformId)) {
+			void this.handleCallback();
+		}
+	}
+
+	async handleCallback(): Promise<void> {
+		const params = this.route.snapshot.queryParams;
+
+		if (params.error || params.error_description) {
+			await this.router.navigate(['/error'], { queryParams: params });
 			return;
 		}
 
-		this.subscription.add(
-			this.strivacityAuthService.handleCallback().subscribe({
-				next: () => {
-					void this.router.navigateByUrl('/profile');
-				},
-				error: (err) => {
-					this.error = this.route.snapshot.queryParamMap.get('error');
-					this.errorDescription = this.route.snapshot.queryParamMap.get('error_description');
-					// eslint-disable-next-line no-console
-					console.error('Error during callback handling:', err);
-				},
-			}),
-		);
-	}
-
-	ngOnDestroy(): void {
-		this.subscription.unsubscribe();
+		try {
+			await this.authService.handleCallback();
+			await this.router.navigateByUrl('/profile');
+		} catch (error) {
+			await this.router.navigate(['/error'], { queryParams: { message: error instanceof Error ? error.message : 'Unknown error' } });
+		}
 	}
 }

@@ -1,31 +1,38 @@
-import { Component, SkipSelf } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { Session, StrivacityAuthService } from '@strivacity/sdk-angular';
+import '@strivacity/common/components/token-field';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: false,
 	selector: 'app-profile-page',
 	templateUrl: './profile.page.html',
+	schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class ProfilePage {
-	readonly subscription = new Subscription();
-	session: Session = {
-		loading: true,
-		isAuthenticated: false,
-		idTokenClaims: null,
-		accessToken: null,
-		refreshToken: null,
-		accessTokenExpired: false,
-		accessTokenExpirationDate: null,
-	};
+	readonly authService = inject(StrivacityAuthService);
+	readonly router = inject(Router);
 
-	constructor(@SkipSelf() protected strivacityAuthService: StrivacityAuthService) {
-		this.strivacityAuthService.session$.subscribe((session) => {
-			this.session = session;
-		});
-	}
+	// id_token is not a standalone signal — track via idTokenClaims() which updates together
+	readonly idToken = computed(() => {
+		this.authService.idTokenClaims();
+		return this.authService.sdk.session?.id_token ?? null;
+	});
 
-	ngOnDestroy(): void {
-		this.subscription.unsubscribe();
+	readonly accessToken = this.authService.accessToken;
+	readonly expiresAt = this.authService.accessTokenExpirationDate;
+	readonly refreshToken = this.authService.refreshToken;
+
+	async handleRefresh(): Promise<void> {
+		// This demo shows both session modes side by side.
+		// in your own app, keep only the branch matching your `serverSessionUri` setting.
+		if (this.authService.options.serverSessionUri) {
+			globalThis.location.href = '/auth/refresh?returnTo=/profile';
+		} else {
+			try {
+				await this.authService.refresh();
+			} catch (error) {
+				await this.router.navigate(['/error'], { queryParams: { message: error instanceof Error ? error.message : 'Unknown error' } });
+			}
+		}
 	}
 }

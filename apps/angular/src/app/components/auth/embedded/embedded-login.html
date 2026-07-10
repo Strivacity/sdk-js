@@ -1,0 +1,13 @@
+<section class="login-renderer">
+	<sty-notifications></sty-notifications>
+	<sty-login
+		[sessionId]="sessionId"
+		[shortAppId]="shortAppId"
+		[lang]="language"
+		[params]="params"
+		(login)="onLogin()"
+		(close)="onClose()"
+		(error)="onError($event)"
+	></sty-login>
+	<sty-language-selector></sty-language-selector>
+</section>
