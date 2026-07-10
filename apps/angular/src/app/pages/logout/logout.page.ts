@@ -1,30 +1,27 @@
-import { Component, SkipSelf } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Component, type OnInit, PLATFORM_ID, RESPONSE_INIT, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: false,
 	selector: 'app-logout-page',
 	templateUrl: './logout.page.html',
 })
-export class LogoutPage {
-	readonly subscription = new Subscription();
+export class LogoutPage implements OnInit {
+	private readonly authService = inject(StrivacityAuthService);
+	private readonly platformId = inject(PLATFORM_ID);
+	private readonly responseInit = inject(RESPONSE_INIT, { optional: true });
 
-	constructor(
-		protected router: Router,
-		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
-	) {}
-
-	async ngOnInit(): Promise<void> {
-		if (this.strivacityAuthService.isAuthenticated()) {
-			await firstValueFrom(this.strivacityAuthService.logout({ postLogoutRedirectUri: window.location.origin }));
-		} else {
-			void this.router.navigateByUrl('/');
+	ngOnInit(): void {
+		// NOTE: in your own app, keep only the branch matching your `serverSideSession` setting.
+		if (this.authService.sdk.options.serverSideSession) {
+			if (isPlatformBrowser(this.platformId)) {
+				globalThis.location.href = '/auth/logout';
+			} else if (this.responseInit) {
+				this.responseInit.status = 302;
+				this.responseInit.headers = new Headers({ Location: '/auth/logout' });
+			}
+		} else if (isPlatformBrowser(this.platformId)) {
+			void this.authService.logout();
 		}
-	}
-
-	ngOnDestroy(): void {
-		this.subscription.unsubscribe();
 	}
 }

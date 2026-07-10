@@ -1,31 +1,12 @@
-import { Component, SkipSelf } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { Session, StrivacityAuthService } from '@strivacity/sdk-angular';
+import { Component, inject } from '@angular/core';
+import { DatePipe, JsonPipe } from '@angular/common';
+import { Router } from '@angular/router';
+import { StrivacityAuthService } from '@strivacity/sdk-angular';
+import { SessionComponent } from '../../components/profile/session';
 
 @Component({
-	standalone: false,
 	selector: 'app-profile-page',
 	templateUrl: './profile.page.html',
+	imports: [SessionComponent],
 })
-export class ProfilePage {
-	readonly subscription = new Subscription();
-	session: Session = {
-		loading: true,
-		isAuthenticated: false,
-		idTokenClaims: null,
-		accessToken: null,
-		refreshToken: null,
-		accessTokenExpired: false,
-		accessTokenExpirationDate: null,
-	};
-
-	constructor(@SkipSelf() protected strivacityAuthService: StrivacityAuthService) {
-		this.strivacityAuthService.session$.subscribe((session) => {
-			this.session = session;
-		});
-	}
-
-	ngOnDestroy(): void {
-		this.subscription.unsubscribe();
-	}
-}
+export class ProfilePage {}

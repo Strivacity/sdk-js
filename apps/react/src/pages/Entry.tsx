@@ -1,34 +1,33 @@
+import type { NativeFlow } from '@strivacity/sdk-react';
+import { useStrivacity } from '@strivacity/sdk-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
 
-export const Entry = () => {
+export default function Entry() {
+	const { loading, sdk, entry } = useStrivacity<NativeFlow>();
 	const navigate = useNavigate();
-	const { loading, entry } = useStrivacity();
 
 	useEffect(() => {
-		if (loading) return;
+		if (loading) {
+			return;
+		}
 
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		(async () => {
-			try {
-				const data = await entry();
+		if (!['embedded', 'native'].includes(sdk.options.mode)) {
+			// NOTE: Invalid usage: In non-embedded modes, the entry url should redirect to the hosted login page directly.
+			globalThis.location.href = '/login';
+			return;
+		}
 
-				if (data && Object.keys(data).length > 0) {
-					await navigate(`/callback?${new URLSearchParams(data).toString()}`);
-				} else {
-					await navigate('/');
-				}
-			} catch (error) {
-				alert(error);
-				await navigate('/');
-			}
-		})();
-	}, [loading]);
+		entry()
+			.then((params) => {
+				const url = new URL(sdk.options.loginUri, globalThis.location.origin);
+				url.search = new URLSearchParams(params).toString();
+				globalThis.location.href = url.toString();
+			})
+			.catch((error) => {
+				void navigate(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+			});
+	}, [loading, sdk, entry]);
 
-	return (
-		<section>
-			<h1>Redirecting...</h1>
-		</section>
-	);
-};
+	return null;
+}

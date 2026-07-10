@@ -1,135 +1,202 @@
-import { Suspense, useEffect, useState, useRef } from 'react';
+import type { PopupFlow, LoginComponent, CheckboxWidget, PasswordWidget, StaticWidget, SubmitWidget, Widget } from '@strivacity/sdk-react';
+import { useEffect, useRef, type ComponentType } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity, StyLoginRenderer, FallbackError, type LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-react';
-import { widgets } from '../components/widgets';
+import { useStrivacity, useNativeLogin, injectScript } from '@strivacity/sdk-react';
+import { WidgetRenderer, widgets } from '../components/login';
 
-export const Login = () => {
-	const navigate = useNavigate();
-	const { options, loading, login } = useStrivacity();
-	const [urlHandled, setUrlHandled] = useState<boolean>(false);
-	const [shortAppId, setShortAppId] = useState<string | null>(null);
-	const [sessionId, setSessionId] = useState<string | null>(null);
-	const [language, setLanguage] = useState<string | null>(null);
-	const loginRef = useRef<(HTMLElement & { __cleanup: () => void }) | null>(null);
-
-	const extraParams: ExtraRequestArgs = {
-		loginHint: import.meta.env.VITE_LOGIN_HINT,
-		acrValues: import.meta.env.VITE_ACR_VALUES ? import.meta.env.VITE_ACR_VALUES.split(' ') : undefined,
-		uiLocales: import.meta.env.VITE_UI_LOCALES ? import.meta.env.VITE_UI_LOCALES.split(' ') : undefined,
-		audiences: import.meta.env.VITE_AUDIENCES ? import.meta.env.VITE_AUDIENCES.split(' ') : undefined,
-	};
-
-	useEffect(() => {
-		if (window.location.search !== '') {
-			const url = new URL(window.location.href);
-			const sAppId = url.searchParams.get('short_app_id');
-			const sid = url.searchParams.get('session_id');
-			setShortAppId(sAppId);
-			setSessionId(sid);
-
-			if (url.searchParams.has('language')) {
-				setLanguage(url.searchParams.get('language'));
-			}
-
-			url.search = '';
-			window.history.replaceState({}, '', url.toString());
-		}
-
-		setUrlHandled(true);
-	}, []);
-
-	useEffect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		(async () => {
-			if (options.mode === 'redirect') {
-				await login(extraParams);
-			} else if (options.mode === 'popup') {
-				await login(extraParams);
-				await navigate('/profile');
-			}
-		})();
-	}, []);
-
-	const onLogin = async () => {
-		await navigate('/profile');
-	};
-	const onFallback = (error: FallbackError) => {
-		if (error.url) {
-			window.location.href = error.url.toString();
-		} else {
-			alert(error);
-		}
-	};
-	const onClose = () => {
-		location.reload();
-	};
-	const onError = (error: string) => {
-		alert(error);
-	};
-	const onGlobalMessage = (message: string) => {
-		alert(message);
-	};
-	const onBlockReady = (_events: { previousState: LoginFlowState; state: LoginFlowState }) => {
-		// You can handle block ready events here
-	};
-	const loginRefCallback = (element: (HTMLElement & { __cleanup: () => void }) | null) => {
-		if (loginRef.current) {
-			const prev = loginRef.current;
-			if (prev.__cleanup) {
-				prev.__cleanup();
-			}
-		}
-
-		loginRef.current = element;
-
-		if (element) {
-			const handleClose = () => onClose();
-			const handleLogin = () => void onLogin();
-			const handleError = (event: Event) => onError((event as CustomEvent).detail);
-			const handleBlockReady = (event: Event) => onBlockReady((event as CustomEvent).detail);
-
-			element.addEventListener('close', handleClose);
-			element.addEventListener('login', handleLogin);
-			element.addEventListener('error', handleError);
-			element.addEventListener('block-ready', handleBlockReady);
-
-			element.__cleanup = () => {
-				element.removeEventListener('close', handleClose);
-				element.removeEventListener('login', handleLogin);
-				element.removeEventListener('error', handleError);
-				element.removeEventListener('block-ready', handleBlockReady);
-			};
-		}
-	};
-
-	return (
-		<section>
-			{options.mode === 'redirect' && <h1>Redirecting...</h1>}
-			{options.mode === 'popup' && <h1>Loading...</h1>}
-			{options.mode === 'embedded' && !loading && urlHandled && (
-				<>
-					<sty-notifications></sty-notifications>
-					<sty-login ref={loginRefCallback} shortAppId={shortAppId} sessionId={sessionId} params={extraParams}></sty-login>
-					<sty-language-selector></sty-language-selector>
-				</>
-			)}
-			{options.mode === 'native' && !loading && urlHandled && (
-				<Suspense fallback={<span>Loading...</span>}>
-					<StyLoginRenderer
-						params={extraParams}
-						widgets={widgets}
-						sessionId={sessionId}
-						language={language}
-						onLanguageChange={(lang) => setLanguage(lang)}
-						onFallback={onFallback}
-						onClose={onClose}
-						onLogin={() => void onLogin()}
-						onError={onError}
-						onGlobalMessage={onGlobalMessage}
-						onBlockReady={onBlockReady}
-					/>
-				</Suspense>
-			)}
-		</section>
-	);
+const issuer = import.meta.env.VITE_ISSUER;
+const mode = import.meta.env.VITE_MODE;
+const extraParams: Record<string, string | Array<string> | undefined> = {
+	loginHint: import.meta.env.VITE_LOGIN_HINT,
+	acrValues: import.meta.env.VITE_ACR_VALUES?.split(' '),
+	uiLocales: import.meta.env.VITE_UI_LOCALES?.split(' '),
+	audiences: import.meta.env.VITE_AUDIENCES?.split(' '),
 };
+
+// NOTE: This demo shows all supported modes side by side
+// in your own app, pick the single mode you use and drop the rest
+const components: Record<string, ComponentType> = {
+	redirect: function () {
+		const { loading, login } = useStrivacity<PopupFlow>();
+
+		useEffect(() => {
+			if (loading) {
+				return;
+			}
+
+			void login(extraParams);
+		}, [loading, login]);
+
+		return (
+			<section>
+				<p>Loading...</p>
+			</section>
+		);
+	},
+
+	popup: function () {
+		const { loading, login } = useStrivacity<PopupFlow>();
+		const navigate = useNavigate();
+
+		useEffect(() => {
+			if (loading) {
+				return;
+			}
+
+			login(extraParams)
+				.then(() => {
+					void navigate('/profile');
+				})
+				.catch((error) => {
+					void navigate(`/error?error_description=${encodeURIComponent(error)}`);
+				});
+		}, [loading, login]);
+
+		return (
+			<section>
+				<p>Loading...</p>
+			</section>
+		);
+	},
+
+	embedded: function () {
+		const navigate = useNavigate();
+		const searchParams = new URLSearchParams(globalThis?.window?.location.search);
+
+		const sessionId = searchParams.get('session_id');
+		const shortAppId = searchParams.get('short_app_id');
+		const language = searchParams.get('language') ?? globalThis.navigator?.language;
+		const loginRef = useRef<LoginComponent>(null);
+
+		useEffect(() => {
+			// NOTE: Load components bundle script
+			injectScript('sty-components', `${issuer}/assets/components/bundle.js`);
+		}, []);
+
+		useEffect(() => {
+			const element = loginRef.current;
+
+			if (!element) {
+				return;
+			}
+
+			element.params = extraParams;
+			element.sessionId = sessionId;
+			element.shortAppId = shortAppId;
+			element.lang = language;
+
+			const onLogin = () => {
+				void navigate('/profile');
+			};
+			const onClose = () => {
+				globalThis.location.reload();
+			};
+			const onError = (event: Event) => {
+				void navigate(`/error?error=${encodeURIComponent((event as CustomEvent<string>).detail)}`);
+			};
+
+			element.addEventListener('login', onLogin);
+			element.addEventListener('close', onClose);
+			element.addEventListener('error', onError);
+
+			return () => {
+				element.removeEventListener('login', onLogin);
+				element.removeEventListener('close', onClose);
+				element.removeEventListener('error', onError);
+			};
+		}, [navigate]);
+
+		return (
+			<section>
+				<sty-notifications></sty-notifications>
+				<sty-login ref={loginRef}></sty-login>
+				<sty-language-selector></sty-language-selector>
+			</section>
+		);
+	},
+
+	native: function () {
+		const navigate = useNavigate();
+		const searchParams = new URLSearchParams(globalThis?.window?.location.search);
+		const ctx = useNativeLogin({
+			params: {
+				...extraParams,
+				sessionId: searchParams.get('session_id'),
+				language: searchParams.get('language'),
+			},
+			onLogin: async () => {
+				await navigate('/profile');
+			},
+			onClose: () => {
+				globalThis.location.reload();
+			},
+			onError: async (error) => {
+				await navigate(`/error?error=${encodeURIComponent(error.message)}`);
+			},
+			onFallback: (error) => {
+				globalThis.location.href = error.url.toString();
+			},
+			onGlobalMessage: async (message) => {
+				alert(message.text);
+			},
+		});
+
+		if (ctx.loading || !ctx.state.screen) {
+			return (
+				<section>
+					<p>Loading...</p>
+				</section>
+			);
+		}
+
+		// NOTE: You can override the password screen
+		if (ctx.state.screen === 'password') {
+			const passwordForm = ctx.state.forms?.find((form) => form.id === 'password');
+			const resetForm = ctx.state.forms?.find((form) => form.id === 'reset');
+			const sectionTitleWidget = passwordForm?.widgets?.find((widget) => widget.id === 'section-title') as StaticWidget;
+			const passwordInputWidget = passwordForm?.widgets?.find((widget) => widget.id === 'password') as PasswordWidget;
+			const keepMeLoggedInWidget = passwordForm?.widgets?.find((widget) => widget.id === 'keepMeLoggedIn') as CheckboxWidget;
+			const resetSubmitWidget = resetForm?.widgets?.find((widget) => widget.id === 'submit') as SubmitWidget;
+
+			return (
+				<section className="login-renderer">
+					<form
+						data-widget="layout"
+						data-type="vertical"
+						data-form-id="password"
+						onSubmit={async (event) => {
+							event.preventDefault();
+							await ctx.submitForm('password');
+						}}
+					>
+						<widgets.static formId="password" config={sectionTitleWidget} />
+						<widgets.password formId="password" config={passwordInputWidget} />
+						<widgets.checkbox formId="password" config={keepMeLoggedInWidget} />
+						<button
+							type="submit"
+							disabled={ctx.loading}
+							data-widget="submit"
+							data-type="button"
+							data-variant="primary"
+							data-form-id="password"
+							data-widget-id="submit"
+						>
+							Custom button
+						</button>
+						{resetForm && <widgets.submit formId="reset" config={resetSubmitWidget} />}
+					</form>
+				</section>
+			);
+		}
+
+		return (
+			<section className="login-renderer">
+				<widgets.layout formId={(ctx.state.layout?.items?.[0] as Widget | undefined)?.formId} type={ctx.state.layout?.type} tag="form">
+					<WidgetRenderer items={ctx.state.layout?.items} />
+				</widgets.layout>
+			</section>
+		);
+	},
+};
+
+export default components[mode];

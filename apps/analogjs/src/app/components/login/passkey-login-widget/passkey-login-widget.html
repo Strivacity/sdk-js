@@ -1,0 +1,28 @@
+@if (config().render?.type === 'button') {
+<button
+	type="button"
+	[disabled]="disabled()"
+	data-widget="passkeyLogin"
+	data-type="button"
+	[attr.data-form-id]="formId()"
+	[attr.data-widget-id]="config().id"
+	(click)="onClick()"
+	(keydown.enter)="onClick()"
+	(keydown.space)="onClick()"
+>
+	{{ config().label }}
+</button>
+} @else {
+<a
+	data-widget="passkeyLogin"
+	data-type="link"
+	[attr.data-form-id]="formId()"
+	[attr.data-widget-id]="config().id"
+	tabindex="0"
+	(click)="onClick()"
+	(keydown.enter)="onClick()"
+	(keydown.space)="onClick()"
+>
+	{{ config().label }}
+</a>
+}

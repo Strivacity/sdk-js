@@ -6,26 +6,9 @@ export default defineConfig({
 	envDir: searchForWorkspaceRoot(process.cwd()),
 	root: __dirname,
 	build: {
-		reportCompressedSize: true,
 		emptyOutDir: true,
-		commonjsOptions: {
-			transformMixedEsModules: true,
-		},
 	},
-	esbuild: {
-		supported: {
-			'top-level-await': true,
-		},
-	},
-	plugins: [
-		vuePlugin({
-			template: {
-				compilerOptions: {
-					isCustomElement: (tag) => tag.includes('sty-'),
-				},
-			},
-		}),
-	],
+	plugins: [vuePlugin()],
 	server: {
 		port: 4200,
 		host: 'localhost',

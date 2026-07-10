@@ -1,22 +1,94 @@
 import { createApp } from 'vue';
-import { router } from './router';
-import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
-import AppComponent from './components/app.component.vue';
+import { createRouter, createWebHistory, type NavigationGuardWithThis } from 'vue-router';
+import { createStrivacitySDK, createDefaultLogging, useStrivacity, type SDKOptions } from '@strivacity/sdk-vue';
+import App from './App.vue';
+import '@strivacity/common/styles/globals.css';
 
-void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+import Callback from './pages/Callback.vue';
+import Entry from './pages/Entry.vue';
+import Error from './pages/Error.vue';
+import Home from './pages/Home.vue';
+import Login from './pages/Login.vue';
+import Logout from './pages/Logout.vue';
+import Profile from './pages/Profile.vue';
+import Register from './pages/Register.vue';
+import Revoke from './pages/Revoke.vue';
 
-const app = createApp(AppComponent);
-const sdk = createStrivacitySDK({
-	mode: import.meta.env.VITE_MODE,
-	issuer: import.meta.env.VITE_ISSUER,
-	scopes: import.meta.env.VITE_SCOPES.split(' '),
-	clientId: import.meta.env.VITE_CLIENT_ID,
-	redirectUri: import.meta.env.VITE_REDIRECT_URI,
-	storageTokenName: 'sty.session.vue',
-	logging: DefaultLogging,
+const routeGuard: NavigationGuardWithThis<undefined> = async (_to, _from, next) => {
+	const { sdk, isAuthenticated } = useStrivacity();
+
+	await sdk.init();
+
+	if (!isAuthenticated.value) {
+		next(sdk.options.loginUri);
+	} else {
+		next();
+	}
+};
+
+const router = createRouter({
+	history: createWebHistory(),
+	routes: [
+		{
+			path: '/',
+			name: 'home',
+			component: Home,
+		},
+		{
+			path: '/callback',
+			name: 'callback',
+			component: Callback,
+		},
+		{
+			path: '/error',
+			name: 'error',
+			component: Error,
+		},
+		{
+			path: '/entry',
+			name: 'entry',
+			component: Entry,
+		},
+		{
+			path: '/login',
+			name: 'login',
+			component: Login,
+		},
+		{
+			path: '/logout',
+			name: 'logout',
+			component: Logout,
+		},
+		{
+			path: '/profile',
+			name: 'profile',
+			component: Profile,
+			beforeEnter: routeGuard,
+		},
+		{
+			path: '/register',
+			name: 'register',
+			component: Register,
+		},
+		{
+			path: '/revoke',
+			name: 'revoke',
+			component: Revoke,
+		},
+	],
 });
 
+const app = createApp(App);
 app.use(router);
-app.use(sdk);
-
+app.use(
+	createStrivacitySDK({
+		mode: import.meta.env.VITE_MODE as SDKOptions['mode'],
+		issuer: import.meta.env.VITE_ISSUER as SDKOptions['issuer'],
+		clientId: import.meta.env.VITE_CLIENT_ID as SDKOptions['clientId'],
+		scopes: import.meta.env.VITE_SCOPES?.split(' ') as SDKOptions['scopes'],
+		redirectUri: import.meta.env.VITE_REDIRECT_URI as SDKOptions['redirectUri'],
+		storageTokenName: 'sty.session.vue',
+		logging: createDefaultLogging(),
+	}),
+);
 app.mount('#app');

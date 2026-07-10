@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-analogjs",
+  "projectType": "application",
+  "sourceRoot": "apps/angular/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-angular:build"],
+      "options": {
+        "command": "tsc --noEmit --project apps/analogjs/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/analogjs/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/analogjs"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/analogjs/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/analogjs",
+        "command": "vite serve"
+      }
+    }
+  }
+}

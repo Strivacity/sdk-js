@@ -1,105 +1,100 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Component, CUSTOM_ELEMENTS_SCHEMA, type OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { injectScript, StrivacityAuthService, StrivacityNativeLoginService } from '@strivacity/sdk-angular';
+import { NativeLoginRendererComponent } from '../../components/login';
 
-import { Component, OnDestroy, OnInit, SkipSelf } from '@angular/core';
-import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { SDKOptions, StrivacityAuthService, FallbackError, LoginFlowState, type ExtraRequestArgs } from '@strivacity/sdk-angular';
-import { type ImportMeta } from '../../app.config';
-import { widgets } from '../../components/widgets';
+const extraParams: Record<string, string | Array<string> | undefined> = {
+	loginSessionUri: '/auth/login/session',
+	loginHint: import.meta.env?.VITE_LOGIN_HINT,
+	acrValues: import.meta.env?.VITE_ACR_VALUES?.split(' '),
+	uiLocales: import.meta.env?.VITE_UI_LOCALES?.split(' '),
+	audiences: import.meta.env?.VITE_AUDIENCES?.split(' '),
+};
+const extraSearchParams: Array<[string, string]> = Object.entries(extraParams).flatMap(([key, value]) =>
+	(Array.isArray(value) ? value : [value]).map((item) => [key, String(item)] as [string, string]),
+);
 
 @Component({
-	standalone: false,
 	selector: 'app-register-page',
 	templateUrl: './register.page.html',
+	schemas: [CUSTOM_ELEMENTS_SCHEMA],
+	imports: [NativeLoginRendererComponent],
+	providers: [StrivacityNativeLoginService],
 })
-export class RegisterPage implements OnInit, OnDestroy {
-	readonly widgets = widgets;
-	readonly subscription = new Subscription();
-	shortAppId: string | null = null;
-	sessionId: string | null = null;
-	language: string | null = null;
-	options: SDKOptions;
-	extraParams: ExtraRequestArgs = {
-		prompt: 'create',
-		loginHint: (import.meta as unknown as ImportMeta).env.VITE_LOGIN_HINT,
-		acrValues: (import.meta as unknown as ImportMeta).env.VITE_ACR_VALUES ? (import.meta as unknown as ImportMeta).env.VITE_ACR_VALUES.split(' ') : undefined,
-		uiLocales: (import.meta as unknown as ImportMeta).env.VITE_UI_LOCALES ? (import.meta as unknown as ImportMeta).env.VITE_UI_LOCALES.split(' ') : undefined,
-		audiences: (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES ? (import.meta as unknown as ImportMeta).env.VITE_AUDIENCES.split(' ') : undefined,
-	};
+export class RegisterPage implements OnInit {
+	private readonly authService = inject(StrivacityAuthService);
+	protected readonly nativeLoginService = inject(StrivacityNativeLoginService);
+	private readonly router = inject(Router);
+	private readonly route = inject(ActivatedRoute);
+	private readonly platformId = inject(PLATFORM_ID);
 
-	constructor(
-		protected router: Router,
-		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
-	) {
-		this.options = this.strivacityAuthService.options;
+	protected readonly mode = this.authService.sdk.options.mode;
+	protected readonly issuer = this.authService.sdk.options.issuer;
+	protected readonly params = { ...extraParams, prompt: 'create' };
+	protected readonly sessionId = this.route.snapshot.queryParamMap.get('session_id');
+	protected readonly shortAppId = this.route.snapshot.queryParamMap.get('short_app_id');
+	protected readonly language =
+		this.route.snapshot.queryParamMap.get('language') ?? (isPlatformBrowser(this.platformId) ? globalThis.navigator.language : 'en-US');
 
-		if (window.location.search !== '') {
-			const url = new URL(window.location.href);
-			this.shortAppId = url.searchParams.get('short_app_id');
-			this.sessionId = url.searchParams.get('session_id');
+	// NOTE: This demo shows all supported modes side by side
+	// in your own app, pick the single mode you use and drop the rest
+	ngOnInit(): void {
+		if (!isPlatformBrowser(this.platformId)) {
+			return;
+		}
 
-			if (url.searchParams.has('language')) {
-				this.language = url.searchParams.get('language');
+		if (this.mode === 'embedded') {
+			injectScript('sty-components', `${this.issuer}/assets/components/bundle.js`);
+		} else if (this.mode === 'redirect') {
+			// NOTE: in your own app, keep only the branch matching your `serverSideSession` setting.
+			if (this.authService.sdk.options.serverSideSession) {
+				globalThis.location.href = `auth/register?${new URLSearchParams(extraSearchParams).toString()}`;
+			} else {
+				void this.authService.register(extraParams);
 			}
-
-			url.search = '';
-			history.replaceState({}, '', url.toString());
+		} else if (this.mode === 'popup') {
+			try {
+				this.authService.register(extraParams);
+			} catch (error) {
+				this.router.navigate(['/error'], { queryParams: { error_description: error instanceof Error ? error.message : 'Unknown error' } });
+			}
+		} else if (this.mode === 'native') {
+			void this.nativeLoginService.start({
+				params: {
+					...extraParams,
+					prompt: 'create',
+					sessionId: this.sessionId,
+					language: this.route.snapshot.queryParamMap.get('language'),
+				},
+				onLogin: async () => {
+					await this.router.navigateByUrl('/profile');
+				},
+				onClose: () => {
+					globalThis.location.reload();
+				},
+				onError: async (error) => {
+					await this.router.navigate(['/error'], { queryParams: { error: error.message } });
+				},
+				onFallback: (error) => {
+					globalThis.location.href = error.url.toString();
+				},
+				onGlobalMessage: (message) => {
+					alert(message.text);
+				},
+			});
 		}
 	}
 
-	ngOnInit() {
-		if (this.options?.mode === 'redirect') {
-			this.subscription.add(
-				this.strivacityAuthService.register(this.extraParams).subscribe({
-					next: () => {},
-					error: (error: any) => this.onError(error),
-				}),
-			);
-		} else if (this.options?.mode === 'popup') {
-			this.subscription.add(
-				this.strivacityAuthService.register(this.extraParams).subscribe({
-					next: () => {
-						void this.router.navigateByUrl('/profile');
-					},
-					error: (error: any) => this.onError(error),
-				}),
-			);
-		}
-	}
-
-	ngOnDestroy() {
-		this.subscription.unsubscribe();
-	}
-
-	onLogin() {
+	protected onEmbeddedLogin(): void {
 		void this.router.navigateByUrl('/profile');
 	}
 
-	onFallback(error: FallbackError) {
-		if (error.url) {
-			location.href = error.url.toString();
-		} else {
-			alert(error);
-		}
+	protected onEmbeddedClose(): void {
+		globalThis.location.reload();
 	}
 
-	onClose() {
-		location.reload();
-	}
-
-	onError(error: any) {
-		alert(error);
-	}
-
-	onGlobalMessage(message: string) {
-		alert(message);
-	}
-
-	onBlockReady(_events: { previousState: LoginFlowState; state: LoginFlowState }) {
-		// You can handle block ready events here
-	}
-
-	onLanguageChange(language: string | null) {
-		this.language = language;
+	protected onEmbeddedError(event: Event): void {
+		alert((event as CustomEvent<string>).detail ?? (event as ErrorEvent).message ?? 'Unknown error');
 	}
 }

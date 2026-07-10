@@ -1,0 +1,62 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-sveltekit",
+  "projectType": "application",
+  "sourceRoot": "apps/sveltekit/src",
+  "targets": {
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/sveltekit",
+        "command": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+      },
+      "dependsOn": ["sdk-svelte:build"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/sveltekit",
+        "command": "vite dev"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/sveltekit",
+        "command": "vite build"
+      },
+      "dependsOn": [
+        {
+          "projects": "self",
+          "params": "forward",
+          "target": "prepare"
+        }
+      ],
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    }
+  }
+}

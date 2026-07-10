@@ -1,0 +1,13 @@
+{
+  "name": "@strivacity/app-preact",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "type": "module",
+  "dependencies": {
+    "@strivacity/sdk-preact": "*",
+    "preact": "^10.0.0",
+    "preact-router": "^4.0.0"
+  }
+}

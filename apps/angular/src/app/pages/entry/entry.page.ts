@@ -1,31 +1,37 @@
-import { Component, SkipSelf } from '@angular/core';
+import { Component, type OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { StrivacityAuthService } from '@strivacity/sdk-angular';
 
 @Component({
-	standalone: false,
 	selector: 'app-entry-page',
 	templateUrl: './entry.page.html',
 })
-export class EntryPage {
-	constructor(
-		protected router: Router,
-		@SkipSelf() protected strivacityAuthService: StrivacityAuthService,
-	) {}
+export class EntryPage implements OnInit {
+	private readonly authService = inject(StrivacityAuthService);
+	private readonly router = inject(Router);
+	private readonly platformId = inject(PLATFORM_ID);
 
-	ngOnInit() {
-		this.strivacityAuthService.entry().subscribe({
-			next: (data) => {
-				if (data && Object.keys(data).length > 0) {
-					void this.router.navigate([`/callback`], { queryParams: new URLSearchParams(data) });
-				} else {
-					void this.router.navigate(['/']);
-				}
-			},
-			error: (error) => {
-				alert(error);
-				void this.router.navigate(['/']);
-			},
-		});
+	ngOnInit(): void {
+		if (isPlatformBrowser(this.platformId)) {
+			void this.handleEntry();
+		}
+	}
+
+	private async handleEntry(): Promise<void> {
+		if (!['embedded', 'native'].includes(this.authService.sdk.options.mode)) {
+			await this.router.navigateByUrl('/login');
+			return;
+		}
+
+		try {
+			const params = (await this.authService.entry()) as Record<string, string>;
+			const url = new URL(this.authService.sdk.options.loginUri, globalThis.location.origin);
+
+			url.search = new URLSearchParams(params).toString();
+			globalThis.location.href = url.toString();
+		} catch (error) {
+			await this.router.navigate(['/error'], { queryParams: { message: error instanceof Error ? error.message : 'Unknown error' } });
+		}
 	}
 }

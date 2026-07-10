@@ -1,0 +1,24 @@
+<h2>Session</h2>
+<dl>
+	<dt>expires</dt>
+	<dd>{{ authService.accessTokenExpirationDate() ? (authService.accessTokenExpirationDate()! * 1000 | date: 'medium') : '-' }}</dd>
+
+	<dt>access token</dt>
+	<dd>{{ authService.accessToken() }}</dd>
+
+	<dt>refresh token</dt>
+	<dd>{{ authService.refreshToken() }}</dd>
+
+	@if (authService.refreshToken()) {
+	<dt></dt>
+	<dd><button (click)="handleRefresh()">Refresh</button></dd>
+	}
+
+	<dt>account id</dt>
+	<dd>{{ authService.idTokenClaims()?.sub ?? '-' }}</dd>
+
+	<dt>claims</dt>
+	<dd>
+		<pre>{{ authService.idTokenClaims() | json }}</pre>
+	</dd>
+</dl>

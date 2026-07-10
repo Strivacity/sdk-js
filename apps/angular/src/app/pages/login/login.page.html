@@ -1,33 +1,23 @@
+@if (mode === 'redirect' || mode === 'popup') {
 <section>
-	@if (options?.mode === 'redirect') {
-	<h1>Redirecting...</h1>
-	} @else if (options?.mode === 'popup') {
-	<h1>Loading...</h1>
-	} @else if (options?.mode === 'embedded') {
+	<p>Loading...</p>
+</section>
+} @else if (mode === 'embedded') {
+<section>
 	<sty-notifications></sty-notifications>
 	<sty-login
-		[params]="extraParams"
+		[sessionId]="sessionId"
 		[shortAppId]="shortAppId"
-		[sessionId]="sessionId"
-		(close)="onClose($event.detail)"
-		(login)="onLogin()"
-		(error)="onError($event.detail)"
-		(blockReady)="onBlockReady($event.detail)"
-	/>
+		[lang]="language"
+		[params]="params"
+		(login)="onEmbeddedLogin()"
+		(close)="onEmbeddedClose()"
+		(error)="onEmbeddedError($event)"
+	></sty-login>
 	<sty-language-selector></sty-language-selector>
-	} @else if (options?.mode === 'native') {
-	<sty-login-renderer
-		[params]="extraParams"
-		[widgets]="widgets"
-		[sessionId]="sessionId"
-		[language]="language"
-		(languageChange)="onLanguageChange($event)"
-		(fallback)="onFallback($event)"
-		(close)="onClose($event)"
-		(login)="onLogin()"
-		(error)="onError($event)"
-		(globalMessage)="onGlobalMessage($event)"
-		(blockReady)="onBlockReady($event)"
-	></sty-login-renderer>
-	}
 </section>
+} @else if (mode === 'native') {
+<section>
+	<app-native-login-renderer />
+</section>
+}

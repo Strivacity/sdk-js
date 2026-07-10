@@ -1,0 +1,11 @@
+{
+  "name": "@strivacity/app-analogjs",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "type": "module",
+  "dependencies": {
+    "@strivacity/sdk-angular": "*"
+  }
+}

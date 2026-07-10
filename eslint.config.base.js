@@ -5,6 +5,7 @@ import tsEslint from 'typescript-eslint';
 import pluginReact from 'eslint-plugin-react';
 import pluginSvelte from 'eslint-plugin-svelte';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
+import pluginVitest from '@vitest/eslint-plugin';
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
 
 export const baseConfig = {
@@ -34,8 +35,6 @@ export const baseConfig = {
 		'@typescript-eslint/no-unsafe-call': 'off',
 		'@typescript-eslint/no-unsafe-member-access': 'off',
 		'@typescript-eslint/no-unsafe-return': 'off',
-		'@typescript-eslint/unbound-method': 'off',
-		'@typescript-eslint/no-unnecessary-type-assertion': 'off',
 	},
 };
 
@@ -48,11 +47,38 @@ export const ignoreConfig = {
 		'**/.angular',
 		'**/.nuxt',
 		'**/.svelte-kit',
-		'**/dist',
-		'**/reports',
 		'**/android',
+		'**/coverage',
+		'**/dist',
 		'**/ios',
+		'**/reports',
 	],
+};
+
+export const vueConfig = {
+	files: ['**/*.vue'],
+	rules: {
+		'vue/html-indent': ['error', 'tab'],
+		'vue/no-v-html': 'off',
+		'vue/html-self-closing': 'off',
+		'vue/no-deprecated-slot-attribute': 'off',
+		'vue/singleline-html-element-content-newline': 'off',
+		'vue/multiline-html-element-content-newline': 'off',
+		'vue/attribute-hyphenation': 'off',
+		'vue/multi-word-component-names': 'off',
+		'vue/html-closing-bracket-spacing': 'error',
+		'vue/component-definition-name-casing': ['error', 'kebab-case'],
+		'vue/max-attributes-per-line': ['error', { singleline: { max: 10 }, multiline: { max: 1 } }],
+	},
+};
+
+export const vitestConfig = {
+	...pluginVitest.configs.recommended,
+	files: ['**/*.spec.ts'],
+	rules: {
+		'vitest/valid-title': 'off',
+		'vitest/no-focused-tests': ['error'],
+	},
 };
 
 export const defineTsConfig = (...configs) =>
@@ -86,9 +112,6 @@ export const defineReactConfig = (...configs) =>
 				globals: {
 					...globals.browser,
 				},
-			},
-			rules: {
-				'react-hooks/exhaustive-deps': 'off',
 			},
 		},
 		...configs,
@@ -136,21 +159,6 @@ export const defineVueConfig = (...configs) =>
 		vueTsConfigs.recommendedTypeChecked,
 		ignoreConfig,
 		baseConfig,
-		{
-			files: ['**/*.vue'],
-			rules: {
-				'vue/html-indent': ['error', 'tab'],
-				'vue/no-v-html': 'off',
-				'vue/html-self-closing': 'off',
-				'vue/no-deprecated-slot-attribute': 'off',
-				'vue/singleline-html-element-content-newline': 'off',
-				'vue/multiline-html-element-content-newline': 'off',
-				'vue/attribute-hyphenation': 'off',
-				'vue/multi-word-component-names': 'off',
-				'vue/html-closing-bracket-spacing': 'error',
-				'vue/component-definition-name-casing': ['error', 'kebab-case'],
-				'vue/max-attributes-per-line': ['error', { singleline: { max: 10 }, multiline: { max: 1 } }],
-			},
-		},
+		vueConfig,
 		...configs,
 	);

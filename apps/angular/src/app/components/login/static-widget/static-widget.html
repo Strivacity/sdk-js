@@ -1,0 +1,5 @@
+@if (config().render?.type === 'html') {
+<div data-widget="static" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id" [innerHTML]="config().value"></div>
+} @else {
+<div data-widget="static" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id">{{ config().value }}</div>
+}

@@ -4,9 +4,8 @@
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
-      "!{projectRoot}/.stylelintrc.js",
       "!{projectRoot}/eslint.config.js",
-      "!{projectRoot}/prettier.config.js",
+      "!{projectRoot}/oxfmt.config.ts",
       "!{projectRoot}/**/*.spec.ts",
       "!{projectRoot}/packages/*/dist/**/*",
       "!{projectRoot}/packages/*/reports/**/*"
@@ -20,10 +19,6 @@
     "@nx/eslint:eslint": {
       "cache": true,
       "inputs": ["default", "{workspaceRoot}/eslint.config.js"]
-    },
-    "stylelint": {
-      "cache": true,
-      "inputs": ["default", "{workspaceRoot}/.stylelintrc.js"]
     }
   },
   "plugins": [
@@ -32,24 +27,15 @@
       "options": {
         "targetName": "eslint"
       }
-    },
-    {
-      "plugin": "nx-stylelint/plugin",
-      "options": {
-        "targetName": "stylelint",
-        "extensions": ["css", "scss", "vue"]
-      }
     }
   ],
   "release": {
     "projects": ["*", "!app-*", "!vitest"],
     "projectsRelationship": "independent",
-    "releaseTagPattern": "@strivacity/{projectName}@{version}",
     "version": {
       "conventionalCommits": true,
-      "generatorOptions": {
-        "fallbackCurrentVersionResolver": "disk"
-      }
+      "fallbackCurrentVersionResolver": "disk",
+      "preserveLocalDependencyProtocols": false
     },
     "changelog": {
       "workspaceChangelog": false,
@@ -63,6 +49,10 @@
       "tag": true,
       "commit": true,
       "push": true
+    },
+    "releaseTag": {
+      "pattern": "@strivacity/{projectName}@{version}"
     }
-  }
+  },
+  "analytics": false
 }

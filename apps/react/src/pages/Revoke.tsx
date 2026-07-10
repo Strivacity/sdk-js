@@ -1,25 +1,24 @@
+import { useStrivacity } from '@strivacity/sdk-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
 
-export const Revoke = () => {
+export default function Revoke() {
+	const { loading, revoke } = useStrivacity();
 	const navigate = useNavigate();
-	const { isAuthenticated, revoke } = useStrivacity();
 
 	useEffect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		(async () => {
-			if (isAuthenticated) {
-				await revoke();
-			}
+		if (loading) {
+			return;
+		}
 
-			await navigate('/');
-		})();
-	}, []);
+		revoke()
+			.then(() => {
+				globalThis.location.href = '/';
+			})
+			.catch((error) => {
+				void navigate(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+			});
+	}, [loading, revoke]);
 
-	return (
-		<section>
-			<h1>Logging out...</h1>
-		</section>
-	);
-};
+	return null;
+}
