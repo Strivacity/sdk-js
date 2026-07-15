@@ -26,27 +26,36 @@ export class CustomEmbeddedFlowHandler extends EmbeddedFlowHandler {
 			throw error;
 		}
 
-		const data = await response.json();
+		let uri: URL;
 
-		if (data.error) {
-			const error = new Error(`${data.error}: ${data.error_description}`);
+		try {
+			uri = new URL(await response.text());
+		} catch {
+			uri = new URL(response.url);
+		}
+
+		if (uri.searchParams.has('error')) {
+			const error = new Error(`${uri.searchParams.get('error')}: ${uri.searchParams.get('error_description')}`);
 			this.sdk.logging?.error('Authorization error', error);
 			throw error;
 		}
 
-		if (!data.short_app_id) {
+		const shortAppId = uri.searchParams.get('short_app_id');
+		const sessionId = uri.searchParams.get('session_id');
+
+		if (!shortAppId) {
 			const error = new Error('"short_app_id" is missing from the response');
 			this.sdk.logging?.error('Failed to start a session', error);
 			throw error;
 		}
-		if (!data.session_id) {
+		if (!sessionId) {
 			const error = new Error('"session_id" is missing from the response');
 			this.sdk.logging?.error('Failed to start a session', error);
 			throw error;
 		}
 
-		this.shortAppId = data.short_app_id;
-		this.sessionId = data.session_id;
+		this.shortAppId = shortAppId;
+		this.sessionId = sessionId;
 	}
 
 	/**

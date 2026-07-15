@@ -84,43 +84,15 @@ export async function startSession(params: ExtraRequestArgs = {}) {
 		authorizationUrl.searchParams.append('nonce', state.nonce);
 	}
 
+	storage.set(`session.${state.id}`, JSON.stringify(state));
+
 	const response = await fetch(authorizationUrl.toString(), {
 		method: 'GET',
 		credentials: 'include',
+		redirect: 'manual',
 	});
 
-	if (!response.ok) {
-		const error = new Error(`Authorization request failed with status ${response.status}`);
-		console.error('Authorization request error', error);
-		throw error;
-	}
-
-	let uri: URL;
-
-	try {
-		uri = new URL(await response.text());
-	} catch {
-		uri = new URL(response.url);
-	}
-
-	if (uri.searchParams.has('error')) {
-		const error = new Error(`${uri.searchParams.get('error')}: ${uri.searchParams.get('error_description')}`);
-		console.error('Authorization error', error);
-		throw error;
-	}
-
-	if (!uri.searchParams.has('session_id')) {
-		const error = new Error('"session_id" is missing from the response');
-		console.error('Failed to start a session', error);
-		throw error;
-	}
-
-	const sessionId = uri.searchParams.get('session_id') as string;
-	const shortAppId = uri.searchParams.get('short_app_id') as string;
-
-	storage.set(`session.${sessionId}`, JSON.stringify(state));
-
-	return { session_id: sessionId, short_app_id: shortAppId };
+	return response;
 }
 
 export async function refreshSession(sessionId: string) {
@@ -243,7 +215,7 @@ export async function entrySession(params: Record<string, string> = {}) {
 	return { session_id: sessionId, short_app_id: shortAppId, language: language };
 }
 
-export async function finalizeSession(sessionId?: string, params: Record<string, string> = {}) {
+export async function finalizeSession(params: Record<string, string> = {}) {
 	console.log('Exchanging authorization code for tokens');
 
 	const session = new Session();
@@ -266,7 +238,7 @@ export async function finalizeSession(sessionId?: string, params: Record<string,
 	let state: State;
 
 	try {
-		const serializedState = storage.get(`session.${sessionId}`) ?? null;
+		const serializedState = storage.get(`session.${session.state}`) ?? null;
 
 		if (!serializedState) {
 			throw new Error();
@@ -274,7 +246,7 @@ export async function finalizeSession(sessionId?: string, params: Record<string,
 
 		state = State.fromSerializedData(serializedState);
 
-		storage.delete(`session.${sessionId}`);
+		storage.delete(`session.${session.state}`);
 	} catch {
 		const error = new Error('Invalid or missing state');
 		console.error('Validation failed', error);

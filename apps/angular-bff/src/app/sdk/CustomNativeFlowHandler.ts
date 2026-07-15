@@ -36,21 +36,29 @@ export class CustomNativeFlowHandler extends NativeFlowHandler {
 			throw error;
 		}
 
-		const data = await response.json();
+		let uri: URL;
 
-		if (data.error) {
-			const error = new Error(`${data.error}: ${data.error_description}`);
+		try {
+			uri = new URL(await response.text());
+		} catch {
+			uri = new URL(response.url);
+		}
+
+		if (uri.searchParams.has('error')) {
+			const error = new Error(`${uri.searchParams.get('error')}: ${uri.searchParams.get('error_description')}`);
 			this.sdk.logging?.error('Authorization error', error);
 			throw error;
 		}
 
-		if (!data.session_id) {
+		sessionId = uri.searchParams.get('session_id');
+
+		if (!sessionId) {
 			const error = new Error('"session_id" is missing from the response');
 			this.sdk.logging?.error('Failed to start a session', error);
 			throw error;
 		}
 
-		this.sessionId = data.session_id;
+		this.sessionId = sessionId;
 
 		return this.submitForm();
 	}
