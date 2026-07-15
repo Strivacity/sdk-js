@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { Router, Request, Response } from 'express';
 import { Session } from '@strivacity/sdk-core/utils/Session';
 import { storage, startSession, finalizeSession, refreshSession, revokeSession, getLogoutUrl, entrySession, OAuthError } from './utils';
@@ -34,8 +35,30 @@ router.post('/session/start', async (req: Request, res: Response) => {
 	res.clearCookie('session');
 
 	try {
-		const data = await startSession(req.body);
-		res.json(data);
+		const startResponse = await startSession(req.body);
+
+		res.status(startResponse.status);
+
+		const disallowedHeaders = new Set(['transfer-encoding', 'connection', 'keep-alive', 'content-encoding']);
+
+		for (const [key, value] of startResponse.headers.entries()) {
+			if (key.toLowerCase() === 'set-cookie') continue;
+			if (!disallowedHeaders.has(key.toLowerCase())) {
+				res.setHeader(key, value);
+			}
+		}
+
+		const cookies = startResponse.headers.get('set-cookie');
+
+		if (cookies) {
+			res.setHeader('Set-Cookie', cookies);
+		}
+
+		if (startResponse.body) {
+			return Readable.fromWeb(startResponse.body as Parameters<typeof Readable.fromWeb>[0]).pipe(res);
+		}
+
+		return res.send();
 	} catch (error) {
 		if (error instanceof OAuthError) {
 			return res.status(400).json({ error: error.error, error_description: error.error_description });
@@ -48,10 +71,8 @@ router.post('/session/start', async (req: Request, res: Response) => {
 });
 
 router.post('/session/finalize', async (req: Request, res: Response) => {
-	const sessionId = req.headers.authorization?.split(' ')[1];
-
 	try {
-		const id = await finalizeSession(sessionId, req.body);
+		const id = await finalizeSession(req.body);
 		res
 			.cookie('session', id, {
 				httpOnly: true,
