@@ -1,0 +1,64 @@
+{
+  "name": "@strivacity/sdk-preact",
+  "version": "3.0.3",
+  "description": "Strivacity Preact SDK client",
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Strivacity/sdk-js"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "types": "./dist/types.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./components": {
+      "types": "./dist/components.d.ts",
+      "import": "./dist/components.mjs",
+      "require": "./dist/components.cjs",
+      "default": "./dist/components.mjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "require": "./dist/errors.cjs",
+      "default": "./dist/errors.mjs"
+    },
+    "./hooks": {
+      "types": "./dist/hooks.d.ts",
+      "import": "./dist/hooks.mjs",
+      "require": "./dist/hooks.cjs",
+      "default": "./dist/hooks.mjs"
+    },
+    "./storages": {
+      "types": "./dist/storages.d.ts",
+      "import": "./dist/storages.mjs",
+      "require": "./dist/storages.cjs",
+      "default": "./dist/storages.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.cjs",
+      "default": "./dist/types.mjs"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.cjs",
+      "default": "./dist/utils.mjs"
+    }
+  },
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  },
+  "peerDependencies": {
+    "preact": ">=10"
+  }
+}
