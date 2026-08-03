@@ -280,11 +280,6 @@ export async function finalizeSession(params: Record<string, string> = {}) {
 		console.error('Validation failed', error);
 		throw error;
 	}
-	if (session.scope !== options.scopes?.join(' ')) {
-		const error = new Error('Invalid scope');
-		console.error('Validation failed', error);
-		throw error;
-	}
 	if (session.id_token) {
 		session.claims = jwt.decode<IdTokenClaims>(session.id_token);
 

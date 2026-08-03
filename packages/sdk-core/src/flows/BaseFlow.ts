@@ -538,11 +538,6 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			this.logging?.error('Validation failed', error);
 			throw error;
 		}
-		if (this.session.scope !== this.options.scopes?.join(' ')) {
-			const error = new Error('Invalid scope');
-			this.logging?.error('Validation failed', error);
-			throw error;
-		}
 		if (this.session.id_token) {
 			this.session.claims = jwt.decode<IdTokenClaims>(this.session.id_token);
 

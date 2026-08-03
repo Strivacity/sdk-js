@@ -905,16 +905,6 @@ describe('NativeFlow', () => {
 				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid JWT');
 			});
 
-			test('should throw error on invalid scope', async () => {
-				const state = await storage.generateState();
-				const session = storage.generateSession({ scope: 'invalid' }, null);
-				const { flow, spies } = spyInitFlow(options);
-
-				spies.sendTokenRequest.mockImplementation(() => Promise.resolve({ ok: true, json: () => session }));
-
-				await expect(() => flow.tokenExchange({ code: 'code', state: state.id })).rejects.toThrowError('Invalid scope');
-			});
-
 			test('should throw error on invalid nonce', async () => {
 				const state = await storage.generateState();
 				const session = storage.generateSession({}, null);
