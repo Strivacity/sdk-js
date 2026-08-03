@@ -1,3 +1,14 @@
+## 3.0.3 (2026-08-03)
+
+### 🩹 Fixes
+
+- unnecessary scope validation removed ([2c3536a](https://github.com/Strivacity/sdk-js/commit/2c3536a))
+- openid scope handling fixed ([9c0e012](https://github.com/Strivacity/sdk-js/commit/9c0e012))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 3.0.3
+
 ## 3.0.2 (2026-05-12)
 
 ### 🩹 Fixes
