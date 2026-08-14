@@ -1,12 +1,19 @@
 import { resolve, relative, extname } from 'node:path';
+import { globSync } from 'node:fs';
 import { defineConfig } from 'vite';
-import { glob } from 'glob';
+import { getVitestConfig } from '@strivacity/testing/vitest/config';
 import vuePlugin from '@vitejs/plugin-vue';
-import dtsPlugin from 'vite-plugin-dts';
+import dtsPlugin from 'unplugin-dts/vite';
 
 export default defineConfig({
 	plugins: [
-		vuePlugin(),
+		vuePlugin({
+			template: {
+				compilerOptions: {
+					isCustomElement: (tag) => tag.startsWith('sty-'),
+				},
+			},
+		}),
 		dtsPlugin({
 			tsconfigPath: './tsconfig.app.json',
 			entryRoot: './src',
@@ -19,11 +26,12 @@ export default defineConfig({
 		sourcemap: true,
 		rollupOptions: {
 			preserveEntrySignatures: 'allow-extension',
-			external: [/^@strivacity/, /^vue*/],
+			external: [/@strivacity/, /^vue/],
 			input: Object.fromEntries(
-				glob
-					.sync('./src/**/*.{ts,vue}', { ignore: ['**/*.d.ts'] })
-					.map((file) => [relative('./src', file.slice(0, file.length - extname(file).length)), resolve(file)]),
+				globSync('./src/**/*.{ts,vue}', { exclude: ['**/*.d.ts'] }).map((file) => [
+					relative('./src', file.slice(0, file.length - extname(file).length)),
+					resolve(file),
+				]),
 			),
 			output: [
 				{
@@ -41,4 +49,5 @@ export default defineConfig({
 			],
 		},
 	},
+	test: getVitestConfig('vue'),
 });

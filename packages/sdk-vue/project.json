@@ -8,7 +8,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-core:build"],
       "options": {
-        "command": "vue-tsc --noEmit --project packages/sdk-vue/tsconfig.app.json"
+        "command": "tsc --noEmit --project packages/sdk-vue/tsconfig.app.json"
       }
     },
     "build": {
