@@ -1,4 +1,4 @@
-import { defineTsConfig } from '../../eslint.config.base.js';
+import { defineTsConfig } from '../../eslint.config.base.mjs';
 
 export default defineTsConfig({
 	ignores: ['**/.nuxt', '**/.output'],

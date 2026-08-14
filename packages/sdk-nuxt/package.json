@@ -1,24 +1,50 @@
 {
   "name": "@strivacity/sdk-nuxt",
   "version": "3.0.3",
-  "license": "MIT",
   "description": "Strivacity Nuxt SDK client",
+  "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/Strivacity/sdk-js"
   },
   "type": "module",
-  "dependencies": {
-    "@strivacity/sdk-core": "3.0.3"
-  },
+  "sideEffects": false,
   "main": "./dist/module.mjs",
   "types": "./dist/types.d.mts",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs",
       "default": "./dist/module.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs",
+      "default": "./dist/module.mjs"
+    },
+    "./storages": {
+      "types": "./dist/runtime/storages/core.d.ts",
+      "import": "./dist/runtime/storages/core.js",
+      "default": "./dist/runtime/storages/core.js"
+    },
+    "./utils": {
+      "types": "./dist/runtime/utils/core.d.ts",
+      "import": "./dist/runtime/utils/core.js",
+      "default": "./dist/runtime/utils/core.js"
     }
+  },
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  },
+  "peerDependencies": {
+    "nuxt": ">=4.0"
   }
 }

@@ -1,81 +1,107 @@
-import type { SDKOptions } from '@strivacity/sdk-core';
-import { defineNuxtModule, createResolver, addTemplate, addTypeTemplate, addImports, addComponent } from '@nuxt/kit';
-import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
-import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
-import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
-import { HttpClient } from '@strivacity/sdk-core/utils/HttpClient';
-import { DefaultLogging } from '@strivacity/sdk-core/utils/Logging';
-import { LocalStorage } from '@strivacity/sdk-core/storages/LocalStorage';
-import { SessionStorage } from '@strivacity/sdk-core/storages/SessionStorage';
+import type { NuxtServerSDKInitConfig } from './runtime/types';
+import {
+	defineNuxtModule,
+	resolvePath,
+	createResolver,
+	addImportsDir,
+	addServerImportsDir,
+	addServerHandler,
+	addServerPlugin,
+	addRouteMiddleware,
+} from '@nuxt/kit';
 
-declare module '@nuxt/schema' {
-	interface PublicRuntimeConfig {
-		strivacity: SDKOptions;
-	}
-}
+export type * from './runtime/types';
 
-export type ModuleOptions = SDKOptions;
-
-export * from '@strivacity/sdk-core';
-export { createCredential, getCredential } from '@strivacity/sdk-core/utils/credentials';
-export type * from './types';
-export type { PopupFlow, RedirectFlow, NativeFlow };
-export { HttpClient, DefaultLogging, LocalStorage, SessionStorage };
-
-export default defineNuxtModule<ModuleOptions>({
+export default defineNuxtModule<NuxtServerSDKInitConfig>({
 	meta: {
 		name: '@strivacity/sdk-nuxt',
 		configKey: 'strivacity',
 	},
-	defaults: {} as SDKOptions,
-	setup(options, nuxt) {
+	setup: async (options, nuxt) => {
 		const resolver = createResolver(import.meta.url);
 
-		nuxt.options.runtimeConfig.public.strivacity = options;
+		if (!options.authUrlPrefix) {
+			options.authUrlPrefix = '/auth';
+		}
+		if (typeof options.serverSessionUri === 'undefined') {
+			options.serverSessionUri = `${options.authUrlPrefix}/login`;
+		}
 
-		addTemplate({
-			filename: 'strivacity-sdk-storage.mjs',
-			getContents: () => `export default ${options.storage ? options.storage.toString() : LocalStorage.toString()}`,
-		});
-		addTypeTemplate({
-			filename: 'strivacity-sdk-storage.d.ts',
-			getContents: () => `
-import type { SDKStorage } from '@strivacity/sdk-core';
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { secret, storageFactoryPath, stateStorageFactoryPath, loggingFactoryPath, httpClientFactoryPath, ...publicOptions } = options;
+		const noop = resolver.resolve('./runtime/utils/noop');
 
-declare class CustomStorage implements SDKStorage {
-	get(key: string): Promise<string | null>;
-	delete(key: string): Promise<void>;
-	set(key: string, value: string): Promise<void>;
-}
+		nuxt.options.runtimeConfig.strivacity = options;
+		nuxt.options.runtimeConfig.public.strivacity = publicOptions;
+		nuxt.options.alias = nuxt.options.alias || {};
+		nuxt.options.nitro.alias = nuxt.options.nitro.alias || {};
 
-export default CustomStorage`,
-		});
-		addTemplate({
-			filename: 'strivacity-sdk-logging.mjs',
-			getContents: () => `export default ${options.logging?.toString()}`,
-		});
-		addTypeTemplate({
-			filename: 'strivacity-sdk-logging.d.ts',
-			getContents: () => `
-import type { SDKLogging } from '@strivacity/sdk-core';
+		const loggingPath = options.loggingFactoryPath ? await resolvePath(options.loggingFactoryPath) : noop;
+		const httpClientPath = options.httpClientFactoryPath ? await resolvePath(options.httpClientFactoryPath) : noop;
+		const storagePath = options.storageFactoryPath ? await resolvePath(options.storageFactoryPath) : noop;
+		const stateStoragePath = options.stateStorageFactoryPath ? await resolvePath(options.stateStorageFactoryPath) : noop;
 
-declare class CustomLogging implements SDKLogging {
-	xEventId: string | undefined;
+		nuxt.options.alias['#strivacity-options-logging'] = loggingPath;
+		nuxt.options.alias['#strivacity-options-httpClient'] = httpClientPath;
+		nuxt.options.alias['#strivacity-options-storage'] = storagePath;
+		nuxt.options.alias['#strivacity-options-stateStorage'] = stateStoragePath;
+		nuxt.options.nitro.alias['#strivacity-options-logging'] = loggingPath;
+		nuxt.options.nitro.alias['#strivacity-options-httpClient'] = httpClientPath;
+		nuxt.options.nitro.alias['#strivacity-options-storage'] = storagePath;
+		nuxt.options.nitro.alias['#strivacity-options-stateStorage'] = stateStoragePath;
 
-	debug(message: string): void;
-	info(message: string): void;
-	warn(message: string): void;
-	error(message: string, error: Error): void;
-}
+		addImportsDir(resolver.resolve('./runtime/composables'));
+		addImportsDir(resolver.resolve('./runtime/storages'));
+		addImportsDir(resolver.resolve('./runtime/utils'));
 
-export default CustomLogging`,
-		});
-		addComponent({
-			name: 'StyLoginRenderer',
-			filePath: resolver.resolve('./runtime/login-renderer.vue'),
-		});
-		addImports({ name: 'useStrivacity', as: 'useStrivacity', from: resolver.resolve('./runtime/composables') });
-		addImports({ name: 'getCredential', as: 'getCredential', from: resolver.resolve('./runtime/composables') });
-		addImports({ name: 'createCredential', as: 'createCredential', from: resolver.resolve('./runtime/composables') });
+		if (options.serverSessionUri) {
+			addServerImportsDir(resolver.resolve('./runtime/server/composables'));
+			addServerImportsDir(resolver.resolve('./runtime/server/utils'));
+			addServerImportsDir(resolver.resolve('./runtime/storages'));
+
+			addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
+			addRouteMiddleware({ name: 'strivacity', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
+
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/login`,
+				handler: resolver.resolve('./runtime/server/api/auth/login.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/register`,
+				handler: resolver.resolve('./runtime/server/api/auth/register.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/callback`,
+				handler: resolver.resolve('./runtime/server/api/auth/callback.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/refresh`,
+				handler: resolver.resolve('./runtime/server/api/auth/refresh.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/revoke`,
+				handler: resolver.resolve('./runtime/server/api/auth/revoke.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/entry`,
+				handler: resolver.resolve('./runtime/server/api/auth/entry.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/logout`,
+				handler: resolver.resolve('./runtime/server/api/auth/logout.get'),
+			});
+			addServerHandler({
+				method: 'get',
+				route: `${options.authUrlPrefix}/backchannel-logout`,
+				handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.get'),
+			});
+		}
 	},
 });
