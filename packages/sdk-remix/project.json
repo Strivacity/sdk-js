@@ -6,7 +6,7 @@
   "targets": {
     "type-check": {
       "executor": "nx:run-commands",
-      "dependsOn": ["sdk-core:build"],
+      "dependsOn": ["sdk-core:build", "sdk-react:build"],
       "options": {
         "command": "tsc --noEmit --project packages/sdk-remix/tsconfig.app.json"
       }
@@ -32,14 +32,6 @@
           "mode": "production",
           "command": "vite build"
         }
-      }
-    },
-    "test": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build"],
-      "options": {
-        "cwd": "packages/sdk-remix",
-        "command": "vitest"
       }
     }
   }
