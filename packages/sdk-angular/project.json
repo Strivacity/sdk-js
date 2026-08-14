@@ -10,31 +10,24 @@
       "options": {
         "commands": [
           {
-            "command": "ng-packagr -p packages/sdk-angular/ng-package.json",
+            "command": "ng-packagr -p packages/sdk-angular/ng-package.json -c packages/sdk-angular/tsconfig.lib.prod.json",
             "forwardAllArgs": false
           },
           {
-            "command": "rm -f ./packages/sdk-angular/dist/package.json ./packages/sdk-angular/dist/.npmignore",
+            "command": "rm -rf ./packages/sdk-angular/dist/src ./packages/sdk-angular/dist/package.json ./packages/sdk-angular/dist/.npmignore",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
-      },
-      "configurations": {
-        "serve": {
-          "mode": "development"
-        },
-        "development": {
-          "mode": "development"
-        },
-        "production": {
-          "mode": "production"
-        }
       }
     },
     "test": {
+      "executor": "nx:run-commands",
       "dependsOn": ["build"],
-      "executor": "@analogjs/vitest-angular:test"
+      "options": {
+        "cwd": "packages/sdk-angular",
+        "command": "vitest"
+      }
     }
   }
 }

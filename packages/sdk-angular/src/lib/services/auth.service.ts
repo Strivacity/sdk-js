@@ -1,176 +1,135 @@
-import { Inject, Injectable } from '@angular/core';
-import { type Observable, BehaviorSubject, from } from 'rxjs';
-import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
-import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
-import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
-import { type SDKOptions, initFlow } from '@strivacity/sdk-core';
-import type { Session } from '../utils/types';
-import { STRIVACITY_SDK } from '../utils/helpers';
+import type { IdTokenClaims, SDKInstance } from '../../types';
+import { DestroyRef, Injectable, PLATFORM_ID, TransferState, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { initFlow } from '@strivacity/sdk-core';
+import { STRIVACITY_SDK } from '../utils';
+import { SESSION_TRANSFER_KEY } from '../../server/session';
 
 /**
- * Service that manages Strivacity authentication flows.
- * Supports either PopupFlow or RedirectFlow types.
+ * Signal-based service exposing the Strivacity SDK state and actions to Angular components.
  *
- * @template Flow Type of authentication flow (PopupFlow or RedirectFlow).
- * @template Options Type of SDK options (defaults to SDKOptions).
+ * Provided via `provideStrivacity()` (standalone) or `StrivacityAuthModule.forRoot()` (NgModule).
  */
-@Injectable({
-	providedIn: 'root',
-})
-export class StrivacityAuthService<
-	Flow extends PopupFlow | RedirectFlow | NativeFlow = PopupFlow | RedirectFlow | NativeFlow,
-	Options extends SDKOptions = SDKOptions,
-> {
-	/**
-	 * Instance of the authentication flow (PopupFlow or RedirectFlow).
-	 */
-	sdk: Flow;
+@Injectable()
+export class StrivacityAuthService {
+	private readonly loadingSignal = signal(true);
+	private readonly languageSignal = signal(globalThis.navigator?.language ?? 'en-US');
+	private readonly isAuthenticatedSignal = signal(false);
+	private readonly idTokenClaimsSignal = signal<IdTokenClaims | null>(null);
+	private readonly accessTokenSignal = signal<string | null>(null);
+	private readonly refreshTokenSignal = signal<string | null>(null);
+	private readonly accessTokenExpiredSignal = signal(true);
+	private readonly accessTokenExpirationDateSignal = signal<number | null>(null);
 
-	/**
-	 * BehaviorSubject that holds the current session state.
-	 * @protected
-	 * @readonly
-	 */
-	private readonly sessionSubject: BehaviorSubject<Session>;
+	readonly options = inject(STRIVACITY_SDK);
+	readonly sdk: SDKInstance = initFlow(this.options as never) as unknown as SDKInstance;
+	readonly loading = this.loadingSignal.asReadonly();
+	readonly language = this.languageSignal.asReadonly();
+	readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
+	readonly idTokenClaims = this.idTokenClaimsSignal.asReadonly();
+	readonly accessToken = this.accessTokenSignal.asReadonly();
+	readonly refreshToken = this.refreshTokenSignal.asReadonly();
+	readonly accessTokenExpired = this.accessTokenExpiredSignal.asReadonly();
+	readonly accessTokenExpirationDate = this.accessTokenExpirationDateSignal.asReadonly();
 
-	/**
-	 * Observable that emits the session state changes.
-	 * @readonly
-	 */
-	readonly session$: Observable<Session>;
+	constructor() {
+		if (this.options.serverSideSession) {
+			const transferState = inject(TransferState);
+			const hydratedSession = transferState.get(SESSION_TRANSFER_KEY, undefined);
 
-	/**
-	 * Creates an instance of StrivacityAuthService.
-	 *
-	 * @param {Options} options SDK configuration options injected via STRIVACITY_SDK.
-	 */
-	constructor(@Inject(STRIVACITY_SDK) public options: Options) {
-		this.sdk = initFlow(options) as Flow;
-		this.sessionSubject = new BehaviorSubject<Session>({
-			loading: true,
-			isAuthenticated: false,
-			idTokenClaims: null,
-			accessToken: null,
-			refreshToken: null,
-			accessTokenExpired: true,
-			accessTokenExpirationDate: null,
-		});
-		this.session$ = this.sessionSubject.asObservable();
+			if (hydratedSession) {
+				this.sdk.session = hydratedSession;
 
-		const updateSession = async () => {
-			this.sessionSubject.next({
-				loading: false,
-				isAuthenticated: await this.sdk.isAuthenticated,
-				idTokenClaims: this.sdk.idTokenClaims || null,
-				accessToken: this.sdk.accessToken || null,
-				refreshToken: this.sdk.refreshToken || null,
-				accessTokenExpired: this.sdk.accessTokenExpired,
-				accessTokenExpirationDate: this.sdk.accessTokenExpirationDate || null,
-			});
-		};
-
-		this.sdk.subscribeToEvent('init', updateSession);
-		this.sdk.subscribeToEvent('loggedIn', updateSession);
-		this.sdk.subscribeToEvent('sessionLoaded', updateSession);
-		this.sdk.subscribeToEvent('tokenRefreshed', updateSession);
-		this.sdk.subscribeToEvent('tokenRefreshFailed', updateSession);
-		this.sdk.subscribeToEvent('logoutInitiated', updateSession);
-		this.sdk.subscribeToEvent('tokenRevoked', updateSession);
-		this.sdk.subscribeToEvent('tokenRevokeFailed', updateSession);
-	}
-
-	/**
-	 * Checks if the user is authenticated.
-	 *
-	 * @returns {Observable<boolean>} An observable that emits the authentication status.
-	 */
-	isAuthenticated() {
-		return from(this.sdk.isAuthenticated);
-	}
-
-	/**
-	 * Logs the user in using the specified options.
-	 *
-	 * @param {Parameters<Flow['login']>[0]} [options] Options to customize the login behavior.
-	 * @returns {Observable<void>} An observable that completes when the login process is done.
-	 */
-	login(options?: Parameters<Flow['login']>[0]) {
-		const result = this.sdk.login(options);
-
-		if (result instanceof Promise) {
-			return from(result);
+				if (isPlatformBrowser(inject(PLATFORM_ID))) {
+					transferState.remove(SESSION_TRANSFER_KEY);
+				}
+			}
 		}
 
-		return result;
+		void this.updateSession();
+
+		const subscription = this.sdk.subscribeToAllEvents(() => this.updateSession());
+		inject(DestroyRef).onDestroy(() => subscription.dispose());
 	}
 
-	/**
-	 * Initiates the entry process using the provided challenge.
-	 *
-	 * @param {string} [url] Optional URL to use for the entry process. If not provided, the current window location will be used.
-	 * @returns {Observable<void>} An observable that completes when the entry process is done.
-	 */
-	entry(url?: string) {
-		const result = this.sdk.entry(url);
+	init(...args: Parameters<typeof this.sdk.init>): ReturnType<typeof this.sdk.init> {
+		return this.sdk.init(...args);
+	}
 
-		if (result instanceof Promise) {
-			return from(result);
+	subscribeToEvent(...args: Parameters<typeof this.sdk.subscribeToEvent>): ReturnType<typeof this.sdk.subscribeToEvent> {
+		return this.sdk.subscribeToEvent(...args);
+	}
+
+	subscribeToAllEvents(...args: Parameters<typeof this.sdk.subscribeToAllEvents>): ReturnType<typeof this.sdk.subscribeToAllEvents> {
+		return this.sdk.subscribeToAllEvents(...args);
+	}
+
+	checkAuthentication(...args: Parameters<typeof this.sdk.checkAuthentication>): ReturnType<typeof this.sdk.checkAuthentication> {
+		return this.sdk.checkAuthentication(...args);
+	}
+
+	getAccessToken(...args: Parameters<typeof this.sdk.getAccessToken>): ReturnType<typeof this.sdk.getAccessToken> {
+		return this.sdk.getAccessToken(...args);
+	}
+
+	tokenExchange(...args: Parameters<typeof this.sdk.tokenExchange>): ReturnType<typeof this.sdk.tokenExchange> {
+		return this.sdk.tokenExchange(...args);
+	}
+
+	handleCallback(...args: Parameters<typeof this.sdk.handleCallback>): ReturnType<typeof this.sdk.handleCallback> {
+		return this.sdk.handleCallback(...args);
+	}
+
+	refresh(): ReturnType<typeof this.sdk.refresh> {
+		return this.sdk.refresh();
+	}
+
+	revoke(): ReturnType<typeof this.sdk.revoke> {
+		return this.sdk.revoke();
+	}
+
+	logout(...args: Parameters<typeof this.sdk.logout>): ReturnType<typeof this.sdk.logout> {
+		return this.sdk.logout(...args);
+	}
+
+	login(...args: Parameters<typeof this.sdk.login>): ReturnType<typeof this.sdk.login> {
+		return this.sdk.login(...args);
+	}
+
+	register(...args: Parameters<typeof this.sdk.register>): ReturnType<typeof this.sdk.register> {
+		return this.sdk.register(...args);
+	}
+
+	entry(...args: Parameters<typeof this.sdk.entry>): ReturnType<typeof this.sdk.entry> {
+		return this.sdk.entry(...args);
+	}
+
+	private async updateSession(): Promise<void> {
+		const authenticated = await this.sdk.isAuthenticated;
+
+		if (this.loadingSignal()) {
+			this.loadingSignal.set(false);
 		}
-
-		return result;
-	}
-
-	/**
-	 * Registers a new user using the specified options.
-	 *
-	 * @param {Parameters<Flow['register']>[0]} [options] Options to customize the registration behavior.
-	 * @returns {Observable<void>} An observable that completes when the registration process is done.
-	 */
-	register(options?: Parameters<Flow['register']>[0]) {
-		const result = this.sdk.register(options);
-
-		if (result instanceof Promise) {
-			return from(result);
+		if (this.sdk.language !== this.languageSignal()) {
+			this.languageSignal.set(this.sdk.language);
 		}
-
-		return result;
-	}
-
-	/**
-	 * Refreshes the current authentication session.
-	 *
-	 * @returns {Observable<void>} An observable that completes when the session is refreshed.
-	 */
-	refresh() {
-		return from(this.sdk.refresh());
-	}
-
-	/**
-	 * Revokes the current session tokens.
-	 *
-	 * @returns {Observable<void>} An observable that completes when the tokens are revoked.
-	 */
-	revoke() {
-		return from(this.sdk.revoke());
-	}
-
-	/**
-	 * Logs the user out using the specified options.
-	 *
-	 * @param {Parameters<Flow['logout']>[0]} [options] Options to customize the logout behavior.
-	 * @returns {Observable<void>} An observable that completes when the logout process is done.
-	 */
-	logout(options?: Parameters<Flow['logout']>[0]) {
-		return from(this.sdk.logout(options));
-	}
-
-	/**
-	 * Handles the authentication callback (e.g., after a redirect or popup flow).
-	 *
-	 * @param {Parameters<Flow['handleCallback']>[0]} [url] The URL to handle for the callback.
-	 * @returns {Observable<void>} An observable that completes when the callback is handled.
-	 */
-	handleCallback(url?: Parameters<Flow['handleCallback']>[0]) {
-		return from(this.sdk.handleCallback(url));
+		if (authenticated !== this.isAuthenticatedSignal()) {
+			this.isAuthenticatedSignal.set(authenticated);
+		}
+		if (this.sdk.idTokenClaims !== this.idTokenClaimsSignal()) {
+			this.idTokenClaimsSignal.set(this.sdk.idTokenClaims ?? null);
+		}
+		if (this.sdk.accessToken !== this.accessTokenSignal()) {
+			this.accessTokenSignal.set(this.sdk.accessToken ?? null);
+		}
+		if (this.sdk.refreshToken !== this.refreshTokenSignal()) {
+			this.refreshTokenSignal.set(this.sdk.refreshToken ?? null);
+		}
+		if (this.sdk.accessTokenExpired !== this.accessTokenExpiredSignal()) {
+			this.accessTokenExpiredSignal.set(this.sdk.accessTokenExpired);
+		}
+		if (this.sdk.accessTokenExpirationDate !== this.accessTokenExpirationDateSignal()) {
+			this.accessTokenExpirationDateSignal.set(this.sdk.accessTokenExpirationDate ?? null);
+		}
 	}
 }
