@@ -6,7 +6,7 @@
   "targets": {
     "type-check": {
       "executor": "nx:run-commands",
-      "dependsOn": ["sdk-core:build"],
+      "dependsOn": ["sdk-react:build"],
       "options": {
         "command": "tsc --noEmit --project packages/sdk-next/tsconfig.app.json"
       }
