@@ -4,32 +4,32 @@
   "projectType": "library",
   "sourceRoot": "packages/sdk-nuxt/src",
   "targets": {
-    "build": {
+    "prepare": {
       "executor": "nx:run-commands",
-      "dependsOn": ["sdk-core:build"],
       "options": {
         "commands": [
           {
-            "command": "nuxt-module-build prepare --cwd packages/sdk-nuxt",
+            "command": "nuxt-module-build build --stub --cwd packages/sdk-nuxt",
             "forwardAllArgs": false
           },
           {
-            "command": "nuxt-module-build build --sourcemap --cwd packages/sdk-nuxt",
+            "command": "nuxt-module-build prepare --cwd packages/sdk-nuxt",
             "forwardAllArgs": false
           }
         ],
         "parallel": false
-      },
-      "configurations": {
-        "serve": {
-          "mode": "development"
-        },
-        "development": {
-          "mode": "development"
-        },
-        "production": {
-          "mode": "production"
-        }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-core:build", "prepare"],
+      "options": {
+        "commands": [
+          {
+            "command": "nuxt-module-build build --sourcemap --cwd packages/sdk-nuxt",
+            "forwardAllArgs": false
+          }
+        ]
       }
     },
     "test": {
