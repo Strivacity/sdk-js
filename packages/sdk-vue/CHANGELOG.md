@@ -29,13 +29,13 @@
 ### 🚀 Features
 
 - custom sdk mode added ([17812c6](https://github.com/Strivacity/sdk-js/commit/17812c6))
-- ⚠️  EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
-- ⚠️  NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+- ⚠️ EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- ⚠️ NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
 
-### ⚠️  Breaking Changes
+### ⚠️ Breaking Changes
 
-- EmbeddedFlow implemented  ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
-- NativeFlow entry function now returns an object instead of a string  ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+- EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
 
 ### 🧱 Updated Dependencies
 
@@ -45,13 +45,13 @@
 
 ### 🚀 Features
 
-- ⚠️  EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
-- ⚠️  NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+- ⚠️ EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- ⚠️ NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
 
-### ⚠️  Breaking Changes
+### ⚠️ Breaking Changes
 
-- EmbeddedFlow implemented  ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
-- NativeFlow entry function now returns an object instead of a string  ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
+- EmbeddedFlow implemented ([a0e3ad8](https://github.com/Strivacity/sdk-js/commit/a0e3ad8))
+- NativeFlow entry function now returns an object instead of a string ([9a8942d](https://github.com/Strivacity/sdk-js/commit/9a8942d))
 
 ### 🧱 Updated Dependencies
 
@@ -140,12 +140,12 @@
 ### 🚀 Features
 
 - ionic example app added ([494805a](https://github.com/strivacity/sdk-js/commit/494805a))
-- ⚠️  NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
+- ⚠️ NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
 - @strivacity/sdk-vue package implemented ([8c526f5](https://github.com/strivacity/sdk-js/commit/8c526f5))
 
-### ⚠️  Breaking Changes
+### ⚠️ Breaking Changes
 
-- ⚠️  NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
+- ⚠️ NativeFlow implemented ([75b353f](https://github.com/strivacity/sdk-js/commit/75b353f))
 
 ### 🧱 Updated Dependencies
 
@@ -153,7 +153,6 @@
 - Updated sdk-core to 2.0.0-beta
 
 ## 1.0.1 (2025-02-03)
-
 
 ### 🩹 Fixes
 
@@ -163,18 +162,15 @@
 
 - add --access=public to the publish workflow
 
-
 ### 🧱 Updated Dependencies
 
 - Updated sdk-core to 1.0.1
 
 # 1.0.0 (2024-09-20)
 
-
 ### 🚀 Features
 
 - @strivacity/sdk-vue package implemented
-
 
 ### 🧱 Updated Dependencies
 

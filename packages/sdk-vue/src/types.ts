@@ -1,219 +1,225 @@
 import type { Ref } from 'vue';
-import type { IdTokenClaims, LoginFlowMessage, LoginFlowState, SDKOptions } from '@strivacity/sdk-core';
-import type { PopupFlow } from '@strivacity/sdk-core/flows/PopupFlow';
-import type { RedirectFlow } from '@strivacity/sdk-core/flows/RedirectFlow';
-import type { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
+import type {
+	IdTokenClaims,
+	RedirectFlow,
+	PopupFlow,
+	NativeFlow,
+	EmbeddedFlow,
+	initFlow,
+	FallbackError,
+	NativeParams,
+	LoginFlowState,
+	SessionData,
+	LoginFlowMessage,
+} from '@strivacity/sdk-core';
 
-/**
- * Represents the session state, including authentication details and token information.
- */
-export type Session = {
+export * from '@strivacity/sdk-core/types';
+
+export type SDKContext<Flow extends RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow> = {
 	/**
-	 * Reactive reference to the loading state of the session.
-	 * `true` when the session is initializing, otherwise `false`.
+	 * The underlying Strivacity SDK flow instance.
+	 */
+	readonly sdk: Flow;
+
+	/**
+	 * A boolean indicating whether the SDK is still loading.
+	 */
+	readonly loading: Ref<boolean>;
+
+	/**
+	 * BCP 47 language code representing the current language of the SDK.
+	 */
+	readonly language: Ref<string>;
+
+	/**
+	 * A boolean ref indicating whether the user is authenticated.
+	 */
+	readonly isAuthenticated: Ref<boolean>;
+
+	/**
+	 * The claims from the ID token, if available.
+	 */
+	readonly idTokenClaims: Ref<IdTokenClaims | null>;
+
+	/**
+	 * The access token, if available.
+	 */
+	readonly accessToken: Ref<string | null>;
+
+	/**
+	 * The refresh token, if available.
+	 */
+	readonly refreshToken: Ref<string | null>;
+
+	/**
+	 * A boolean ref indicating whether the access token has expired.
+	 */
+	readonly accessTokenExpired: Ref<boolean>;
+
+	/**
+	 * The expiration date of the access token, if available.
+	 */
+	readonly accessTokenExpirationDate: Ref<number | null>;
+
+	/**
+	 * Subscribes to a specific SDK event.
+	 */
+	subscribeToEvent: Flow['subscribeToEvent'];
+
+	/**
+	 * Subscribes to all SDK events.
+	 */
+	subscribeToAllEvents: Flow['subscribeToAllEvents'];
+
+	/**
+	 * Checks whether the user is currently authenticated, optionally triggering a token refresh.
+	 */
+	checkAuthentication: Flow['checkAuthentication'];
+
+	/**
+	 * Returns the current access token, optionally refreshing it if expired.
+	 */
+	getAccessToken: Flow['getAccessToken'];
+
+	/**
+	 * Initializes the SDK, loading metadata and restoring any persisted session.
+	 */
+	init: Flow['init'];
+
+	/**
+	 * Performs a token exchange using the provided parameters.
+	 */
+	tokenExchange: Flow['tokenExchange'];
+
+	/**
+	 * Handles the authentication callback by parsing the response from the given URL.
+	 */
+	handleCallback: Flow['handleCallback'];
+
+	/**
+	 * Refreshes the current access token using the refresh token.
+	 */
+	refresh: Flow['refresh'];
+
+	/**
+	 * Revokes the current tokens.
+	 */
+	revoke: Flow['revoke'];
+
+	/**
+	 * Logs the user out and optionally redirects to a post-logout URI.
+	 */
+	logout: Flow['logout'];
+
+	/**
+	 * Initiates the login flow.
+	 */
+	login: Flow['login'];
+
+	/**
+	 * Initiates the registration flow.
+	 */
+	register: Flow['register'];
+
+	/**
+	 * Handles the entry point URL of the authentication flow, typically used for embedded or native modes.
+	 */
+	entry: Flow['entry'];
+};
+
+export type SDKInstance = Awaited<ReturnType<typeof initFlow>>;
+
+export type LoginContext = {
+	/**
+	 * Whether a form submission or session initialization is in progress.
 	 */
 	loading: Ref<boolean>;
 
 	/**
-	 * The SDK options used to configure the session.
+	 * Current form field values, keyed by form ID then widget ID.
 	 */
-	options: Ref<SDKOptions>;
-
-	/**
-	 * Reactive reference to the user's authentication status.
-	 * `true` if the user is authenticated, otherwise `false`.
-	 */
-	isAuthenticated: Ref<boolean>;
-
-	/**
-	 * Reactive reference to the claims contained in the ID token.
-	 * Contains user identity and other information, or `null` if not authenticated.
-	 */
-	idTokenClaims: Ref<IdTokenClaims | null>;
-
-	/**
-	 * Reactive reference to the current access token for API authorization.
-	 * `null` if the user is not authenticated or the token is unavailable.
-	 */
-	accessToken: Ref<string | null>;
-
-	/**
-	 * Reactive reference to the refresh token, used to refresh the access token.
-	 * `null` if the user is not authenticated or the refresh token is unavailable.
-	 */
-	refreshToken: Ref<string | null>;
-
-	/**
-	 * Reactive reference indicating if the access token has expired.
-	 * `true` if expired, otherwise `false`.
-	 */
-	accessTokenExpired: Ref<boolean>;
-
-	/**
-	 * Reactive reference to the expiration date of the access token in Unix time (milliseconds).
-	 * `null` if no token is available or the session is not authenticated.
-	 */
-	accessTokenExpirationDate: Ref<number | null>;
-};
-
-/**
- * Represents the available authentication flows and operations for Popup-based interactions.
- */
-export type PopupSDK = {
-	/**
-	 * Represents the SDK instance.
-	 */
-	sdk: InstanceType<typeof PopupFlow>;
-
-	/**
-	 * Initiates the login process.
-	 */
-	login: InstanceType<typeof PopupFlow>['login'];
-
-	/**
-	 * Registers a new user.
-	 */
-	register: InstanceType<typeof PopupFlow>['register'];
-
-	/**
-	 * Initiates the entry process.
-	 */
-	entry: InstanceType<typeof PopupFlow>['entry'];
-
-	/**
-	 * Refreshes the user's session.
-	 */
-	refresh: InstanceType<typeof PopupFlow>['refresh'];
-
-	/**
-	 * Revokes the current session tokens.
-	 */
-	revoke: InstanceType<typeof PopupFlow>['revoke'];
-
-	/**
-	 * Logs out the user.
-	 */
-	logout: InstanceType<typeof PopupFlow>['logout'];
-
-	/**
-	 * Handles the callback after authentication or token exchange.
-	 */
-	handleCallback: InstanceType<typeof PopupFlow>['handleCallback'];
-};
-
-/**
- * Represents the available authentication flows and operations for Redirect-based interactions.
- */
-export type RedirectSDK = {
-	/**
-	 * Represents the SDK instance.
-	 */
-	sdk: InstanceType<typeof RedirectFlow>;
-
-	/**
-	 * Initiates the login process.
-	 */
-	login: InstanceType<typeof RedirectFlow>['login'];
-
-	/**
-	 * Registers a new user.
-	 */
-	register: InstanceType<typeof RedirectFlow>['register'];
-
-	/**
-	 * Initiates the entry process.
-	 */
-	entry: InstanceType<typeof RedirectFlow>['entry'];
-
-	/**
-	 * Refreshes the user's session.
-	 */
-	refresh: InstanceType<typeof RedirectFlow>['refresh'];
-
-	/**
-	 * Revokes the current session tokens.
-	 */
-	revoke: InstanceType<typeof RedirectFlow>['revoke'];
-
-	/**
-	 * Logs out the user.
-	 */
-	logout: InstanceType<typeof RedirectFlow>['logout'];
-
-	/**
-	 * Handles the callback after authentication or token exchange.
-	 */
-	handleCallback: InstanceType<typeof RedirectFlow>['handleCallback'];
-};
-
-/**
- * Represents the available authentication flows and operations for Native-based interactions.
- */
-export type NativeSDK = {
-	/**
-	 * Represents the SDK instance.
-	 */
-	sdk: InstanceType<typeof NativeFlow>;
-
-	/**
-	 * Initiates the login process.
-	 */
-	login: InstanceType<typeof NativeFlow>['login'];
-
-	/**
-	 * Registers a new user.
-	 */
-	register: InstanceType<typeof NativeFlow>['register'];
-
-	/**
-	 * Initiates the entry process.
-	 */
-	entry: InstanceType<typeof NativeFlow>['entry'];
-
-	/**
-	 * Refreshes the user's session.
-	 */
-	refresh: InstanceType<typeof NativeFlow>['refresh'];
-
-	/**
-	 * Revokes the current session tokens.
-	 */
-	revoke: InstanceType<typeof NativeFlow>['revoke'];
-
-	/**
-	 * Logs out the user.
-	 */
-	logout: InstanceType<typeof NativeFlow>['logout'];
-
-	/**
-	 * Handles the callback after authentication or token exchange.
-	 */
-	handleCallback: InstanceType<typeof NativeFlow>['handleCallback'];
-};
-
-/**
- * Represents a combined context for Popup-based flows, containing both the Popup SDK and the session state.
- */
-export type PopupContext = PopupSDK & Session;
-
-/**
- * Represents a combined context for Redirect-based flows, containing both the Redirect SDK and the session state.
- */
-export type RedirectContext = RedirectSDK & Session;
-
-/**
- * Represents a combined context for Redirect-based flows, containing both the Redirect SDK and the session state.
- */
-export type NativeContext = NativeSDK & Session;
-
-export type NativeFlowContextValue = {
-	loading: Ref<boolean>;
 	forms: Ref<Record<string, Record<string, unknown>>>;
+
+	/**
+	 * Current validation and info messages, keyed by form ID then widget ID.
+	 */
 	messages: Ref<Record<string, Record<string, LoginFlowMessage>>>;
+
+	/**
+	 * The current login flow state returned by the backend.
+	 */
 	state: Ref<Partial<LoginFlowState>>;
-	submitForm: (formId: string) => Promise<void>;
-	triggerFallback: (hostedUrl?: string) => void;
+
+	/**
+	 * Submits the form with the given ID and advances the login flow.
+	 *
+	 * @param formId - The ID of the form to submit.
+	 * @param customBody - Optional custom body to send with the form submission. If not provided, the current form values will be used.
+	 * @returns A promise that resolves when the form submission is complete.
+	 */
+	submitForm: (formId: string, customBody?: Record<string, unknown>) => Promise<void>;
+
+	/**
+	 * Redirects to the hosted login UI.
+	 *
+	 * @param message - Optional message to log before redirecting.
+	 * @returns A promise that resolves when the redirect is initiated.
+	 */
+	triggerFallback: (message?: string) => void;
+
+	/**
+	 * Signals that the login flow was closed by the user.
+	 */
 	triggerClose: () => void;
+
+	/**
+	 * Updates a single field value within a form before submission.
+	 *
+	 * @param formId - The ID of the form containing the field.
+	 * @param widgetId - The ID of the widget (field) to update.
+	 * @param value - The new value to set for the field.
+	 */
 	setFormValue: (formId: string, widgetId: string, value: unknown) => void;
+
+	/**
+	 * Sets a validation or info message on a specific widget.
+	 *
+	 * @param formId - The ID of the form containing the widget.
+	 * @param widgetId - The ID of the widget to set the message for.
+	 * @param value - The message to set, which can be a string or a structured LoginFlowMessage.
+	 */
 	setMessage: (formId: string, widgetId: string, value: LoginFlowMessage) => void;
+};
+
+export type UseNativeLoginOptions = {
+	/**
+	 * Optional parameters to be passed to the login session request. These parameters will be sent to the `authorizationUri` endpoint.
+	 */
+	params?: NativeParams;
+
+	/**
+	 * A render function called when the user successfully completes the login flow.
+	 * This can be used to perform any necessary actions after a successful login, such as redirecting the user or updating the application state. Defaults to `null`.
+	 */
+	onLogin?: (session: SessionData) => void | Promise<void>;
+
+	/**
+	 * Called when the fallback flow is triggered, typically due to an error or unsupported environment. Receives a `FallbackError` object containing the hosted URL to redirect to.
+	 */
+	onFallback?: (error: FallbackError) => void | Promise<void>;
+
+	/**
+	 * Called when the login flow is closed by the user. This can be used to perform any necessary cleanup or state updates in the application. Defaults to `null`.
+	 */
+	onClose?: () => void | Promise<void>;
+
+	/**
+	 * Called when an error occurs during the login session initialization or flow. Receives an `Error` object describing the issue.
+	 */
+	onError?: (error: Error) => void | Promise<void>;
+
+	/**
+	 * Called when a global message is received during the login flow. This can be used to display messages to the user or log them for debugging purposes.
+	 */
+	onGlobalMessage?: (message: LoginFlowMessage) => void | Promise<void>;
 };
