@@ -8,7 +8,8 @@
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-core:build"],
       "options": {
-        "command": "tsc --noEmit --project packages/sdk-remix/tsconfig.app.json"
+        "cwd": "packages/sdk-svelte",
+        "command": "svelte-check --tsconfig ./tsconfig.app.json"
       }
     },
     "build": {
