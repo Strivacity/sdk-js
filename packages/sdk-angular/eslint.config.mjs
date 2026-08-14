@@ -1,6 +1,6 @@
 import angular from '@angular-eslint/eslint-plugin';
 import angularTemplate from '@angular-eslint/eslint-plugin-template';
-import { defineAngularConfig } from '../../eslint.config.base.js';
+import { defineAngularConfig } from '../../eslint.config.base.mjs';
 
 export default defineAngularConfig({
 	files: ['./src/**/*.ts'],
