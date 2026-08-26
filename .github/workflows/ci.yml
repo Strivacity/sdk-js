@@ -17,6 +17,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  NX_DEFAULT_OUTPUT_STYLE: stream
+
 jobs:
   lint:
     runs-on: ubuntu-latest
