@@ -58,5 +58,6 @@
       "pattern": "@strivacity/{projectName}@{version}"
     }
   },
+  "useDaemonProcess": false,
   "analytics": false
 }

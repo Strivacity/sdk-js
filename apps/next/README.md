@@ -34,7 +34,7 @@ Switch between modes by setting `VITE_MODE` (`redirect`, `popup`, `embedded`, or
 
 ## Server-managed sessions
 
-This app has its own server (Next.js's route handlers), so it wires up the SDK's Server SDK directly (see `app/lib/auth`) rather than pairing with a separate backend. `serverSessionUri` is set to `/auth/login` by default, routing login through this app's own server instead of storing tokens client-side.
+This app has its own server (Next.js's route handlers), so it wires up the SDK's Server SDK directly (see `app/lib/auth`) rather than pairing with a separate backend. `serverSessionUri` is set to `/auth/login` by default, routing login through this app's own server instead of storing tokens client-side. See the Core SDK's [Server-side session management](../../packages/sdk-core/README.md#server-side-session-management) for details.
 
 ---
 

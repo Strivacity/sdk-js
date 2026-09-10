@@ -404,6 +404,9 @@ importers:
 
   packages/sdk-next:
     dependencies:
+      '@strivacity/sdk-core':
+        specifier: workspace:*
+        version: link:../sdk-core
       '@strivacity/sdk-react':
         specifier: workspace:*
         version: link:../sdk-react
