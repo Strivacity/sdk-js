@@ -27,4 +27,23 @@ jobs:
           git config --global user.name "strivacity"
 
       - name: Publish
-        run: pnpm nx release publish --access=public
+        run: |
+          STABLE=()
+          PRERELEASE=()
+
+          for f in packages/*/package.json; do
+            proj=$(basename "$(dirname "$f")")
+            ver=$(node -p "require('./$f').version")
+            if [[ "$ver" == *-* ]]; then
+              PRERELEASE+=("$proj")
+            else
+              STABLE+=("$proj")
+            fi
+          done
+
+          if [ ${#STABLE[@]} -gt 0 ]; then
+            pnpm nx release publish --projects="$(IFS=,; echo "${STABLE[*]}")" --access=public
+          fi
+          if [ ${#PRERELEASE[@]} -gt 0 ]; then
+            pnpm nx release publish --projects="$(IFS=,; echo "${PRERELEASE[*]}")" --tag="next" --access=public
+          fi
