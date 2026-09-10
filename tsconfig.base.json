@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "rootDir": ".",
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
@@ -9,6 +8,7 @@
     "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "useDefineForClassFields": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "importHelpers": false,
@@ -22,6 +22,11 @@
     "skipDefaultLibCheck": true,
     "noEmit": true,
     "strict": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "jsx": "react-jsx",
+    "paths": {
+      "@strivacity/testing/*": ["./tools/testing/*"],
+      "@strivacity/common/*": ["./tools/common/*"]
+    }
   }
 }

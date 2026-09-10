@@ -1,25 +1,22 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
 
-export const Logout = () => {
-	const navigate = useNavigate();
-	const { isAuthenticated, logout } = useStrivacity();
+export default function Logout() {
+	const { sdk, loading, logout } = useStrivacity();
 
 	useEffect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		(async () => {
-			if (isAuthenticated) {
-				await logout({ postLogoutRedirectUri: location.origin });
-			} else {
-				await navigate('/');
-			}
-		})();
-	}, []);
+		if (loading) {
+			return;
+		}
 
-	return (
-		<section>
-			<h1>Logging out...</h1>
-		</section>
-	);
-};
+		// This demo shows both session modes side by side.
+		// in your own app, keep only the branch matching your `serverSessionUri` setting.
+		if (sdk.options.serverSessionUri) {
+			globalThis.location.href = '/auth/logout';
+		} else {
+			void logout();
+		}
+	}, [loading, logout]);
+
+	return null;
+}

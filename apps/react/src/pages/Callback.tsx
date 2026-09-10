@@ -1,45 +1,37 @@
+import { useStrivacity } from '@strivacity/sdk-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
 
-export const Callback = () => {
-	const query = globalThis?.window ? Object.fromEntries(new URLSearchParams(globalThis.window.location.search)) : {};
+export default function Callback() {
+	const { sdk, loading, handleCallback } = useStrivacity();
 	const navigate = useNavigate();
-	const { sdk, loading } = useStrivacity();
+	const searchParams = new URLSearchParams(globalThis.window.location.search);
 
 	useEffect(() => {
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		(async () => {
-			const url = new URL(location.href);
+		(() => {
+			if (loading) {
+				return;
+			}
 
-			if (url.searchParams.has('session_id')) {
-				await navigate(`/login?${url.searchParams}`);
+			// This demo shows both session modes side by side.
+			// in your own app, keep only the branch matching your `serverSessionUri` setting.
+			if (sdk.options.serverSessionUri) {
+				globalThis.location.href = `/auth/callback?${searchParams.toString()}`;
 			} else {
-				if (loading) {
-					return;
-				}
-
-				try {
-					await sdk.handleCallback();
-					await navigate('/profile');
-				} catch (error) {
-					// eslint-disable-next-line no-console
-					console.error('Error during callback handling:', error);
-				}
+				handleCallback()
+					.then(() => {
+						void navigate('/profile');
+					})
+					.catch(() => {
+						void navigate(`/error?error=${encodeURIComponent('An error occurred during callback handling.')}`);
+					});
 			}
 		})();
 	}, [loading]);
 
-	if (query.error) {
-		return (
-			<section>
-				<h1>Error in authentication</h1>
-				<div>
-					<h4>{query.error}</h4>
-					<p>{query.error_description}</p>
-				</div>
-			</section>
-		);
+	if (searchParams.get('error') || searchParams.get('error_description')) {
+		void navigate(`/error?${searchParams.toString()}`);
+		return null;
 	} else {
 		return (
 			<section>
@@ -47,4 +39,4 @@ export const Callback = () => {
 			</section>
 		);
 	}
-};
+}

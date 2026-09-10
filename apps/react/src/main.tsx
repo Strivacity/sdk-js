@@ -1,64 +1,47 @@
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
-import { DefaultLogging, type SDKOptions, StyAuthProvider, useStrivacity } from '@strivacity/sdk-react';
+import { BrowserRouter, Route, Routes } from 'react-router';
+import type { SessionData } from '@strivacity/sdk-react';
+import { options, AuthProvider } from './components/Provider';
 import { App } from './components/App';
-import { Callback } from './pages/Callback';
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { Logout } from './pages/Logout';
-import { Profile } from './pages/Profile';
-import { Register } from './pages/Register';
-import { Revoke } from './pages/Revoke';
-import { Entry } from './pages/Entry';
+import '@strivacity/common/styles/globals.css';
 
-void import(/* @vite-ignore */ `${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+import Callback from './pages/Callback';
+import Entry from './pages/Entry';
+import Error from './pages/Error';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Logout from './pages/Logout';
+import Profile from './pages/Profile';
+import Register from './pages/Register';
+import Revoke from './pages/Revoke';
 
-const options: SDKOptions = {
-	mode: import.meta.env.VITE_MODE,
-	issuer: import.meta.env.VITE_ISSUER,
-	scopes: import.meta.env.VITE_SCOPES.split(' '),
-	clientId: import.meta.env.VITE_CLIENT_ID,
-	redirectUri: import.meta.env.VITE_REDIRECT_URI,
-	storageTokenName: 'sty.session.react',
-	logging: DefaultLogging,
-};
+// BFF mode only (serverSessionUri set): the client SDK never holds a session, so fetch the server-managed one before rendering
+let session: SessionData | null | undefined;
 
-const RouteGuard = ({ children }: { children: React.ReactElement }) => {
-	const { loading, isAuthenticated } = useStrivacity();
+if (options.serverSessionUri) {
+	const response = await fetch('/auth/session', { credentials: 'include' });
 
-	if (loading) {
-		return <h1>Loading...</h1>;
+	if (response.ok) {
+		session = await response.json();
 	}
-
-	if (!isAuthenticated) {
-		return <Navigate to="/login" replace />;
-	}
-
-	return children;
-};
+}
 
 createRoot(document.getElementById('app')!).render(
 	<BrowserRouter>
-		<StyAuthProvider options={options}>
+		<AuthProvider session={session}>
 			<Routes>
 				<Route path="/" element={<App />}>
 					<Route index element={<Home />} />
 					<Route path="/callback" element={<Callback />} />
+					<Route path="/error" element={<Error />} />
+					<Route path="/entry" element={<Entry />} />
 					<Route path="/login" element={<Login />} />
 					<Route path="/logout" element={<Logout />} />
-					<Route
-						path="/profile"
-						element={
-							<RouteGuard>
-								<Profile />
-							</RouteGuard>
-						}
-					/>
+					<Route path="/profile" element={<Profile />} />
 					<Route path="/register" element={<Register />} />
 					<Route path="/revoke" element={<Revoke />} />
-					<Route path="/entry" element={<Entry />} />
 				</Route>
 			</Routes>
-		</StyAuthProvider>
+		</AuthProvider>
 	</BrowserRouter>,
 );

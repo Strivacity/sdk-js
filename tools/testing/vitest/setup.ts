@@ -1,6 +1,14 @@
-import { afterAll, afterEach, beforeAll } from 'vitest';
-import { server } from '../mocks/msw';
+import { beforeAll, afterAll, beforeEach } from 'vitest';
+import { worker } from '../mocks/msw';
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => {
+	worker.listen({ onUnhandledRequest: 'error' });
+});
+
+beforeEach(() => {
+	worker.resetHandlers();
+});
+
+afterAll(() => {
+	worker.close();
+});

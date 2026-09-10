@@ -1,0 +1,12 @@
+{
+  "name": "@strivacity/app-solidstart",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "type": "module",
+  "dependencies": {
+    "@strivacity/sdk-solid": "*",
+    "@strivacity/common": "*"
+  }
+}

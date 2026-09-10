@@ -1,27 +1,75 @@
 {
   "name": "@strivacity/sdk-svelte",
   "version": "3.0.3",
-  "license": "MIT",
   "description": "Strivacity Svelte SDK client",
+  "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/Strivacity/sdk-js"
   },
-  "dependencies": {
-    "@strivacity/sdk-core": "3.0.3"
-  },
-  "peerDependencies": {
-    "svelte": ">=5"
-  },
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.mjs",
+      "require": "./dist/client/index.cjs",
+      "default": "./dist/client/index.mjs"
+    },
+    "./client/*": {
+      "types": "./dist/client/*.d.ts",
+      "import": "./dist/client/*.mjs",
+      "require": "./dist/client/*.cjs",
+      "default": "./dist/client/*.mjs"
+    },
+    "./client/components": {
+      "types": "./dist/client/components.svelte.d.ts",
+      "import": "./dist/client/components.svelte.mjs",
+      "require": "./dist/client/components.svelte.cjs",
+      "default": "./dist/client/components.svelte.mjs"
+    },
+    "./client/hooks": {
+      "types": "./dist/client/hooks.svelte.d.ts",
+      "import": "./dist/client/hooks.svelte.mjs",
+      "require": "./dist/client/hooks.svelte.cjs",
+      "default": "./dist/client/hooks.svelte.mjs"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.cjs",
+      "default": "./dist/server/index.mjs"
+    },
+    "./server/*": {
+      "types": "./dist/server/*.d.ts",
+      "import": "./dist/server/*.mjs",
+      "require": "./dist/server/*.cjs",
+      "default": "./dist/server/*.mjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "require": "./dist/errors.cjs",
+      "default": "./dist/errors.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.cjs",
+      "default": "./dist/types.mjs"
+    }
+  },
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  },
+  "peerDependencies": {
+    "@sveltejs/kit": ">=2",
+    "svelte": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "@sveltejs/kit": {
+      "optional": true
     }
   }
 }

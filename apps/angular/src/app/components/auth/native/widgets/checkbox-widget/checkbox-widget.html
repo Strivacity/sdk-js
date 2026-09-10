@@ -1,0 +1,20 @@
+<div data-widget="checkbox" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id">
+	<div>
+		<input
+			[id]="config().id"
+			[name]="config().id"
+			[disabled]="disabled()"
+			[required]="!!config().validator?.required"
+			[checked]="checked()"
+			type="checkbox"
+			size="1"
+			(change)="onChange($any($event.target).checked)"
+		/>
+		@if (config().label) {
+		<label [for]="config().id" class="label">{{ config().label }}</label>
+		}
+	</div>
+	@if (errorMessage()) {
+	<small class="error">{{ errorMessage() }}</small>
+	}
+</div>

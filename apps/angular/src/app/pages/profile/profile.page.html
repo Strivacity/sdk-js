@@ -1,34 +1,5 @@
 <section>
-	<dl>
-		<dt>
-			<strong>accessToken</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessToken | json }}</pre>
-		</dd>
-		<dt>
-			<strong>refreshToken</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.refreshToken | json }}</pre>
-		</dd>
-		<dt>
-			<strong>accessTokenExpired</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessTokenExpired | json }}</pre>
-		</dd>
-		<dt>
-			<strong>accessTokenExpirationDate</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.accessTokenExpirationDate | date: 'medium' }}</pre>
-		</dd>
-		<dt>
-			<strong>claims</strong>
-		</dt>
-		<dd>
-			<pre>{{ session.idTokenClaims | json }}</pre>
-		</dd>
-	</dl>
+	<sty-app-token-field type="id_token" [value]="idToken()"></sty-app-token-field>
+	<sty-app-token-field type="access_token" [value]="accessToken()" [expiresAt]="expiresAt()"></sty-app-token-field>
+	<sty-app-token-field type="refresh_token" [value]="refreshToken()" (refreshToken)="handleRefresh()"></sty-app-token-field>
 </section>

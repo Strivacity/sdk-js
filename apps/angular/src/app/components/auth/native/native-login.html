@@ -1,0 +1,39 @@
+<!-- No screen yet: the SDK is still fetching the first screen from the auth server -->
+@if (nativeLoginService.loading() || !nativeLoginService.state().screen) {
+<section>
+	<p>Loading...</p>
+</section>
+}
+
+<!-- Custom markup for the 'password' screen instead of the generic renderer below -->
+@else if (passwordScreen()) {
+<section class="login-renderer">
+	<form data-widget="layout" data-type="vertical" data-form-id="password" (submit)="onPasswordSubmit($event)">
+		<app-static-widget formId="password" [config]="$any(passwordScreen()!.sectionTitleWidget)" />
+		<!-- You can add custom elements -->
+		<div style="text-align: center">This is a custom text</div>
+		<app-password-widget formId="password" [config]="$any(passwordScreen()!.passwordInputWidget)" />
+		<app-checkbox-widget formId="password" [config]="$any(passwordScreen()!.keepMeLoggedInWidget)" />
+		<!-- You can override widget rendering also -->
+		<button
+			type="submit"
+			[disabled]="nativeLoginService.loading()"
+			data-widget="submit"
+			data-type="button"
+			data-variant="primary"
+			data-form-id="password"
+			data-widget-id="submit"
+		>
+			Custom button
+		</button>
+		@if (passwordScreen()!.hasResetForm) {
+		<app-submit-widget formId="reset" [config]="$any(passwordScreen()!.resetSubmitWidget)" />
+		}
+	</form>
+</section>
+}
+
+<!-- Every other screen: render its layout generically -->
+@else {
+<app-native-login-renderer />
+}

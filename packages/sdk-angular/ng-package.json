@@ -1,8 +1,8 @@
 {
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
+  "allowedNonPeerDependencies": ["@strivacity/sdk-core", "@strivacity/sdk-angular"],
   "dest": "dist",
   "lib": {
-    "entryFile": "src/public-api.ts"
-  },
-  "allowedNonPeerDependencies": ["@strivacity/sdk-core", "@strivacity/sdk-angular"]
+    "entryFile": "./src/index.ts"
+  }
 }

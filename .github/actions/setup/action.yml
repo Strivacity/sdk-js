@@ -13,12 +13,12 @@ runs:
       uses: actions/setup-node@v6
       with:
         node-version: 24
-        cache: "pnpm"
-        cache-dependency-path: "./pnpm-lock.yaml"
+        cache: 'pnpm'
+        cache-dependency-path: './pnpm-lock.yaml'
 
     - name: Install
       run: pnpm install --frozen-lockfile
       shell: bash
-      working-directory: "."
+      working-directory: '.'
       env:
         CYPRESS_INSTALL_BINARY: 0

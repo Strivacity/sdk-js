@@ -1,28 +1,46 @@
 {
   "name": "@strivacity/sdk-angular",
   "version": "3.0.3",
-  "license": "MIT",
   "description": "Strivacity Angular SDK client",
+  "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/Strivacity/sdk-js"
   },
-  "type": "module",
-  "dependencies": {
-    "@strivacity/sdk-core": "3.0.3"
-  },
-  "peerDependencies": {
-    "@angular/core": ">=14"
-  },
+  "sideEffects": false,
   "main": "./dist/fesm2022/strivacity-sdk-angular.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/strivacity-sdk-angular.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/types/strivacity-sdk-angular.d.ts",
       "import": "./dist/fesm2022/strivacity-sdk-angular.mjs",
       "esm": "./dist/fesm2022/strivacity-sdk-angular.mjs",
       "default": "./dist/fesm2022/strivacity-sdk-angular.mjs"
+    },
+    "./types": {
+      "types": "./dist/types/strivacity-sdk-angular-src-types.d.ts",
+      "import": "./dist/fesm2022/strivacity-sdk-angular-src-types.mjs",
+      "esm": "./dist/fesm2022/strivacity-sdk-angular-src-types.mjs",
+      "default": "./dist/fesm2022/strivacity-sdk-angular-src-types.mjs"
+    },
+    "./server": {
+      "types": "./dist/types/strivacity-sdk-angular-src-server.d.ts",
+      "import": "./dist/fesm2022/strivacity-sdk-angular-src-server.mjs",
+      "esm": "./dist/fesm2022/strivacity-sdk-angular-src-server.mjs",
+      "default": "./dist/fesm2022/strivacity-sdk-angular-src-server.mjs"
+    }
+  },
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=20",
+    "express": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
     }
   }
 }

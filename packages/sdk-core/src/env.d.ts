@@ -1,20 +1,13 @@
-/// <reference types="vite/client" />
-
-/* eslint-disable no-var */
-import type { EmbeddedFlow } from './flows/EmbeddedFlow';
+import type { EmbeddedFlow, LoginComponent } from './types/embedded';
 
 declare global {
 	interface StrivacityFramework {
-		/**
-		 * The OIDC service instance managing authentication and tokens.
-		 */
+		hostElement?: LoginComponent;
 		oidcService?: EmbeddedFlow;
+		storage?: Map<string, string>;
 	}
 
-	namespace globalThis {
-		/**
-		 * Application configuration object.
-		 */
-		var sty: StrivacityFramework;
-	}
+	var sty: StrivacityFramework;
 }
+
+export {};

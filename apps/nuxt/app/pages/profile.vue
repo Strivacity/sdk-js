@@ -1,30 +1,40 @@
-<script lang="ts" setup>
-const { accessToken, accessTokenExpired, accessTokenExpirationDate, idTokenClaims, refreshToken } = useStrivacity();
+<script setup lang="ts">
+import '@strivacity/common/components/token-field';
+
+import { useStrivacity } from '#imports';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const ctx = useStrivacity();
+const session = computed(() => ctx.sdk.session);
+
+definePageMeta({
+	middleware: ['auth'],
+});
+
+async function handleRefresh() {
+	// This demo shows both session modes side by side.
+	// in your own app, keep only the branch matching your `serverSessionUri` setting.
+	if (ctx.sdk.options.serverSessionUri) {
+		globalThis.location.href = '/auth/refresh?returnTo=/profile';
+	} else {
+		try {
+			await ctx.refresh();
+			globalThis.location.reload();
+		} catch (error) {
+			void router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+		}
+	}
+}
 </script>
 
 <template>
-	<section>
-		<dl>
-			<dt><strong>accessToken</strong></dt>
-			<dd>
-				<pre>{{ JSON.stringify(accessToken) }}</pre>
-			</dd>
-			<dt><strong>refreshToken</strong></dt>
-			<dd>
-				<pre>{{ JSON.stringify(refreshToken) }}</pre>
-			</dd>
-			<dt><strong>accessTokenExpired</strong></dt>
-			<dd>
-				<pre>{{ JSON.stringify(accessTokenExpired) }}</pre>
-			</dd>
-			<dt><strong>accessTokenExpirationDate</strong></dt>
-			<dd>
-				<pre>{{ accessTokenExpirationDate ? new Date(accessTokenExpirationDate * 1000).toLocaleString() : JSON.stringify(null) }}</pre>
-			</dd>
-			<dt><strong>claims</strong></dt>
-			<dd>
-				<pre>{{ JSON.stringify(idTokenClaims, null, 2) }}</pre>
-			</dd>
-		</dl>
-	</section>
+	<client-only>
+		<section>
+			<sty-app-token-field type="id_token" :value="session?.id_token"></sty-app-token-field>
+			<sty-app-token-field type="access_token" :value="session?.access_token" :expiresAt="session?.expires_at"></sty-app-token-field>
+			<sty-app-token-field type="refresh_token" :value="session?.refresh_token" @refreshToken="handleRefresh"></sty-app-token-field>
+		</section>
+	</client-only>
 </template>

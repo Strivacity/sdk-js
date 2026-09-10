@@ -1,0 +1,21 @@
+<header>
+	<div>
+		@if (authService.isAuthenticated()) {
+		<strong>Welcome, {{ name() }}!</strong>
+		} @else if (authService.loading()) {
+		<p>Loading...</p>
+		}
+	</div>
+	<div>
+		<a routerLink="/" routerLinkActive="active" data-button="home">Home</a>
+		@if (authService.isAuthenticated()) {
+		<a routerLink="/profile" routerLinkActive="active" data-button="profile">Profile</a>
+		<a routerLink="/revoke" routerLinkActive="active" data-button="revoke">Revoke</a>
+		<a routerLink="/logout" routerLinkActive="active" data-button="logout">Logout</a>
+		} @else {
+		<a routerLink="/login" routerLinkActive="active" data-button="login">Login</a>
+		<a routerLink="/register" routerLinkActive="active" data-button="register">Register</a>
+		}
+	</div>
+</header>
+<router-outlet />

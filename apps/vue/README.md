@@ -1,323 +1,41 @@
-# Strivacity SDK - Vue Example App
+# Strivacity Vue example app
 
-This example application demonstrates how to integrate the [@strivacity/sdk-vue](https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-vue) SDK into a Vue 3 application using Vue Router and the Composition API. It covers all supported authentication modes (`redirect`, `popup`, `native`, `embedded`) and shows how to structure route-based authentication flows.
+A Vue 3 SPA demonstrating [`@strivacity/sdk-vue`](../../packages/sdk-vue) - it shows all four authentication modes (`redirect`, `popup`, `embedded`, `native`) side by side, route guarding, token refresh/revoke, and pairing with the [backend (BFF) app](../backend) for server-managed sessions.
 
-See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+**See also:**
 
-## Overview
+- [Full Documentation](https://docs.strivacity.com/reference/overview) - complete guide for all authentication modes
+- [Example apps overview](../README.md) - how pages, modes, and session strategies work across every example app
+- [`@strivacity/sdk-vue` README](../../packages/sdk-vue/README.md) - the SDK this app is built on, including its full configuration reference
+- [Root README](../../README.md) - monorepo setup, environment configuration, and running other example apps
 
-The SDK is registered as a Vue plugin and exposes the `useStrivacity` composable, which provides reactive authentication state and methods throughout the application. Vue Router is used for client-side navigation with route-based authentication guards.
+---
 
-## Requirements
+## Running this app
 
-- Vue.js: 3+
-- Node.js: 20 LTS+
-
-## Install
-
-```bash
-pnpm install
-```
-
-Create a `.env.local` file in the repository root:
-
-```env
-VITE_MODE=redirect
-VITE_ISSUER=your-cluster-domain
-VITE_CLIENT_ID=your-client-id
-VITE_SCOPES=openid profile email
-VITE_REDIRECT_URI=http://localhost:4200/callback
-```
-
-Then start the development server:
+From the repository root (see the [root README](../../README.md#environment-configuration) for the required `.env.local`):
 
 ```bash
 pnpm app:vue:serve
 ```
 
-## Usage
+Switch between modes by setting `VITE_MODE` (`redirect`, `popup`, `embedded`, or `native`) in `.env.local`.
 
-### Initialization
+---
 
-The SDK is registered as a Vue plugin in `src/main.ts`. All environment variables are read from the Vite environment and passed directly to `createStrivacitySDK`.
+## Project structure
 
-The file also dynamically imports `bundle.js` from the configured issuer domain. This script is served by the Strivacity cluster and registers the Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`, etc.) used in `embedded` mode:
+- `src/pages` - one route per demo screen (`Home`, `Login`, `Register`, `Callback`, `Logout`, `Revoke`, `Profile`, `Entry`, `Error`)
+- `src/components/auth` - one folder per mode (`redirect`, `popup`, `embedded`, `native`); `components/auth/index.ts` picks the active one based on `VITE_MODE`
 
-```typescript
-import { createApp } from 'vue';
-import { router } from './router';
-import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
-import AppComponent from './components/app.component.vue';
+---
 
-void import(`${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+## Native mode renderer
 
-const app = createApp(AppComponent);
-const sdk = createStrivacitySDK({
-	mode: import.meta.env.VITE_MODE,
-	issuer: import.meta.env.VITE_ISSUER,
-	scopes: import.meta.env.VITE_SCOPES.split(' '),
-	clientId: import.meta.env.VITE_CLIENT_ID,
-	redirectUri: import.meta.env.VITE_REDIRECT_URI,
-	storageTokenName: 'sty.session.vue',
-	logging: DefaultLogging,
-});
+In `native` mode, Strivacity sends back the login flow as structured data (a `layout` tree plus per-screen `forms`) instead of markup, so your own components render the UI. This app's renderer for that is:
 
-app.use(router);
-app.use(sdk);
-```
+- [`NativeLoginRenderer.vue`](./src/components/auth/native/NativeLoginRenderer.vue) - entry point; renders the root layout widget (a `<form>`) and hands its child items to the widget renderer
+- [`NativeLoginWidgetRenderer.ts`](./src/components/auth/native/NativeLoginWidgetRenderer.ts) - walks the layout tree recursively; for each placeholder, looks up its live widget data (value, validation messages) by id in the current form state and picks the matching component from the `widgets` map
+- `native/widgets/` - one Vue component per widget type (`InputWidget`, `PasswordWidget`, `SelectWidget`, `SubmitWidget`, `PasskeyLoginWidget`, ...), each responsible for rendering and updating a single field
 
-Components access authentication state through the `useStrivacity` composable, which returns reactive refs:
-
-```vue
-<script setup>
-import { useStrivacity } from '@strivacity/sdk-vue';
-import { computed } from 'vue';
-
-const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
-const userName = computed(() => `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`);
-</script>
-
-<template>
-	<div v-if="loading">Loading...</div>
-	<div v-else-if="isAuthenticated">Welcome, {{ userName }}!</div>
-</template>
-```
-
-### Login / Register
-
-`src/pages/login.page.vue` and `src/pages/register.page.vue` initiate the authentication flow. The active mode determines how the UI is rendered:
-
-- **`redirect`** — `login()` is called on mount; the user is taken to the identity provider in the same window.
-- **`popup`** — `login()` is called on mount; authentication happens in a popup window.
-- **`native`** — The `StyLoginRenderer` component renders the login UI inline using your custom widget components.
-- **`embedded`** — The `<sty-login>` web component (loaded via `bundle.js` from the cluster) takes over rendering.
-
-`src/pages/callback.page.vue` handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
-
-```vue
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const router = useRouter();
-const { handleCallback } = useStrivacity();
-
-onMounted(async () => {
-	try {
-		await handleCallback();
-		await router.push('/profile');
-	} catch (error) {
-		console.error('Error during callback handling:', error);
-	}
-});
-</script>
-```
-
-### Refresh token
-
-Token refresh runs automatically when the SDK detects an expired access token. The `refresh` method is also available via the composable for manual invocation:
-
-```vue
-<script setup>
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const { refresh } = useStrivacity();
-</script>
-```
-
-### Revoke session / logout
-
-`src/pages/revoke.page.vue` revokes the current session tokens without a full logout. It checks `isAuthenticated` before calling `revoke()` and then returns to the home page:
-
-```vue
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const router = useRouter();
-const { isAuthenticated, revoke } = useStrivacity();
-
-onMounted(async () => {
-	if (isAuthenticated.value) {
-		await revoke();
-	}
-	await router.push('/');
-});
-</script>
-```
-
-`src/pages/logout.page.vue` performs a full logout. When the user is authenticated, `logout()` is called with `postLogoutRedirectUri` set to the application origin; otherwise the user is immediately redirected home:
-
-```vue
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const router = useRouter();
-const { isAuthenticated, logout } = useStrivacity();
-
-onMounted(async () => {
-	if (isAuthenticated.value) {
-		await logout({ postLogoutRedirectUri: location.origin });
-	} else {
-		await router.push('/');
-	}
-});
-</script>
-```
-
-### Resume an externally-initiated flow
-
-`src/pages/entry.page.vue` handles flows started by an external process (e.g. password reset, magic link, invite). On mount it calls `entry()`, which processes the incoming URL and returns a `session_id` (and optionally a `short_app_id`). These are forwarded as query parameters to `/callback` to resume the flow; if no data is returned the user is redirected to the home page:
-
-```vue
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const router = useRouter();
-const { entry } = useStrivacity();
-
-onMounted(async () => {
-	try {
-		const data = await entry();
-
-		if (data && Object.keys(data).length > 0) {
-			await router.push(`/callback?${new URLSearchParams(data).toString()}`);
-		} else {
-			await router.push('/');
-		}
-	} catch (error) {
-		alert(error);
-		await router.push('/');
-	}
-});
-</script>
-```
-
-The callback page detects the `session_id` parameter and forwards it to `/login` to continue the native or embedded flow, instead of running the standard `handleCallback()` path:
-
-```vue
-<script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useStrivacity } from '@strivacity/sdk-vue';
-
-const router = useRouter();
-const { handleCallback } = useStrivacity();
-
-onMounted(async () => {
-	const url = new URL(location.href);
-	const sessionId = url.searchParams.get('session_id');
-
-	if (sessionId) {
-		await router.push(`/login?${url.searchParams}`);
-	} else {
-		try {
-			await handleCallback();
-			await router.push('/profile');
-		} catch (error) {
-			console.error('Error during callback handling:', error);
-		}
-	}
-});
-</script>
-```
-
-The login page extracts `session_id`, `short_app_id`, and `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new login. The `short_app_id` is used in `embedded` mode to identify the application within the `<sty-login>` web component. When a `language` parameter is present it is passed directly to the renderer via `v-model:language`; the renderer resolves the actual language used and reflects it back to the component:
-
-```vue
-<script setup>
-import { ref } from 'vue';
-
-const shortAppId = (ref < string) | (null > null);
-const sessionId = (ref < string) | (null > null);
-
-if (location.search !== '') {
-	const url = new URL(window.location.href);
-	shortAppId.value = url.searchParams.get('short_app_id');
-	sessionId.value = url.searchParams.get('session_id');
-	url.search = '';
-	history.replaceState({}, '', url.toString());
-}
-</script>
-```
-
-You can also navigate directly to `/login?session_id=<id>` to resume a flow without going through the entry page, which is useful when the `session_id` is obtained through your own backend logic.
-
-## Logging
-
-Enable the built-in console logger by passing `logging: DefaultLogging` to the SDK options:
-
-```typescript
-import { createStrivacitySDK, DefaultLogging } from '@strivacity/sdk-vue';
-
-const sdk = createStrivacitySDK({
-	// ...other options
-	logging: DefaultLogging,
-});
-```
-
-The default logger writes to the browser console and prefixes messages with the `xEventId` correlation ID when available.
-
-To use a custom logger, implement the `SDKLogging` interface and register your class in the SDK options:
-
-```typescript
-import type { SDKLogging } from '@strivacity/sdk-vue';
-
-export class MyLogger implements SDKLogging {
-	xEventId?: string;
-
-	debug(message: string): void {
-		console.debug(this.xEventId ? `(${this.xEventId}) ${message}` : message);
-	}
-	info(message: string): void {
-		console.info(this.xEventId ? `(${this.xEventId}) ${message}` : message);
-	}
-	warn(message: string): void {
-		console.warn(this.xEventId ? `(${this.xEventId}) ${message}` : message);
-	}
-	error(message: string, error: Error): void {
-		console.error(this.xEventId ? `(${this.xEventId}) ${message}` : message, error);
-	}
-}
-```
-
-```typescript
-import { createStrivacitySDK } from '@strivacity/sdk-vue';
-import { MyLogger } from './logging/MyLogger';
-
-const sdk = createStrivacitySDK({
-	// ...other options
-	logging: MyLogger,
-});
-```
-
-## Pages
-
-| Page     | Path                          | Description                                                                                                                                                                                                                                                                                                      |
-| -------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home     | `src/pages/index.page.vue`    | Public landing page. Displays user info when authenticated.                                                                                                                                                                                                                                                      |
-| Login    | `src/pages/login.page.vue`    | Entry point for the authentication flow. Accepts optional `session_id` and `short_app_id` URL parameters to resume an existing flow instead of starting a new one. An optional `language` URL parameter is passed to the renderer via `v-model:language`; the resolved language is reflected back automatically. |
-| Register | `src/pages/register.page.vue` | Entry point for the registration flow. Mirrors the login page structure with an extra `prompt: create` parameter. Also accepts an optional `language` URL parameter, passed to the renderer in the same way.                                                                                                     |
-| Callback | `src/pages/callback.page.vue` | Handles the identity provider's redirect response. Routes to the login page when a `session_id` is present, otherwise completes the standard authorization flow.                                                                                                                                                 |
-| Entry    | `src/pages/entry.page.vue`    | Entry point for externally-initiated flows (e.g. password reset). Processes the incoming URL and routes to the appropriate next step.                                                                                                                                                                            |
-| Profile  | `src/pages/profile.page.vue`  | Protected page showing the authenticated user's session details and token information.                                                                                                                                                                                                                           |
-| Revoke   | `src/pages/revoke.page.vue`   | Invalidates the current session tokens without a full logout and returns the user to the home page.                                                                                                                                                                                                              |
-| Logout   | `src/pages/logout.page.vue`   | Terminates the user's session and redirects to the home page after logout.                                                                                                                                                                                                                                       |
-
-## Vulnerability Reporting
-
-The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-security-issue) details the procedure for disclosing security issues. Please do not report security vulnerabilities on the public issue tracker.
-
-## License
-
-This example app is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
-
-## Contributing
-
-Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
+For the full explanation of `native` mode's data model (layout, forms, screens, messages) and event lifecycle, see the [native journey documentation](https://docs.strivacity.com/reference/native-journey) and the [core SDK's native mode section](../../packages/sdk-core/README.md#client-native-mode).

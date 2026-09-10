@@ -1,0 +1,60 @@
+{
+  "private": true,
+  "name": "@strivacity/sdk-solid",
+  "version": "3.0.3",
+  "description": "Strivacity SolidJS SDK client",
+  "license": "MIT",
+  "author": "strivacity <opensource@strivacity.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Strivacity/sdk-js"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.mjs",
+      "require": "./dist/client/index.cjs",
+      "default": "./dist/client/index.mjs"
+    },
+    "./client/*": {
+      "types": "./dist/client/*.d.ts",
+      "import": "./dist/client/*.mjs",
+      "require": "./dist/client/*.cjs",
+      "default": "./dist/client/*.mjs"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.cjs",
+      "default": "./dist/server/index.mjs"
+    },
+    "./server/*": {
+      "types": "./dist/server/*.d.ts",
+      "import": "./dist/server/*.mjs",
+      "require": "./dist/server/*.cjs",
+      "default": "./dist/server/*.mjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "require": "./dist/errors.cjs",
+      "default": "./dist/errors.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.cjs",
+      "default": "./dist/types.mjs"
+    }
+  },
+  "dependencies": {
+    "@strivacity/sdk-core": "*"
+  },
+  "peerDependencies": {
+    "@solidjs/web": ">=2",
+    "solid-js": ">=2"
+  }
+}

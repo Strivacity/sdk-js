@@ -1,0 +1,449 @@
+import type { EntryResponse, ExtraRequestArgs, SDK } from './oidc';
+
+export declare const WidgetTypeList: readonly [
+	'layout',
+	'submit',
+	'close',
+	'static',
+	'input',
+	'checkbox',
+	'password',
+	'select',
+	'multiSelect',
+	'passcode',
+	'date',
+	'phone',
+	'passkeyLogin',
+	'passkeyEnroll',
+	'webauthnLogin',
+	'webauthnEnroll',
+];
+
+export type WidgetType = (typeof WidgetTypeList)[number];
+
+export declare const SelectOptionTypeList: readonly ['item', 'group'];
+
+export type SelectOptionType = (typeof SelectOptionTypeList)[number];
+
+export type BrandingData = {
+	logoUrl: string | null;
+	brandName: string | null;
+	copyright: string | null;
+	privacyPolicyUrl: string | null;
+	siteTermsUrl: string | null;
+};
+
+export type CheckboxWidget = {
+	id: string;
+	type: 'checkbox';
+	label?: string;
+	readonly?: boolean;
+	value?: boolean;
+	render?: {
+		type: 'checkboxHidden' | 'checkboxShown';
+		labelType: 'text' | 'html';
+	};
+	validator?: {
+		required?: boolean;
+	};
+};
+
+export type DateWidget = {
+	id: string;
+	type: 'date';
+	label?: string;
+	readonly?: boolean;
+	value?: string;
+	render?: {
+		type: 'native' | 'fieldSet';
+	};
+	validator?: {
+		notBefore?: string;
+		notAfter?: string;
+		required?: boolean;
+	};
+};
+
+export type InputWidget = {
+	id: string;
+	type: 'input';
+	label?: string;
+	value?: string;
+	readonly?: boolean;
+	autocomplete?: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	inputmode: any;
+	render?: {
+		autocompleteHint?: string;
+	};
+	validator?: {
+		required?: boolean;
+		minLength?: number;
+		maxLength?: number;
+		regex?: string;
+	};
+};
+
+export type PasscodeWidget = {
+	id: string;
+	type: 'passcode';
+	label?: string;
+	validator?: {
+		length?: number;
+	};
+};
+
+export type PasswordWidget = {
+	id: string;
+	type: 'password';
+	label?: string;
+	qualityIndicator?: boolean;
+	validator?: {
+		minLength?: number;
+		maxLength?: number;
+		maxNumericCharacterSequences?: number;
+		maxRepeatedCharacters?: number;
+		mustContain?: Array<'UPPERCASE' | 'LOWERCASE' | 'NUMERIC' | 'SPECIAL'>;
+		restrictedCharacters?: string;
+	};
+};
+
+export type PhoneWidget = {
+	id: string;
+	type: 'phone';
+	label?: string;
+	readonly?: boolean;
+	value?: string;
+	validator?: {
+		required?: boolean;
+	};
+};
+
+export type SelectWidgetOption = {
+	type: 'item';
+	label?: string;
+	value: string;
+};
+
+export type SelectWidgetOptionGroup = {
+	type: 'group';
+	label?: string;
+	options: Array<SelectWidgetOption>;
+};
+
+export type SelectWidget = {
+	id: string;
+	type: 'select';
+	label?: string;
+	readonly?: boolean;
+	value?: string;
+	render?: {
+		type: 'dropdown' | 'radio';
+	};
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		required?: boolean;
+	};
+};
+
+export type MultiSelectWidget = {
+	id: string;
+	type: 'multiSelect';
+	label?: string;
+	readonly?: boolean;
+	value?: Array<string>;
+	options: Array<SelectWidgetOptionGroup | SelectWidgetOption>;
+	validator?: {
+		minSelectable?: number;
+		maxSelectable?: number;
+	};
+};
+
+export type StaticWidget = {
+	id: string;
+	type: 'static';
+	value: string;
+	render?: {
+		type: 'html' | 'text';
+	};
+};
+
+export type SubmitWidget = {
+	id: string;
+	type: 'submit';
+	label?: string;
+	render?: {
+		type: 'button' | 'link';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
+
+export type CloseWidget = {
+	id: string;
+	type: 'close';
+	label?: string;
+	render?: {
+		type: 'button' | 'link';
+		textColor?: string;
+		bgColor?: string;
+		hint?: {
+			icon?: string;
+			variant?: string;
+		};
+	};
+};
+
+export type PasskeyLoginWidget = {
+	id: string;
+	type: 'passkeyLogin';
+	label?: string;
+	render?: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+	};
+	assertionOptions: PublicKeyCredentialRequestOptionsJSON;
+};
+
+export type PasskeyEnrollWidget = {
+	id: string;
+	type: 'passkeyEnroll';
+	label?: string;
+	render?: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+	};
+	enrollOptions: PublicKeyCredentialCreationOptionsJSON;
+};
+
+export type WebauthnLoginWidget = {
+	id: string;
+	type: 'webauthnLogin';
+	label?: string;
+	authenticatorType: 'deviceBiometrics' | 'securityKey';
+	render?: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+	};
+	assertionOptions: PublicKeyCredentialRequestOptionsJSON;
+};
+
+export type WebauthnEnrollWidget = {
+	id: string;
+	type: 'webauthnEnroll';
+	label?: string;
+	authenticatorType: 'deviceBiometrics' | 'securityKey';
+	render?: {
+		type: 'button';
+		hint?: {
+			variant?: string;
+		};
+	};
+	enrollOptions: PublicKeyCredentialCreationOptionsJSON;
+};
+
+export type AnyWidget =
+	| CheckboxWidget
+	| CloseWidget
+	| DateWidget
+	| InputWidget
+	| MultiSelectWidget
+	| PasscodeWidget
+	| PasskeyEnrollWidget
+	| PasskeyLoginWidget
+	| PasswordWidget
+	| PhoneWidget
+	| SelectWidget
+	| StaticWidget
+	| SubmitWidget
+	| WebauthnEnrollWidget
+	| WebauthnLoginWidget;
+
+export type FormWidget = {
+	id: string;
+	type: 'form';
+	widgets: Array<AnyWidget>;
+};
+
+export type Widget = {
+	type: 'widget';
+	formId: string;
+	widgetId: string;
+};
+
+export type LayoutWidget = {
+	type: 'vertical' | 'horizontal';
+	items: Array<Widget | LayoutWidget>;
+};
+
+export type NativeFlowMessage = {
+	type: string;
+	text: string;
+};
+
+export type NativeFlowState = {
+	/**
+	 * Fallback URL to the hosted login page, if the screen cannot be rendered natively.
+	 */
+	hostedUrl?: string;
+
+	/**
+	 * Present when the journey is complete. Pass to `finalizeSession()`.
+	 */
+	finalizeUrl?: string;
+
+	/**
+	 * Identifier of the current journey step (for example, `identification`, `registration`).
+	 */
+	screen?: string;
+
+	/**
+	 * Branding information for the current login flow.
+	 */
+	branding?: BrandingData;
+
+	/**
+	 * List of Form objects, each containing a `widgets` array.
+	 */
+	forms?: Array<FormWidget>;
+
+	/**
+	 * Layout descriptor defining the visual arrangement of widgets across forms.
+	 */
+	layout?: LayoutWidget;
+
+	/**
+	 * Error and informational messages for the current step, including a `global` message.
+	 */
+	messages?: Record<string, Record<string, NativeFlowMessage>> & {
+		global?: NativeFlowMessage;
+	};
+};
+
+export type NativeParams = ExtraRequestArgs & {
+	/**
+	 * The SDK type to use for the native login flow. This is typically set to 'web-minimal' for web-based applications.
+	 */
+	sdk?: string;
+
+	/**
+	 * The session ID of the current native login flow, or `null` if no session has been started.
+	 */
+	sessionId?: string | null;
+
+	/**
+	 * The language code used for the native login flow UI.
+	 */
+	language?: string | null;
+};
+
+export type NativeLoginFlow = {
+	/**
+	 * The session ID of the current native login flow, or `null` if no session has been started.
+	 *
+	 * @deprecated Use `sdk.sessionId` instead of accessing this via the login flow instance.
+	 */
+	sessionId: string | null;
+
+	/**
+	 * The short application ID associated with the current native login flow, or `null` if not yet available.
+	 *
+	 * @deprecated Use `sdk.shortAppId` instead of accessing this via the login flow instance.
+	 */
+	shortAppId: string | null;
+
+	/**
+	 * The language code used for the native login flow UI.
+	 *
+	 * @deprecated Use `sdk.language` instead of accessing this via the login flow instance.
+	 */
+	language: string;
+
+	/**
+	 * Starts the native login session with the given parameters.
+	 *
+	 * @deprecated Use `sdk.startSession()` instead of calling this via the login flow instance.
+	 *
+	 * @param {NativeParams} [params] - The parameters to use when starting the session.
+	 * @returns {Promise<NativeFlowState | void>} A promise that resolves to the login flow state after starting the session, or void if the session is finalized.
+	 */
+	startSession(params?: NativeParams): Promise<NativeFlowState | void>;
+
+	/**
+	 * Finalizes the native login session by processing the callback URL.
+	 *
+	 * @deprecated Use `sdk.finalizeSession()` instead of calling this via the login flow instance.
+	 *
+	 * @param {string | URL} url - The callback URL returned after authentication.
+	 * @returns {Promise<void>}
+	 */
+	finalizeSession(url: string | URL): Promise<void>;
+
+	/**
+	 * Submits a login form with the given form ID and body data.
+	 *
+	 * @deprecated Use `sdk.submitForm()` instead of calling this via the login flow instance.
+	 *
+	 * @param {string} [formId] - The ID of the form to submit.
+	 * @param {Record<string, unknown>} [body] - The form field values to submit.
+	 * @returns {Promise<NativeFlowState>} The resulting login flow state after submission.
+	 */
+	submitForm(formId?: string, body?: Record<string, unknown>): Promise<NativeFlowState>;
+};
+
+export type NativeFlow = Omit<SDK<NativeParams, Promise<EntryResponse>>, 'login' | 'register'> & {
+	/**
+	 * Starts the native authentication session with the given parameters.
+	 *
+	 * @param {NativeParams} [loginParams] - The parameters to use when starting the session.
+	 * @returns {Promise<NativeFlowState | void>} A promise that resolves to the login flow state after starting the session, or void if the session is finalized.
+	 */
+	startSession(loginParams?: NativeParams): Promise<NativeFlowState | void>;
+
+	/**
+	 * Finalizes the native authentication session by processing the callback URL.
+	 *
+	 * @param {string | URL} url - The callback URL returned after authentication.
+	 * @returns {Promise<void>}
+	 */
+	finalizeSession(url: string | URL): Promise<void>;
+
+	/**
+	 * Submits a login form with the given form ID and body data.
+	 *
+	 * @param {string} [formId] - The ID of the form to submit.
+	 * @param {Record<string, unknown>} [body] - The form field values to submit.
+	 * @returns {Promise<NativeFlowState>} The resulting login flow state after submission.
+	 */
+	submitForm(formId?: string, body?: Record<string, unknown>): Promise<NativeFlowState>;
+
+	/**
+	 * Initiates the native login flow and returns a `NativeLoginFlow` instance to drive the process.
+	 *
+	 * @deprecated Use `startSession` and `finalizeSession` directly instead.
+	 *
+	 * @param {NativeParams} [params] - Optional parameters for the login request.
+	 * @returns {NativeLoginFlow} Native login flow instance to drive the process.
+	 */
+	login(params?: NativeParams): NativeLoginFlow;
+
+	/**
+	 * Initiates the native registration flow and returns a `NativeLoginFlow` instance to drive the process.
+	 *
+	 * @deprecated Use `startSession` and `finalizeSession` directly instead.
+	 *
+	 * @param {NativeParams} [params] - Optional parameters for the registration request.
+	 * @returns {NativeLoginFlow} Native login flow instance to drive the process.
+	 */
+	register(params?: NativeParams): NativeLoginFlow;
+};

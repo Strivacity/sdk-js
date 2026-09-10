@@ -1,0 +1,48 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "app-preact",
+  "projectType": "application",
+  "sourceRoot": "apps/preact/src",
+  "targets": {
+    "type-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sdk-preact:build"],
+      "options": {
+        "command": "tsc --noEmit --project apps/preact/tsconfig.app.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/preact/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/preact"
+      },
+      "configurations": {
+        "serve": {
+          "mode": "development",
+          "command": "vite build --watch"
+        },
+        "development": {
+          "mode": "development",
+          "command": "vite build"
+        },
+        "production": {
+          "mode": "production",
+          "command": "vite build"
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["type-check"],
+      "outputs": ["{workspaceRoot}/apps/preact/dist"],
+      "defaultConfiguration": "development",
+      "options": {
+        "cwd": "apps/preact",
+        "command": "vite serve"
+      }
+    }
+  }
+}

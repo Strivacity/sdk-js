@@ -7,19 +7,21 @@ overrides:
   '@strivacity/sdk-core': workspace:*
   '@strivacity/sdk-next': workspace:*
   '@strivacity/sdk-nuxt': workspace:*
-  '@strivacity/sdk-svelte': workspace:*
+  '@strivacity/sdk-preact': workspace:*
   '@strivacity/sdk-react': workspace:*
-  '@strivacity/sdk-remix': workspace:*
+  '@strivacity/sdk-solid': workspace:*
+  '@strivacity/sdk-svelte': workspace:*
   '@strivacity/sdk-vue': workspace:*
   '@strivacity/testing': workspace:*
+  '@strivacity/common': workspace:*
 shellEmulator: true
 autoInstallPeers: false
-shamefullyHoist: true
 allowBuilds:
+  '@parcel/watcher': false
   esbuild: true
+  lmdb: true
+  msgpackr-extract: true
   msw: true
   nx: true
+  sharp: true
   simple-git-hooks: true
-  lmdb: false
-  msgpackr-extract: false
-  sharp: false

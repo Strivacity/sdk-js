@@ -1,0 +1,22 @@
+<div data-widget="passcode" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id">
+	@if (config().label) {
+	<label [for]="config().id" class="label">{{ config().label }}</label>
+	}
+	<input
+		[id]="config().id"
+		[name]="config().id"
+		[type]="config().type"
+		[readOnly]="disabled()"
+		[attr.minlength]="config().validator?.length"
+		[attr.maxlength]="config().validator?.length"
+		autocomplete="off"
+		inputmode="numeric"
+		size="1"
+		(input)="onInput($any($event))"
+		(change)="onChange($event)"
+		(keydown.enter)="onKeyDown($event)"
+	/>
+	@if (errorMessage()) {
+	<small class="error">{{ errorMessage() }}</small>
+	}
+</div>

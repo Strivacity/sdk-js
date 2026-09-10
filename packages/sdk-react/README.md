@@ -1,116 +1,222 @@
 # @strivacity/sdk-react
 
-A React library that integrates Strivacity's policy-driven authentication journeys into your application using the OAuth 2.0 PKCE flow. Supports `redirect`, `popup`, `native`, and `embedded` modes.
+React SDK for [Strivacity](https://www.strivacity.com) - adds PKCE-protected OIDC authentication to your React application with hooks.
 
-See our [Developer Portal](https://www.strivacity.com/learn-support/developer-hub) to get started with developing with the Strivacity product.
+Built on top of [@strivacity/sdk-core](../sdk-core) - see the [core SDK documentation](../sdk-core/README.md) for detailed information about authentication flows, configuration options, and advanced features.
 
-## Overview
+**See also:**
+- [Full Documentation](https://docs.strivacity.com/reference/overview) - Complete guide for all authentication modes
+- [Example App](../../apps/react) - Working React example covering all four login modes
+- [Core SDK](../sdk-core/README.md) - Framework-agnostic SDK documentation
 
-This SDK allows you to integrate Strivacity's policy-driven journeys into your React application. It wraps the `@strivacity/sdk-core` library as a React context provider and exposes a `useStrivacity` hook that provides authentication state and methods throughout your component tree. The SDK uses the OAuth 2.0 PKCE flow to authenticate with Strivacity. For detailed configuration options, available modes, and advanced usage refer to the [`@strivacity/sdk-core` documentation](https://github.com/Strivacity/sdk-js/blob/main/packages/sdk-core/README.md).
+## Table of contents
 
-## Demo Application
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Choosing a mode](#choosing-a-mode)
+- [Quick start](#quick-start)
+- [Authentication modes](#authentication-modes)
+  - [redirect mode](#redirect-mode)
+  - [popup mode](#popup-mode)
+  - [embedded mode](#embedded-mode)
+  - [native mode](#native-mode)
+- [Hooks API](#hooks-api)
+  - [useStrivacity](#usestrivacity)
+  - [useNativeLogin](#usenativelogin)
+  - [withAuthGuard](#withauthguard)
+- [Route guards](#route-guards)
+- [Token management](#token-management)
+- [Shared features](#shared-features)
+- [Configuration reference](#configuration-reference)
+- [Migration guide](#migration-guide)
+- [Vulnerability Reporting](#vulnerability-reporting)
+- [License](#license)
+- [Contributing](#contributing)
 
-- [Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/react)
-- [Ionic Example app](https://github.com/Strivacity/sdk-js/tree/main/apps/ionic-react)
+---
 
-## Requirements
+## Prerequisites
 
-- React: 18+
+- React 18+
+- A Strivacity tenant with an application configured (issuer URL, client ID, redirect URI)
 
-## Install
+---
+
+## Installation
 
 ```bash
 npm install @strivacity/sdk-react
 ```
 
-## Usage
+---
 
-### Initialization
+## Choosing a mode
 
-Wrap your application with `StyAuthProvider` in your entry point:
+The SDK supports **four authentication modes**:
+
+| Mode       | Login UI                                 | Best for                                     |
+| ---------- | ---------------------------------------- | -------------------------------------------- |
+| `redirect` | Strivacity hosted page                   | Standard web apps                            |
+| `popup`    | Strivacity hosted page in a popup        | SPAs that must stay on the current page      |
+| `embedded` | Strivacity web components in your page   | Branded login inside your own layout         |
+| `native`   | Your own components driven by flow state | Full UI control, step-by-step form rendering |
+
+> All modes use the same PKCE-protected OIDC flow under the hood. The `mode` option only controls where the login UI lives and how the flow state is consumed.
+
+---
+
+## Quick start
+
+### 1. Wrap your app with the provider
+
+`StyAuthProvider` is a React context provider - wrap it around your root component once. It initializes the SDK and provides the auth context to every component in the tree via React context.
 
 ```tsx
+// main.tsx
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router';
-import { StyAuthProvider, type SDKOptions } from '@strivacity/sdk-react';
-
-const options: SDKOptions = {
-	mode: 'redirect', // or 'popup', 'native', 'embedded'
-	issuer: 'https://<YOUR_DOMAIN>',
-	scopes: ['openid', 'profile'],
-	clientId: '<YOUR_CLIENT_ID>',
-	redirectUri: '<YOUR_REDIRECT_URI>',
-};
+import { StyAuthProvider } from '@strivacity/sdk-react';
+import { App } from './App';
 
 createRoot(document.getElementById('app')!).render(
-	<BrowserRouter>
-		<StyAuthProvider options={options}>
-			<Routes>
-				<Route path="/" element={<App />} />
-			</Routes>
-		</StyAuthProvider>
-	</BrowserRouter>,
+	<StyAuthProvider
+		options={{
+			mode: 'redirect', // authentication mode
+			issuer: 'https://<YOUR_TENANT_DOMAIN>', // OIDC provider URL
+			clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
+			redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
+			scopes: ['openid', 'profile', 'email'], // requested user permissions/data
+		}}
+	>
+		<App />
+	</StyAuthProvider>,
 );
 ```
 
-Use the `useStrivacity` hook in any component to access authentication state:
+### 2. Use the auth state
+
+Call `useStrivacity()` in any component to read the current authentication state and trigger login or logout.
 
 ```tsx
 import { useStrivacity } from '@strivacity/sdk-react';
 
-export default function MyComponent() {
-	const { loading, isAuthenticated, idTokenClaims } = useStrivacity();
+export function Header() {
+	const { loading, isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
+
+	if (loading) {
+		return null;
+	}
+
+	return (
+		<div>
+			{isAuthenticated ? (
+				<>
+					<span>Hello, {idTokenClaims?.given_name}</span>
+					<button onClick={() => logout()}>Log out</button>
+				</>
+			) : (
+				<button onClick={() => login()}>Log in</button>
+			)}
+		</div>
+	);
 }
 ```
 
-### Redirect / Popup mode
+---
 
-In `redirect` mode the user is taken to the identity provider in the same window; in `popup` mode authentication happens in a popup. Both are initiated the same way from code.
+## Authentication modes
 
-#### Login page example
+### redirect mode
+
+> For details on how this mode works, see the [hosted journey documentation](https://docs.strivacity.com/reference/hosted-journey).
+
+The current browser tab navigates to the Strivacity-hosted login page and back to the configured `redirectUri` after authentication.
 
 ```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client';
+import { StyAuthProvider } from '@strivacity/sdk-react';
+import { App } from './App';
+
+createRoot(document.getElementById('app')!).render(
+	<StyAuthProvider
+		options={{
+			mode: 'redirect', // authentication mode
+			issuer: 'https://<YOUR_TENANT_DOMAIN>', // OIDC provider URL
+			clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
+			redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
+			scopes: ['openid', 'profile', 'email'], // requested user permissions/data
+		}}
+	>
+		<App />
+	</StyAuthProvider>,
+);
+```
+
+#### Login
+
+Call this to start the login flow. It redirects the user to the Strivacity login page in current browser tab, where they authenticate.
+
+```tsx
+// pages/Login.tsx
 import { useEffect } from 'react';
 import { useStrivacity } from '@strivacity/sdk-react';
+import type { RedirectFlow } from '@strivacity/sdk-react';
 
 export default function Login() {
-	const { login } = useStrivacity();
+	const { loading, login } = useStrivacity<RedirectFlow>();
 
 	useEffect(() => {
-		login();
-	}, []);
+		if (loading) {
+			return;
+		}
+
+		void login({
+			// Optional parameters
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			locationMethod: 'assign', // window.location method: 'assign' adds to browser history, 'replace' doesn't (default: 'assign')
+			targetWindow: 'self', // 'self' redirects current window, 'top' redirects top-level window (default: 'self')
+		});
+	}, [loading, login]);
 
 	return (
 		<section>
-			<h1>Redirecting...</h1>
+			<h1>Redirecting to login...</h1>
 		</section>
 	);
 }
 ```
 
-#### Callback page example
+#### Handle the callback
 
-The callback page handles the response from the identity provider. It calls `handleCallback()` and redirects to `/profile` on success:
+Call this on your redirect URI page after the IDP sends the user back. It parses the query parameters from the callback URL, verifies the state matches what was stored during login (CSRF protection), exchanges the authorization code for tokens using PKCE, validates the ID token, and stores the session in the [configured storage](#storages). After that you can redirect to a protected page or render your app.
 
 ```tsx
+// pages/Callback.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
 
 export default function Callback() {
+	const { loading, handleCallback } = useStrivacity();
 	const navigate = useNavigate();
-	const { handleCallback } = useStrivacity();
+	const searchParams = new URLSearchParams(window.location.search);
 
 	useEffect(() => {
-		(async () => {
-			try {
-				await handleCallback();
-				await navigate('/profile');
-			} catch (error) {
-				console.error('Error during callback handling:', error);
-			}
-		})();
-	}, []);
+		if (loading) {
+			return;
+		}
+
+		if (searchParams.get('error')) {
+			void navigate(`/error?${searchParams.toString()}`, { replace: true });
+			return;
+		}
+
+		handleCallback()
+			.then(() => navigate('/profile'))
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading]);
 
 	return (
 		<section>
@@ -120,290 +226,628 @@ export default function Callback() {
 }
 ```
 
-#### Profile page example
+> The callback URL is automatically read from `window.location.href` if not provided. You can pass a custom URL as the first parameter: `await sdk.handleCallback(customUrl)`.
+
+#### Registration
+
+Call this to start the registration flow. It works the same way as `login()` but opens the registration form instead.
+
+```tsx
+// pages/Register.tsx
+import { useEffect } from 'react';
+import { useStrivacity } from '@strivacity/sdk-react';
+import type { RedirectFlow } from '@strivacity/sdk-react';
+
+export default function Register() {
+	const { loading, register } = useStrivacity<RedirectFlow>();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void register({
+			loginHint: 'user@example.com',
+		});
+	}, [loading, register]);
+
+	return (
+		<section>
+			<h1>Redirecting to registration...</h1>
+		</section>
+	);
+}
+```
+
+#### Logout
+
+Call this to clear the session and redirect to the Strivacity end-session endpoint. After that the user is redirected back to your app at `postLogoutRedirectUri`.
+
+```tsx
+// pages/Logout.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+
+export default function Logout() {
+	const { loading, logout } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void logout();
+	}, [loading, logout]);
+
+	return null;
+}
+```
+
+> The `postLogoutRedirectUri` must be configured in your Strivacity application client settings as an allowed post-logout redirect URI. If the URL is invalid or not provided, the user remains on the Strivacity-hosted logged out page.
+
+#### Token management
+
+Call these methods to manage the session and access token.
 
 ```tsx
 import { useStrivacity } from '@strivacity/sdk-react';
 
-export default function Profile() {
-	const { loading, isAuthenticated, accessToken, accessTokenExpired, accessTokenExpirationDate, idTokenClaims, refreshToken } = useStrivacity();
+export function TokenPanel() {
+	const { loading, idTokenClaims, accessToken, refreshToken, refresh, revoke } = useStrivacity();
+
+	async function onRefresh() {
+		// Refresh the access token using the refresh token
+		await refresh();
+	}
+
+	async function onRevoke() {
+		// Revoke all tokens at the authorization server and clear the local session
+		await revoke();
+	}
 
 	if (loading) {
-		return <h1>Loading...</h1>;
+		return null;
+	}
+
+	// idTokenClaims, accessToken, and refreshToken are plain values from context -
+	// they update automatically whenever the SDK's session changes
+	return (
+		<div>
+			<button onClick={onRefresh}>Refresh</button>
+			<button onClick={onRevoke}>Revoke</button>
+			<pre>{JSON.stringify({ idTokenClaims, accessToken, refreshToken }, null, 2)}</pre>
+		</div>
+	);
+}
+```
+
+---
+
+### popup mode
+
+> For details on how this mode works, see the [hosted journey documentation](https://docs.strivacity.com/reference/hosted-journey).
+
+The Strivacity login page opens in a separate window or tab. After authentication the opened window or tab closes itself and the parent page receives the session - no full-page navigation required.
+
+```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client';
+import { StyAuthProvider } from '@strivacity/sdk-react';
+import { App } from './App';
+
+createRoot(document.getElementById('app')!).render(
+	<StyAuthProvider
+		options={{
+			mode: 'popup', // authentication mode
+			issuer: 'https://<YOUR_TENANT_DOMAIN>', // OIDC provider URL
+			clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
+			redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
+			scopes: ['openid', 'profile', 'email'], // requested user permissions/data
+		}}
+	>
+		<App />
+	</StyAuthProvider>,
+);
+```
+
+#### Login
+
+Call this to start the login flow. It opens a popup window by default with the Strivacity login page, where the user authenticates. After that the popup closes itself and the session is stored in the [configured storage](#storages).
+
+By default a centered popup window opens. Pass `popupWindowTarget` to change where the window opens, and `popupWindowFeatures` to control its size and position:
+
+```tsx
+// pages/Login.tsx
+import { useEffect, useRef } from 'react';
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useNavigate } from 'react-router';
+import type { PopupFlow } from '@strivacity/sdk-react';
+
+export default function Login() {
+	const { loading, login } = useStrivacity<PopupFlow>();
+	const navigate = useNavigate();
+	const startedRef = useRef(false);
+
+	useEffect(() => {
+		if (loading || startedRef.current) {
+			return;
+		}
+
+		// Prevent multiple calls (React StrictMode)
+		startedRef.current = true;
+
+		login({
+			// Optional parameters
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			popupWindowTarget: '_blank', // any valid browsing context name
+			popupWindowFeatures: {
+				width: 500,
+				height: 700,
+				left: 100,
+				top: 100,
+				toolbar: false,
+				location: false,
+				resizable: true,
+				scrollbars: true,
+			},
+		})
+			.then(() => navigate('/profile'))
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading, login, navigate]);
+
+	return (
+		<section>
+			<h1>Opening login popup...</h1>
+		</section>
+	);
+}
+```
+
+#### Handle the callback
+
+The popup resolves automatically - no callback page is needed. Token exchange happens inside the popup and the result is posted back to the opener window.
+
+#### Registration
+
+Call this to start the registration flow. It works the same way as `login()` but opens the registration form instead.
+
+```tsx
+// pages/Register.tsx
+import { useEffect, useRef } from 'react';
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useNavigate } from 'react-router';
+import type { PopupFlow } from '@strivacity/sdk-react';
+
+export default function Register() {
+	const { loading, register } = useStrivacity<PopupFlow>();
+	const navigate = useNavigate();
+	const startedRef = useRef(false);
+
+	useEffect(() => {
+		if (loading || startedRef.current) {
+			return;
+		}
+
+		// Prevent multiple calls (React StrictMode)
+		startedRef.current = true;
+
+		register({
+			// Optional parameters
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			popupWindowTarget: '_blank', // any valid browsing context name
+			popupWindowFeatures: {
+				width: 500,
+				height: 700,
+				left: 100,
+				top: 100,
+				toolbar: false,
+				location: false,
+				resizable: true,
+				scrollbars: true,
+			},
+		})
+			.then(() => navigate('/profile'))
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading, register, navigate]);
+
+	return (
+		<section>
+			<h1>Opening registration popup...</h1>
+		</section>
+	);
+}
+```
+
+#### Logout
+
+Call this to clear the session and redirect to the Strivacity end-session endpoint. After that the user is redirected back to your app at `postLogoutRedirectUri`.
+
+```tsx
+// pages/Logout.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+
+export default function Logout() {
+	const { loading, logout } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void logout();
+	}, [loading, logout]);
+
+	return null;
+}
+```
+
+> The `postLogoutRedirectUri` must be configured in your Strivacity application client settings as an allowed post-logout redirect URI. If the URL is invalid or not provided, the user remains on the Strivacity-hosted logged out page.
+
+#### Token management
+
+Call these methods to manage the session and access token.
+
+```tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+
+export function TokenPanel() {
+	const { loading, idTokenClaims, accessToken, refreshToken, refresh, revoke } = useStrivacity();
+
+	async function onRefresh() {
+		// Refresh the access token using the refresh token
+		await refresh();
+	}
+
+	async function onRevoke() {
+		// Revoke all tokens at the authorization server and clear the local session
+		await revoke();
+	}
+
+	if (loading) {
+		return null;
+	}
+
+	// idTokenClaims, accessToken, and refreshToken are plain values from context -
+	// they update automatically whenever the SDK's session changes
+	return (
+		<div>
+			<button onClick={onRefresh}>Refresh</button>
+			<button onClick={onRevoke}>Revoke</button>
+			<pre>{JSON.stringify({ idTokenClaims, accessToken, refreshToken }, null, 2)}</pre>
+		</div>
+	);
+}
+```
+
+---
+
+### embedded mode
+
+> For details on how this mode works, see the [embedded journey documentation](https://docs.strivacity.com/reference/embedded-journey).
+
+The login UI renders inside your own page using Strivacity web components (`<sty-login>`, `<sty-notifications>`, `<sty-language-selector>`). The component bundle isn't an npm package - load it dynamically from your Strivacity tenant cluster once during application bootstrap, alongside SDK initialization:
+
+```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client';
+import { StyAuthProvider, injectScript } from '@strivacity/sdk-react';
+import { App } from './App';
+
+// Load web components bundle
+injectScript('sty-components', 'https://<YOUR_TENANT_DOMAIN>/assets/components/bundle.js');
+
+createRoot(document.getElementById('app')!).render(
+	<StyAuthProvider
+		options={{
+			mode: 'embedded', // authentication mode
+			issuer: 'https://<YOUR_TENANT_DOMAIN>', // OIDC provider URL
+			clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
+			redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
+			scopes: ['openid', 'profile', 'email'], // requested user permissions/data
+		}}
+	>
+		<App />
+	</StyAuthProvider>,
+);
+```
+
+#### Login / Register
+
+In embedded mode `<sty-login>` web component does not take `issuer`, `clientId`, or `redirectUri` as attributes - those come from the SDK configuration above. Place it on your login page together with `sty-notifications` (toast-style system notifications) and `sty-language-selector` (a language switcher for the login flow). Since `<sty-login>` is a plain custom element, its properties (`params`, `sessionId`, `shortAppId`, `lang`) and DOM events are wired up through a ref instead of JSX props:
+
+```tsx
+// pages/Login.tsx
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
+
+export default function Login() {
+	const navigate = useNavigate();
+	const searchParams = new URLSearchParams(window.location.search);
+
+	// Optional: Resume a session started from an entry URL (e.g., password reset)
+	const sessionId = searchParams.get('session_id');
+	const shortAppId = searchParams.get('short_app_id');
+	const lang = searchParams.get('language') ?? navigator.language;
+	const loginRef = useRef<LoginComponent>(null);
+
+	useEffect(() => {
+		const element = loginRef.current;
+
+		if (!element) {
+			return;
+		}
+
+		element.params = {
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			language: 'en-US', // set the UI language (BCP 47 language tag)
+			prompt: 'login', // use 'create' to open the registration flow instead
+		};
+		element.sessionId = sessionId;
+		element.shortAppId = shortAppId;
+		element.lang = lang;
+
+		const onLogin = () => navigate('/profile');
+		const onClose = () => window.location.reload();
+		const onError = (event: Event) => navigate(`/error?message=${encodeURIComponent((event as CustomEvent<string>).detail)}`);
+
+		element.addEventListener('login', onLogin);
+		element.addEventListener('close', onClose);
+		element.addEventListener('error', onError);
+
+		return () => {
+			element.removeEventListener('login', onLogin);
+			element.removeEventListener('close', onClose);
+			element.removeEventListener('error', onError);
+		};
+	}, [navigate, sessionId, shortAppId, lang]);
+
+	return (
+		<section>
+			<sty-notifications></sty-notifications>
+			<sty-login ref={loginRef}></sty-login>
+			<sty-language-selector></sty-language-selector>
+		</section>
+	);
+}
+```
+
+##### Controlling when the flow starts
+
+By default the login flow starts automatically as soon as `<sty-login>` connects to the DOM. Add the `lazy` attribute to take manual control, then call `start()` when ready. `start()` accepts an optional params object forwarded to the authorization request, or you can set params via the `params` property before calling it:
+
+```tsx
+// pages/Login.tsx
+import { useRef } from 'react';
+import { useNavigate } from 'react-router';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
+
+export default function Login() {
+	const navigate = useNavigate();
+	const loginRef = useRef<LoginComponent>(null);
+
+	async function onStartClick() {
+		await loginRef.current?.start({
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			language: 'en-US', // set the UI language (BCP 47 language tag)
+			prompt: 'login', // use 'create' to open the registration flow instead
+		});
 	}
 
 	return (
 		<section>
-			<dl>
-				<dt>
-					<strong>accessToken</strong>
-				</dt>
-				<dd>
-					<pre>{JSON.stringify(accessToken)}</pre>
-				</dd>
-				<dt>
-					<strong>refreshToken</strong>
-				</dt>
-				<dd>
-					<pre>{JSON.stringify(refreshToken)}</pre>
-				</dd>
-				<dt>
-					<strong>accessTokenExpired</strong>
-				</dt>
-				<dd>
-					<pre>{JSON.stringify(accessTokenExpired)}</pre>
-				</dd>
-				<dt>
-					<strong>accessTokenExpirationDate</strong>
-				</dt>
-				<dd>
-					<pre>{accessTokenExpirationDate ? new Date(accessTokenExpirationDate * 1000).toLocaleString() : JSON.stringify(null)}</pre>
-				</dd>
-				<dt>
-					<strong>claims</strong>
-				</dt>
-				<dd>
-					<pre>{JSON.stringify(idTokenClaims, null, 2)}</pre>
-				</dd>
-			</dl>
+			<sty-notifications></sty-notifications>
+			<button onClick={onStartClick}>Continue to login</button>
+			<sty-login ref={loginRef} lazy onLogin={() => navigate('/profile')}></sty-login>
+			<sty-language-selector></sty-language-selector>
 		</section>
 	);
 }
 ```
 
-#### Logout page example
-
-The `postLogoutRedirectUri` parameter is optional and specifies where users are redirected after logout. This URI must be configured in the Admin Console as an allowed post-logout redirect URI.
+You can also set params via the `params` property before calling `start()`:
 
 ```tsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
+import { useRef } from 'react';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
 
-export default function Logout() {
-	const navigate = useNavigate();
-	const { isAuthenticated, logout } = useStrivacity();
+export function LazyLogin() {
+	const loginRef = useRef<LoginComponent>(null);
 
-	useEffect(() => {
-		(async () => {
-			if (isAuthenticated) {
-				await logout({ postLogoutRedirectUri: location.origin });
-			} else {
-				await navigate('/');
-			}
-		})();
-	}, []);
+	async function onStartClick() {
+		if (!loginRef.current) {
+			return;
+		}
+
+		loginRef.current.params = {
+			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
+			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
+			audiences: ['https://api.example.com'], // target resources for the access token
+			language: 'en-US', // set the UI language (BCP 47 language tag)
+			prompt: 'login', // use 'create' to open the registration flow instead
+		};
+		await loginRef.current.start();
+	}
 
 	return (
-		<section>
-			<h1>Logging out...</h1>
-		</section>
+		<>
+			<sty-login ref={loginRef} lazy></sty-login>
+			<button onClick={onStartClick}>Start Login</button>
+		</>
 	);
 }
 ```
 
-#### Component example
+##### Login events
+
+The `<sty-login>` element dispatches `login`, `close`, and `error` custom events. Attach listeners on the element ref inside `useEffect`:
 
 ```tsx
-import { useStrivacity } from '@strivacity/sdk-react';
-
-export default function Nav() {
-	const { isAuthenticated, idTokenClaims, login, logout } = useStrivacity();
-	const name = `${idTokenClaims?.given_name} ${idTokenClaims?.family_name}`;
-
-	return isAuthenticated ? (
-		<div>
-			<div>Welcome, {name}!</div>
-			<button onClick={() => logout()}>Logout</button>
-		</div>
-	) : (
-		<div>
-			<div>Not logged in</div>
-			<button onClick={() => login()}>Log in</button>
-		</div>
-	);
-}
-```
-
-### Native mode
-
-In `native` mode the `StyLoginRenderer` component renders the authentication UI inline using your custom widget components. You can define custom components for each input type; see [Example widgets](https://github.com/Strivacity/sdk-js/tree/main/apps/react/src/components/widgets).
-
-The example widgets use SCSS for styling and Luxon for date handling:
-
-```bash
-npm install sass luxon
-npm install --save-dev @types/luxon
-```
-
-```tsx
-import CheckboxWidget from './checkbox.widget';
-import DateWidget from './date.widget';
-import InputWidget from './input.widget';
-import LayoutWidget from './layout.widget';
-import MultiSelectWidget from './multiselect.widget';
-import PasscodeWidget from './passcode.widget';
-import LoadingWidget from './loading.widget';
-import PasswordWidget from './password.widget';
-import PhoneWidget from './phone.widget';
-import SelectWidget from './select.widget';
-import StaticWidget from './static.widget';
-import SubmitWidget from './submit.widget';
-
-export const widgets = {
-	checkbox: CheckboxWidget,
-	date: DateWidget,
-	input: InputWidget,
-	layout: LayoutWidget,
-	loading: LoadingWidget,
-	passcode: PasscodeWidget,
-	password: PasswordWidget,
-	phone: PhoneWidget,
-	select: SelectWidget,
-	multiSelect: MultiSelectWidget,
-	static: StaticWidget,
-	submit: SubmitWidget,
-};
-```
-
-#### Login page example
-
-The login page extracts `session_id` and optionally `language` from the URL on load, cleans up the URL, and passes them to the renderer. When a `session_id` is present the renderer calls `startSession(sessionId)` to resume the existing flow instead of starting a new one. When a `language` parameter is present it is passed to the renderer which uses it for the authentication UI and calls `onLanguageChange` with the resolved language.
-
-```tsx
-import { useEffect, useState } from 'react';
+// pages/Login.tsx
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { StyLoginRenderer, FallbackError, type LoginFlowState } from '@strivacity/sdk-react';
-import { widgets } from '@/components/widgets';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
 
 export default function Login() {
 	const navigate = useNavigate();
-	const [sessionId, setSessionId] = useState<string | null>(null);
-	const [language, setLanguage] = useState<string | null>(null);
+	const loginRef = useRef<LoginComponent>(null);
 
 	useEffect(() => {
-		if (window.location.search !== '') {
-			const url = new URL(window.location.href);
-			setSessionId(url.searchParams.get('session_id'));
+		const element = loginRef.current;
 
-			if (url.searchParams.has('language')) {
-				setLanguage(url.searchParams.get('language'));
-			}
-
-			url.search = '';
-			window.history.replaceState({}, '', url.toString());
+		if (!element) {
+			return;
 		}
-	}, []);
 
-	const onLogin = async () => {
-		await navigate('/profile');
-	};
+		const onLogin = () => {
+			// User authenticated - navigate to a protected page
+			navigate('/profile');
+		};
+		const onClose = () => {
+			// User cancelled or closed the login flow
+			window.location.reload();
+		};
+		const onError = (event: Event) => {
+			// A fatal error occurred - the message is available in event.detail
+			navigate(`/error?message=${encodeURIComponent((event as CustomEvent<string>).detail)}`);
+		};
 
-	const onFallback = (error: FallbackError) => {
-		if (error.url) {
-			window.location.href = error.url.toString();
-		} else {
-			alert(error);
-		}
-	};
+		element.addEventListener('login', onLogin);
+		element.addEventListener('close', onClose);
+		element.addEventListener('error', onError);
 
-	const onError = (error: string) => {
-		alert(error);
-	};
-
-	const onGlobalMessage = (message: string) => {
-		alert(message);
-	};
-
-	const onBlockReady = ({ previousState, state }: { previousState: LoginFlowState; state: LoginFlowState }) => {
-		console.log('previousState', previousState);
-		console.log('state', state);
-	};
-
-	return (
-		<StyLoginRenderer
-			widgets={widgets}
-			sessionId={sessionId}
-			language={language}
-			onLanguageChange={(lang) => setLanguage(lang)}
-			onFallback={onFallback}
-			onLogin={() => void onLogin()}
-			onError={onError}
-			onGlobalMessage={onGlobalMessage}
-			onBlockReady={onBlockReady}
-		/>
-	);
-}
-```
-
-#### Callback page example
-
-When a `session_id` is present in the URL the native flow is resumed by forwarding it to the login page. Otherwise the standard `handleCallback()` path is used:
-
-```tsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { useStrivacity } from '@strivacity/sdk-react';
-
-export default function Callback() {
-	const navigate = useNavigate();
-	const { handleCallback } = useStrivacity();
-
-	useEffect(() => {
-		(async () => {
-			const url = new URL(location.href);
-			const sessionId = url.searchParams.get('session_id');
-
-			if (sessionId) {
-				await navigate(`/login?session_id=${sessionId}`);
-			} else {
-				try {
-					await handleCallback();
-					await navigate('/profile');
-				} catch (error) {
-					console.error('Error during callback handling:', error);
-				}
-			}
-		})();
-	}, []);
+		return () => {
+			element.removeEventListener('login', onLogin);
+			element.removeEventListener('close', onClose);
+			element.removeEventListener('error', onError);
+		};
+	}, [navigate]);
 
 	return (
 		<section>
-			<h1>Logging in...</h1>
+			<sty-notifications></sty-notifications>
+			<sty-login ref={loginRef}></sty-login>
+			<sty-language-selector></sty-language-selector>
 		</section>
 	);
 }
 ```
 
-#### Entry page example
+##### Notification events
 
-The entry page processes flows started by an external process (e.g. password reset) by calling `entry()` to extract the necessary parameters to resume the flow and forwarding them to the callback page:
+The components dispatch `notification` events on the `document` that the `<sty-notifications>` component automatically displays. If you don't want to use `<sty-notifications>`, you can listen to these events and handle them yourself:
 
 ```tsx
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+
+export function CustomNotifications() {
+	useEffect(() => {
+		function onNotification(event: Event) {
+			const customEvent = event as CustomEvent;
+
+			if (customEvent.detail.action === 'show') {
+				// Add new notification to your custom notification system
+				const notification = customEvent.detail.notification;
+				console.log('New notification:', notification);
+				// Handle the notification display in your own UI
+			} else if (customEvent.detail.action === 'clear') {
+				// Clear all notifications
+				console.log('Clear all notifications');
+			}
+		}
+
+		document.addEventListener('notification', onNotification);
+
+		return () => document.removeEventListener('notification', onNotification);
+	}, []);
+
+	return null;
+}
+```
+
+##### Dynamic language switching
+
+The `<sty-language-selector>` component provides a built-in UI for language switching. If you don't want to use it, you can change the UI language dynamically by updating the `lang` property on the `<sty-login>` component:
+
+```tsx
+import { useRef, useState } from 'react';
+
+export function LanguageSwitcher() {
+	const loginRef = useRef<HTMLElement & { lang: string }>(null);
+	const [currentLang, setCurrentLang] = useState('en-US');
+
+	function changeLanguage(lang: string) {
+		setCurrentLang(lang);
+
+		if (loginRef.current) {
+			loginRef.current.lang = lang;
+		}
+	}
+
+	return (
+		<section>
+			<div>
+				<button onClick={() => changeLanguage('en-US')}>English</button>
+				<button onClick={() => changeLanguage('fr-FR')}>Français</button>
+				<button onClick={() => changeLanguage('de-DE')}>Deutsch</button>
+			</div>
+			<sty-login ref={loginRef} lang={currentLang}></sty-login>
+		</section>
+	);
+}
+```
+
+#### Handle the callback
+
+No separate callback page is needed. The `<sty-login>` component handles the entire authentication flow automatically, including token exchange, and dispatches a `login` event when authentication completes successfully.
+
+#### Externally-initiated flows (entry)
+
+For flows started externally (e.g. a password reset email link), the user lands on the entry URL you configured in your Strivacity application native client settings. Call `entry()` on that landing page to resolve the flow parameters from the IDP (`session_id`, `short_app_id`, `language`).
+
+You have two options:
+
+**Option 1: Redirect to a separate login page**
+
+Forward the parameters as query params to your login page:
+
+```tsx
+// pages/Entry.tsx
 import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import type { EmbeddedFlow } from '@strivacity/sdk-react';
 
 export default function Entry() {
+	const { loading, entry } = useStrivacity<EmbeddedFlow>();
 	const navigate = useNavigate();
-	const { entry } = useStrivacity();
 
 	useEffect(() => {
-		(async () => {
-			try {
-				const data = await entry();
+		if (loading) {
+			return;
+		}
 
-				if (data && Object.keys(data).length > 0) {
-					await navigate(`/callback?${new URLSearchParams(data).toString()}`);
-				} else {
-					await navigate('/');
-				}
-			} catch (error) {
-				console.error('Entry failed:', error);
-				await navigate('/');
-			}
-		})();
-	}, []);
+		entry()
+			.then((data) => {
+				// Redirect to login page with flow parameters
+				const params = new URLSearchParams({
+					session_id: data.session_id,
+					short_app_id: data.short_app_id,
+					language: data.language,
+				});
+				window.location.href = `/login?${params}`;
+			})
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading, entry, navigate]);
 
 	return (
 		<section>
@@ -413,32 +857,803 @@ export default function Entry() {
 }
 ```
 
-#### Profile page example
-
-Same as the profile page example in redirect/popup mode.
-
-#### Logout page example
-
-Same as the logout page example in redirect/popup mode.
-
-### Embedded mode
-
-In `embedded` mode the `<sty-login>` web component (loaded via `bundle.js` from the cluster) handles rendering. Import the bundle at application startup to register the Strivacity web components:
+Then on your login page, read the parameters and pass them to `<sty-login>`:
 
 ```tsx
-import { createRoot } from 'react-dom/client';
-import { StyAuthProvider } from '@strivacity/sdk-react';
+// pages/Login.tsx
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
 
-void import(`${import.meta.env.VITE_ISSUER}/assets/components/bundle.js`);
+export default function Login() {
+	const navigate = useNavigate();
+	const searchParams = new URLSearchParams(window.location.search);
+
+	// Read parameters from URL
+	const sessionId = searchParams.get('session_id');
+	const shortAppId = searchParams.get('short_app_id');
+	const language = searchParams.get('language');
+	const loginRef = useRef<LoginComponent>(null);
+
+	useEffect(() => {
+		const element = loginRef.current;
+
+		if (!element) {
+			return;
+		}
+
+		element.sessionId = sessionId;
+		element.shortAppId = shortAppId;
+		element.lang = language;
+
+		const onLogin = () => navigate('/profile');
+		const onError = (event: Event) => navigate(`/error?message=${encodeURIComponent((event as CustomEvent<string>).detail)}`);
+
+		element.addEventListener('login', onLogin);
+		element.addEventListener('error', onError);
+
+		return () => {
+			element.removeEventListener('login', onLogin);
+			element.removeEventListener('error', onError);
+		};
+	}, [navigate, sessionId, shortAppId, language]);
+
+	return (
+		<section>
+			<sty-notifications></sty-notifications>
+			<sty-login ref={loginRef}></sty-login>
+			<sty-language-selector></sty-language-selector>
+		</section>
+	);
+}
+```
+
+**Option 2: Render login on the entry page**
+
+Pass the parameters directly to `<sty-login>` on the same page:
+
+```tsx
+// pages/Entry.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
+import type { LoginComponent } from '@strivacity/sdk-react/types';
+import type { EmbeddedFlow } from '@strivacity/sdk-react';
+
+export default function Entry() {
+	const { loading, entry } = useStrivacity<EmbeddedFlow>();
+	const navigate = useNavigate();
+	const loginRef = useRef<LoginComponent>(null);
+
+	const [sessionId, setSessionId] = useState<string | null>(null);
+	const [shortAppId, setShortAppId] = useState<string | null>(null);
+	const [language, setLanguage] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		entry()
+			.then((data) => {
+				// Set state for sty-login component
+				setSessionId(data.session_id);
+				setShortAppId(data.short_app_id);
+				setLanguage(data.language);
+			})
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading, entry, navigate]);
+
+	useEffect(() => {
+		const element = loginRef.current;
+
+		if (!element || !sessionId) {
+			return;
+		}
+
+		element.sessionId = sessionId;
+		element.shortAppId = shortAppId;
+		element.lang = language;
+
+		const onLogin = () => navigate('/profile');
+		const onError = (event: Event) => navigate(`/error?message=${encodeURIComponent((event as CustomEvent<string>).detail)}`);
+
+		element.addEventListener('login', onLogin);
+		element.addEventListener('error', onError);
+
+		return () => {
+			element.removeEventListener('login', onLogin);
+			element.removeEventListener('error', onError);
+		};
+	}, [navigate, sessionId, shortAppId, language]);
+
+	if (!sessionId) {
+		return (
+			<section>
+				<h1>Loading...</h1>
+			</section>
+		);
+	}
+
+	return (
+		<section>
+			<sty-notifications></sty-notifications>
+			<sty-login ref={loginRef}></sty-login>
+			<sty-language-selector></sty-language-selector>
+		</section>
+	);
+}
+```
+
+#### Logout
+
+Call this to clear the session and redirect to the Strivacity end-session endpoint. After that the user is redirected back to your app at `postLogoutRedirectUri`.
+
+```tsx
+// pages/Logout.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+
+export default function Logout() {
+	const { loading, logout } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void logout();
+	}, [loading, logout]);
+
+	return null;
+}
+```
+
+> The `postLogoutRedirectUri` must be configured in your Strivacity application client settings as an allowed post-logout redirect URI. If the URL is invalid or not provided, the user remains on the Strivacity-hosted logged out page.
+
+#### Token management
+
+Call these methods to manage the session and access token.
+
+```tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+
+export function TokenPanel() {
+	const { loading, idTokenClaims, accessToken, refreshToken, refresh, revoke } = useStrivacity();
+
+	async function onRefresh() {
+		// Refresh the access token using the refresh token
+		await refresh();
+	}
+
+	async function onRevoke() {
+		// Revoke all tokens at the authorization server and clear the local session
+		await revoke();
+	}
+
+	if (loading) {
+		return null;
+	}
+
+	// idTokenClaims, accessToken, and refreshToken are plain values from context -
+	// they update automatically whenever the SDK's session changes
+	return (
+		<div>
+			<button onClick={onRefresh}>Refresh</button>
+			<button onClick={onRevoke}>Revoke</button>
+			<pre>{JSON.stringify({ idTokenClaims, accessToken, refreshToken }, null, 2)}</pre>
+		</div>
+	);
+}
+```
+
+---
+
+### native mode
+
+> For details on how this mode works, see the [native journey documentation](https://docs.strivacity.com/reference/native-journey).
+
+You build the entire login UI with your own components. `useNativeLogin()` drives a "headless" auth flow: instead of redirecting to a hosted page, the SDK returns a JSON description of the current screen that you render yourself, submit each form step with `submitForm()`, and repeat until the flow finalizes automatically.
+
+> The example below shows a simplified custom implementation. For a complete native renderer with all widget types, see the [example app](../../apps/react/src/components/auth/native/NativeLogin.tsx).
+
+#### Login / Register
+
+Create a login page using `useNativeLogin`:
+
+```tsx
+// pages/Login.tsx
+import { useNativeLogin } from '@strivacity/sdk-react';
+
+export default function Login() {
+	const searchParams = new URLSearchParams(window.location.search);
+
+	const { state, forms, messages, loading, submitForm, setFormValue } = useNativeLogin({
+		params: {
+			prompt: 'login', // use 'create' to open the registration flow instead
+			language: 'en-US', // set the UI language (BCP 47 language tag)
+			sdk: 'web-minimal', // rendering mode: 'web-minimal' for simplified rendering (see below), 'web' (default) for full rendering hints and branding
+			sessionId: searchParams.get('session_id'), // pass a session ID to resume an existing flow
+		},
+		onLogin: async () => {
+			window.location.href = '/profile';
+		},
+		onClose: () => {
+			window.location.reload();
+		},
+		onError: async (error) => {
+			window.location.href = `/error?message=${encodeURIComponent(error.message)}`;
+		},
+		onFallback: (error) => {
+			// Fallback to hosted journey if native widget not supported
+			window.location.href = error.url.toString();
+		},
+		onGlobalMessage: (message) => {
+			alert(message.text);
+		},
+	});
+
+	if (loading || !state.screen) {
+		return (
+			<section>
+				<h1>Loading...</h1>
+			</section>
+		);
+	}
+
+	if (state.screen === 'identifier') {
+		return (
+			<section>
+				<h2>Sign In</h2>
+				<form
+					onSubmit={async (event) => {
+						event.preventDefault();
+						await submitForm('identifier');
+					}}
+				>
+					<input
+						type="text"
+						placeholder="Email"
+						value={(forms['identifier']?.identifier as string) ?? ''}
+						onChange={(event) => setFormValue('identifier', 'identifier', event.target.value)}
+					/>
+					{messages['identifier']?.identifier && <div className="error">{messages['identifier'].identifier.text}</div>}
+					<button type="submit">Continue</button>
+				</form>
+			</section>
+		);
+	}
+
+	if (state.screen === 'password') {
+		return (
+			<section>
+				<h2>Enter Password</h2>
+				<form
+					onSubmit={async (event) => {
+						event.preventDefault();
+						await submitForm('password');
+					}}
+				>
+					<input
+						type="password"
+						placeholder="Password"
+						value={(forms['password']?.password as string) ?? ''}
+						onChange={(event) => setFormValue('password', 'password', event.target.value)}
+					/>
+					{messages['password']?.password && <div className="error">{messages['password'].password.text}</div>}
+					<button type="submit">Sign In</button>
+				</form>
+			</section>
+		);
+	}
+
+	return null;
+}
+```
+
+#### Handle the callback
+
+No separate callback page is needed. Once `state.finalizeUrl` is set, `submitForm()` automatically finalizes the session internally to exchange the authorization code for tokens and store it.
+
+#### Externally-initiated flows (entry)
+
+For flows started externally (e.g. a password reset email link), the user lands on the entry URL you configured in your Strivacity application native client settings. Call `entry()` on that landing page to resolve the flow parameters from the IDP (`session_id`, `short_app_id`, `language`).
+
+You have two options:
+
+**Option 1: Redirect to a separate login page**
+
+```tsx
+// pages/Entry.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import type { NativeFlow } from '@strivacity/sdk-react';
+
+export default function Entry() {
+	const { loading, entry } = useStrivacity<NativeFlow>();
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		entry()
+			.then((data) => {
+				const params = new URLSearchParams({
+					session_id: data.session_id,
+					short_app_id: data.short_app_id,
+					language: data.language,
+				});
+				window.location.href = `/login?${params}`;
+			})
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [loading, entry, navigate]);
+
+	return (
+		<section>
+			<h1>Loading...</h1>
+		</section>
+	);
+}
+```
+
+Then on your login page, read query parameters from the URL and pass it to `useNativeLogin` to resume the flow, exactly as shown in the Login / Register example above:
+
+```tsx
+// pages/Login.tsx
+import { useNativeLogin } from '@strivacity/sdk-react';
+
+export default function Login() {
+	const searchParams = new URLSearchParams(window.location.search);
+
+	const { state, loading, forms, messages, submitForm, setFormValue } = useNativeLogin({
+		params: {
+			sessionId: searchParams.get('session_id'),
+			language: searchParams.get('language'),
+		},
+		onLogin: async () => {
+			window.location.href = '/profile';
+		},
+	});
+
+	// ...render based on `state.screen` as shown in the Login / Register example above
+}
+```
+
+**Option 2: Render login on the entry page**
+
+Call `useNativeLogin` directly inside `Entry.tsx`, feeding it the `session_id` resolved from `entry()` - no redirect needed:
+
+```tsx
+// pages/Entry.tsx
+import { useStrivacity, useNativeLogin } from '@strivacity/sdk-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import type { NativeFlow } from '@strivacity/sdk-react';
+
+export default function Entry() {
+	const { loading: sdkLoading, entry } = useStrivacity<NativeFlow>();
+	const navigate = useNavigate();
+	const [sessionId, setSessionId] = useState<string | null>(null);
+	const [language, setLanguage] = useState<string | null>(null);
+	const [ready, setReady] = useState(false);
+
+	useEffect(() => {
+		if (sdkLoading) {
+			return;
+		}
+
+		entry()
+			.then((data) => {
+				setSessionId(data.session_id);
+				setLanguage(data.language);
+				setReady(true);
+			})
+			.catch((error) => navigate(`/error?message=${encodeURIComponent(error.message)}`));
+	}, [sdkLoading, entry, navigate]);
+
+	const { state, loading, forms, messages, submitForm, setFormValue } = useNativeLogin({
+		params: { sessionId, language },
+		onLogin: async () => {
+			await navigate('/profile');
+		},
+		onError: async (error) => {
+			await navigate(`/error?message=${encodeURIComponent(error.message)}`);
+		},
+	});
+
+	if (!ready || loading || !state.screen) {
+		return (
+			<section>
+				<h1>Loading...</h1>
+			</section>
+		);
+	}
+
+	// ...render based on `state.screen` as shown in the Login / Register example above
+	return null;
+}
+```
+
+#### Logout
+
+Call this to clear the session and redirect to the Strivacity end-session endpoint. After that the user is redirected back to your app at `postLogoutRedirectUri`.
+
+```tsx
+// pages/Logout.tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+import { useEffect } from 'react';
+
+export default function Logout() {
+	const { loading, logout } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void logout();
+	}, [loading, logout]);
+
+	return null;
+}
+```
+
+> The `postLogoutRedirectUri` must be configured in your Strivacity application client settings as an allowed post-logout redirect URI. If the URL is invalid or not provided, the user remains on the Strivacity-hosted logged out page.
+
+#### Token management
+
+Call these methods to manage the session and access token.
+
+```tsx
+import { useStrivacity } from '@strivacity/sdk-react';
+
+export function TokenPanel() {
+	const { loading, idTokenClaims, accessToken, refreshToken, refresh, revoke } = useStrivacity();
+
+	async function onRefresh() {
+		// Refresh the access token using the refresh token
+		await refresh();
+	}
+
+	async function onRevoke() {
+		// Revoke all tokens at the authorization server and clear the local session
+		await revoke();
+	}
+
+	if (loading) {
+		return null;
+	}
+
+	// idTokenClaims, accessToken, and refreshToken are plain values from context -
+	// they update automatically whenever the SDK's session changes
+	return (
+		<div>
+			<button onClick={onRefresh}>Refresh</button>
+			<button onClick={onRevoke}>Revoke</button>
+			<pre>{JSON.stringify({ idTokenClaims, accessToken, refreshToken }, null, 2)}</pre>
+		</div>
+	);
+}
+```
+
+---
+
+## Hooks API
+
+### useStrivacity
+
+The main hook for accessing the SDK instance and authentication state.
+
+```ts
+import { useStrivacity } from '@strivacity/sdk-react';
+import type { RedirectFlow } from '@strivacity/sdk-react';
+
+const ctx = useStrivacity<RedirectFlow>();
+```
+
+#### Returns
+
+```ts
+{
+	// SDK instance (access any SDK method)
+	sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
+
+	// Reactive state (plain values - the component re-renders when they change)
+	loading: boolean; // True during initialization
+	isAuthenticated: boolean; // True if user has valid session
+	idTokenClaims: IdTokenClaims | null; // Decoded ID token claims
+	accessToken: string | null; // Current access token
+	refreshToken: string | null; // Current refresh token
+
+	// Methods (all are async)
+	login(params?: LoginParams): Promise<void>; // Start login flow
+	register(params?: LoginParams): Promise<void>; // Start registration flow
+	handleCallback(url?: string): Promise<void>; // Handle OAuth callback
+	logout(params?: LogoutParams): Promise<void>; // End session
+	refresh(): Promise<void>; // Refresh access token
+	revoke(): Promise<void>; // Revoke tokens
+	entry(): Promise<EntryData>; // Handle external entry (embedded/native only)
+}
+```
+
+### useNativeLogin
+
+Hook for managing native login flow state. Only available in `native` mode.
+
+```ts
+import { useNativeLogin } from '@strivacity/sdk-react';
+import type { NativeParams } from '@strivacity/sdk-react';
+
+const ctx = useNativeLogin({
+	params: { /* login params */ },
+	onLogin: (session) => { /* handle login */ },
+	onError: (error) => { /* handle error */ },
+	// ... other callbacks
+});
+```
+
+#### Options
+
+```ts
+{
+	params?: NativeParams; // Initial flow parameters
+	onLogin?: (session: SessionData) => void | Promise<void>; // Called on successful login
+	onClose?: () => void; // Called when user closes the flow
+	onError?: (error: unknown) => void; // Called on error
+	onFallback?: (error: FallbackError) => void; // Called when fallback needed
+	onGlobalMessage?: (message: NativeFlowMessage) => void; // Called for global messages
+}
+```
+
+#### Returns
+
+```ts
+{
+	// Reactive state (plain values - the component re-renders when they change)
+	loading: boolean; // True while fetching next screen
+	state: Partial<NativeFlowState>; // Current flow state (screen, forms, layout, etc.)
+	forms: Record<string, Record<string, unknown>>; // Form data by form ID
+	messages: Record<string, Record<string, NativeFlowMessage>>; // Validation messages
+
+	// Methods
+	submitForm(formId: string, customBody?: Record<string, unknown>): Promise<void>; // Submit a form and advance to next screen
+	setFormValue(formId: string, widgetId: string, value: unknown): void; // Update a single field value before submission
+	setMessage(formId: string, widgetId: string, value: NativeFlowMessage): void; // Set a validation/info message on a widget
+	triggerFallback(message?: string): void; // Manually trigger fallback to hosted journey
+	triggerClose(): void; // Signal that the login flow was closed by the user
+}
+```
+
+### withAuthGuard
+
+Higher-order component that guards a component with authentication. Waits for the SDK to finish loading, checks the session, and redirects to the login page if the user is not authenticated.
+
+```tsx
+import { withAuthGuard } from '@strivacity/sdk-react';
+
+export default withAuthGuard(
+	function Profile() {
+		return <section>Protected content</section>;
+	},
+	{ loginUri: '/login' },
+);
+```
+
+#### Options
+
+```ts
+{
+	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	onLoading?: () => ReactNode; // Optional render function shown while loading/checking authentication
+}
+```
+
+---
+
+## Route guards
+
+Protect routes that require authentication with the `withAuthGuard` higher-order component. It waits for the SDK to finish loading, verifies the session, and redirects to the login page if the user is not authenticated:
+
+```tsx
+// pages/Profile.tsx
+import { withAuthGuard, useStrivacity } from '@strivacity/sdk-react';
+
+export default withAuthGuard(
+	function Profile() {
+		const { idTokenClaims } = useStrivacity();
+
+		return <section>Hello, {idTokenClaims?.given_name}</section>;
+	},
+	{ loginUri: '/login' },
+);
+```
+
+Then register the guarded component as a regular route in your router setup:
+
+```tsx
+// main.tsx
+import { Routes, Route } from 'react-router';
+import Profile from './pages/Profile';
+
+<Routes>
+	<Route path="/profile" element={<Profile />} />
+</Routes>;
+```
+
+---
+
+## Shared features
+
+The React SDK is built on top of the core SDK and supports all its features:
+
+- **[Storages](../sdk-core/README.md#storages)** - localStorage, sessionStorage, IndexedDB, Cache API, Memory, Worker
+- **[SDK events](../sdk-core/README.md#sdk-events)** - Subscribe to authentication lifecycle events
+- **[Logging](../sdk-core/README.md#logging)** - Built-in and custom logger support
+- **[HTTP client](../sdk-core/README.md#http-client)** - Custom HTTP client integration
+- **[Error handling](../sdk-core/README.md#error-handling)** - Typed error classes for different failure scenarios
+- **[Utility functions](../sdk-core/README.md#utility-functions)** - Base64URL, JWT decoding, encryption, etc.
+- **[Caching](../sdk-core/README.md#caching)** - OIDC metadata and JWKS caching
+
+---
+
+## Configuration reference
+
+The React SDK accepts the same configuration as the core SDK. For detailed information about each option, see the [core SDK configuration reference](../sdk-core/README.md#configuration-reference).
+
+---
+
+## Advanced
+
+### Ionic / Capacitor support
+
+The SDK works with Ionic and Capacitor applications. For native mobile platforms (iOS/Android), you need to override the default `urlHandler`, `callbackHandler`, and `storage` implementations to integrate with Capacitor plugins.
+
+```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client';
+import { StyAuthProvider, SDKStorage, SDKHttpClient, LocalStorage } from '@strivacity/sdk-react';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { InAppBrowser } from '@capacitor/inappbrowser';
+import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
+import type { PluginListenerHandle } from '@capacitor/core';
+import type { HttpClientResponse } from '@strivacity/sdk-react';
+import { App } from './App';
+
+// Custom HTTP client using Capacitor's HTTP plugin
+class CapacitorHttpClient extends SDKHttpClient {
+	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
+		const response = await CapacitorHttp.request({
+			url,
+			method: options?.method || 'GET',
+			headers: (options?.headers as Record<string, string>) || {},
+			data: options?.body,
+			webFetchExtra: options,
+		});
+
+		return {
+			headers: new Headers(response.headers),
+			ok: response.status >= 200 && response.status < 300,
+			status: response.status,
+			statusText: '',
+			url: response.url,
+			json: () => Promise.resolve(response.data),
+			text: () => Promise.resolve(response.data),
+		};
+	}
+}
+
+// Custom storage using Capacitor Preferences
+class CapacitorStorage extends SDKStorage {
+	async get(key: string): Promise<string | null> {
+		const { value } = await Preferences.get({ key });
+		return value;
+	}
+
+	async set(key: string, value: string): Promise<void> {
+		await Preferences.set({ key, value });
+	}
+
+	async delete(key: string): Promise<void> {
+		await Preferences.remove({ key });
+	}
+}
 
 createRoot(document.getElementById('app')!).render(
 	<StyAuthProvider
 		options={{
-			mode: 'embedded',
-			issuer: 'https://<YOUR_DOMAIN>',
-			scopes: ['openid', 'profile'],
-			clientId: '<YOUR_CLIENT_ID>',
-			redirectUri: '<YOUR_REDIRECT_URI>',
+			mode: 'redirect',
+			issuer: 'https://<YOUR_TENANT_DOMAIN>',
+			clientId: 'YOUR_CLIENT_ID',
+			redirectUri: 'https://your-app.example.com/callback',
+			scopes: ['openid', 'profile', 'email'],
+
+			// Use Capacitor HTTP on native platforms
+			httpClient: CapacitorHttpClient,
+
+			// Use Capacitor Preferences on native platforms, localStorage on web
+			storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
+
+			// Handle URL redirects with InAppBrowser on native platforms
+			async urlHandler(url, responseMode) {
+				if (Capacitor.getPlatform() === 'web') {
+					return redirectUrlHandler(url, responseMode);
+				} else {
+					await InAppBrowser.openInWebView({
+						url,
+						options: { /* Configure InAppBrowser options */ },
+					});
+				}
+			},
+
+			// Handle OAuth callback with InAppBrowser listeners on native platforms
+			async callbackHandler(url, responseMode) {
+				if (Capacitor.getPlatform() === 'web') {
+					return redirectCallbackHandler(url, responseMode);
+				}
+
+				return new Promise(async (resolve, reject) => {
+					let navigationListener: PluginListenerHandle | null = null;
+					let finishListener: PluginListenerHandle | null = null;
+					let userCancelled = true;
+
+					const cleanupListeners = async () => {
+						if (navigationListener) {
+							await navigationListener.remove();
+							navigationListener = null;
+						}
+						if (finishListener) {
+							await finishListener.remove();
+							finishListener = null;
+						}
+					};
+
+					try {
+						// Listen for page navigation in InAppBrowser
+						navigationListener = await InAppBrowser.addListener(
+							'browserPageNavigationCompleted',
+							async (event) => {
+								const navigatedUrl = event.url;
+
+								// Check if the navigated URL matches our callback URL
+								if (navigatedUrl && navigatedUrl.startsWith(url)) {
+									try {
+										const urlInstance = new URL(navigatedUrl);
+										const dataString = responseMode === 'query'
+											? urlInstance.search
+											: urlInstance.hash;
+										const params = Object.fromEntries(
+											new URLSearchParams(dataString.slice(1))
+										);
+
+										userCancelled = false;
+										await InAppBrowser.close();
+										resolve(params);
+									} catch (error) {
+										await InAppBrowser.close();
+										reject(error);
+									}
+								}
+							}
+						);
+
+						// Listen for browser close event
+						finishListener = await InAppBrowser.addListener('browserClosed', async () => {
+							await cleanupListeners();
+
+							if (userCancelled) {
+								reject(new Error('InAppBrowser flow cancelled by user.'));
+							}
+						});
+					} catch (error) {
+						await cleanupListeners();
+						reject(error);
+					}
+				});
+			},
 		}}
 	>
 		<App />
@@ -446,185 +1661,132 @@ createRoot(document.getElementById('app')!).render(
 );
 ```
 
-## Logging
+> For more details on custom handlers and storage implementations, see the [core SDK advanced section](../sdk-core/README.md#advanced).
 
-The SDK supports optional logging to help you debug authentication flows and monitor SDK behavior. You can enable the built-in console logger or provide your own custom logger implementation.
+### Server-side session (BFF) mode
 
-### Using the Default Logger
-
-Enable the default console logger by adding the `logging` option:
+Set `serverSessionUri` to route login through your own server instead of talking to the identity provider directly from the browser - tokens are then stored server-side and never reach client-side JavaScript. See [Server-side session management](../sdk-core/README.md#server-side-session-management) in the core SDK README for the full explanation and how to read the session on the client.
 
 ```tsx
-import { StyAuthProvider, DefaultLogging, type SDKOptions } from '@strivacity/sdk-react';
-
-const options: SDKOptions = {
-	mode: 'redirect',
-	issuer: 'https://<YOUR_DOMAIN>',
-	scopes: ['openid', 'profile'],
-	clientId: '<YOUR_CLIENT_ID>',
-	redirectUri: '<YOUR_REDIRECT_URI>',
-	logging: DefaultLogging,
-};
+// main.tsx
+createRoot(document.getElementById('app')!).render(
+	<StyAuthProvider
+		options={{
+			mode: 'redirect',
+			issuer: 'https://<YOUR_TENANT_DOMAIN>',
+			clientId: 'YOUR_CLIENT_ID',
+			redirectUri: 'https://your-app.example.com/callback',
+			scopes: ['openid', 'profile', 'email'],
+			serverSessionUri: '/api/auth/login', // Requests are routed through your server; tokens are NOT written to client storage
+		}}
+	>
+		<App />
+	</StyAuthProvider>,
+);
 ```
 
-### Creating a Custom Logger
+See [`apps/react`](../../apps/react) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 
-Implement the `SDKLogging` interface and pass your class to the `logging` option:
+---
 
-```typescript
-import type { SDKLogging } from '@strivacity/sdk-react';
+## Migration guide
 
-export class MyLogger implements SDKLogging {
-	xEventId?: string;
+### Migrating to v4.0
 
-	debug(message: string): void {
-		console.debug(this.xEventId ? `[${this.xEventId}] ${message}` : message);
-	}
+v4 replaces the SDK's class-based flow architecture with function-based architecture, and adds first-class support for server-managed (BFF) sessions. `StyAuthProvider`, `useStrivacity()`, `useNativeLogin()`, and the built-in `redirect`/`popup`/`embedded`/`native` modes are unchanged - only apps that used `mode: 'custom'` or drove `native` mode through the old `NativeFlowHandler` need to update their code.
 
-	info(message: string): void {
-		console.info(this.xEventId ? `[${this.xEventId}] ${message}` : message);
-	}
+#### Class-based flows replaced by functions
 
-	warn(message: string): void {
-		console.warn(this.xEventId ? `[${this.xEventId}] ${message}` : message);
-	}
+In v3, flows were classes (`RedirectFlow`, `PopupFlow`, `NativeFlow`, `EmbeddedFlow`), and the only way to customize behavior beyond the built-in modes - for example, to proxy authentication through your own backend in a bespoke way - was `mode: 'custom'` with a `customFlow` class that extended one of them and override its methods:
 
-	error(message: string, error: Error): void {
-		console.error(this.xEventId ? `[${this.xEventId}] ${message}` : message, error);
+```ts
+// v3
+import { NativeFlow } from '@strivacity/sdk-core/flows/NativeFlow';
+
+export class CustomNativeFlow extends NativeFlow {
+	override async refresh(): Promise<void> {
+		// ...
 	}
 }
 ```
 
-The `SDKLogging` interface requires `debug`, `info`, `warn`, and `error` methods. The optional `xEventId` property, when set by the SDK, provides a correlation ID to trace related log messages across the authentication flow.
+v4 removes `mode: 'custom'`, the `customFlow` option, and the flow classes entirely. In their place, `createBaseFlow` (from `@strivacity/sdk-core/flows/base`) is a factory function that returns a plain object of methods closing over shared state - build your own flow by composing it, without extending anything:
 
-## HTTP Client
+```ts
+// v4
+import { createBaseFlow } from '@strivacity/sdk-core/flows/base';
+import { getDefaultFlowState, getSDKOptions } from '@strivacity/sdk-core/utils';
+import type { SDKInitConfig, SDKOptions } from '@strivacity/sdk-core/types';
 
-The SDK uses a built-in `fetch`-based HTTP client for all requests. You can replace it with your own implementation by extending `SDKHttpClient` and passing your class via the `httpClient` option. This is useful when you need to attach custom headers (e.g. `x-sty-app-id`) to every outgoing request or route traffic through a proxy.
+export function createCustomFlow(initConfig: SDKInitConfig) {
+	const state = getDefaultFlowState();
+	const options = getSDKOptions<SDKOptions>(state, initConfig);
+	const base = createBaseFlow(state, options);
 
-### Adding custom headers to every request
+	async function refresh(): Promise<void> {
+		// ...
+	}
+
+	return { ...base, refresh };
+}
+```
+
+This is a low-level `@strivacity/sdk-core` primitive - it's used the same way no matter which framework package you build on top of it. Wire it up by adding `factory: createCustomFlow` to the `options` prop passed to `StyAuthProvider` - see [Custom flow](../sdk-core/README.md#custom-flow) in the core SDK README for the full pattern and usage example.
+
+#### Server-managed sessions (BFF) are now built in
+
+In v3, routing authentication through your own backend meant writing a custom flow class like the one above yourself: manually calling `fetch()` against hand-written endpoints, and reimplementing PKCE/state handling, CSRF protection, and server-side token storage on your own.
+
+`@strivacity/sdk-react` doesn't ship its own server - it's a client SDK for SPAs, meant to pair with a separate backend. v4 replaces the old hand-rolled approach with a single option, `serverSessionUri`, on `StyAuthProvider`, paired with the Server SDK (`createBaseServerSDK` from `@strivacity/sdk-core/server`) running on that backend - PKCE, state, and session storage are all handled by the Server SDK:
 
 ```tsx
-import { StyAuthProvider, SDKHttpClient, type HttpClientResponse, type SDKOptions } from '@strivacity/sdk-react';
-
-class CustomHttpClient extends SDKHttpClient {
-	async request<T>(url: string, options?: RequestInit): Promise<HttpClientResponse<T>> {
-		const mergedOptions: RequestInit = {
-			...options,
-			headers: {
-				'x-sty-app-id': 'my-app',
-				...(options?.headers as Record<string, string>),
-			},
-		};
-
-		const response = await fetch(url, mergedOptions);
-
-		return {
-			headers: response.headers,
-			ok: response.ok,
-			status: response.status,
-			statusText: response.statusText,
-			url: response.url,
-			json: async () => (await response.json()) as T,
-			text: async () => await response.text(),
-		};
-	}
-}
-
-const options: SDKOptions = {
-	// ...other options
-	httpClient: CustomHttpClient,
-};
+// v4
+<StyAuthProvider
+	options={{
+		// ...
+		serverSessionUri: '/api/auth/login', // requests are routed through your server; tokens are never written to client storage
+	}}
+>
+	<App />
+</StyAuthProvider>
 ```
 
-Any header you add inside `request()` is automatically included in every SDK request
+See [`apps/react`](../../apps/react) paired with [`apps/backend`](../../apps/backend) for a working example.
 
-### CORS configuration
+#### Native mode: no more `NativeFlowHandler`
 
-For custom request headers to reach the Strivacity cluster, the cluster must be configured to explicitly allow them. Add the header name(s) to the **Access-Control-Allow-Headers** list in the cluster settings. Without this, browsers will block the preflight `OPTIONS` request and the SDK call will fail with a CORS error.
+In v3, `native` mode's `login()`/`register()` returned a separate `NativeFlowHandler` instance, and the flow was driven through that handler:
 
-```
-Access-Control-Allow-Headers: x-sty-app-id, <any other custom headers>
-```
-
-## API Documentation
-
-### `useStrivacity` hook
-
-```typescript
-useStrivacity<T extends PopupContext | RedirectContext | NativeContext>(): T;
+```ts
+// v3
+const handler = await sdk.login();
+const state = await handler.startSession(sessionId);
+const nextState = await handler.submitForm('formId', { identifier: 'user@example.com' });
+await handler.finalizeSession(nextState.finalizeUrl);
 ```
 
-The hook returns a different context type depending on the `mode` configured in `StyAuthProvider`.
+v4 moves `startSession()`, `submitForm()`, and `finalizeSession()` directly onto the flow itself - in `@strivacity/sdk-react` this is wrapped for you by the [`useNativeLogin()`](#usenativelogin) hook:
 
-**Shared properties (all modes)**
+```ts
+import { useNativeLogin } from '@strivacity/sdk-react';
 
-- **`sdk: RedirectFlow | PopupFlow | NativeFlow`**: The underlying SDK flow instance.
-- **`loading: boolean`**: `true` while the session is being initialized.
-- **`options: SDKOptions`**: The configured SDK options.
-- **`isAuthenticated: boolean`**: `true` when the user has a valid session.
-- **`idTokenClaims: IdTokenClaims | null`**: Claims from the ID token, or `null` if not authenticated.
-- **`accessToken: string | null`**: The current access token.
-- **`refreshToken: string | null`**: The current refresh token.
-- **`accessTokenExpired: boolean`**: `true` when the access token has expired.
-- **`accessTokenExpirationDate: number | null`**: Expiration timestamp (Unix seconds) of the access token.
+// v4
+const { state, forms, messages, submitForm } = useNativeLogin({
+	params: { sessionId },
+});
 
----
+await submitForm('formId');
+```
 
-**Type: `RedirectContext`**
+Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
 
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates login by redirecting to the identity provider.
-- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a redirect flow.
-- **`refresh(): Promise<void>`**: Refreshes the user's session.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
-- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback after redirect.
-- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL and returns the parameters needed to resume the flow.
+## Migrating to v3.0
+
+### Entry API Major Changes
+
+Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.
 
 ---
-
-**Type: `PopupContext`**
-
-- **`login(options?: LoginOptions): Promise<void>`**: Initiates login using a popup window.
-- **`register(options?: RegisterOptions): Promise<void>`**: Initiates registration using a popup.
-- **`refresh(): Promise<void>`**: Refreshes the user's session.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via popup.
-- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
-- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
-
----
-
-**Type: `NativeContext`**
-
-- **`login(options?: LoginOptions): Promise<NativeFlowHandler>`**: Initiates login using the native flow.
-- **`register(options?: RegisterOptions): Promise<NativeFlowHandler>`**: Initiates registration using the native flow.
-- **`refresh(): Promise<void>`**: Refreshes the user's session.
-- **`revoke(): Promise<void>`**: Revokes the current session tokens.
-- **`logout(options?: LogoutOptions): Promise<void>`**: Logs the user out via redirect.
-- **`handleCallback(url?: string): Promise<void>`**: Processes the authorization callback.
-- **`entry(): Promise<Record<string, string>>`**: Processes an externally-initiated flow URL.
-
----
-
-### `StyLoginRenderer` component
-
-Used in `native` mode to render the authentication UI with your own widget components.
-
-**Props**
-
-- **`params?: NativeParams`**: Additional parameters for the native login flow.
-- **`widgets?: PartialRecord<WidgetType, React.ComponentType>`**: Custom React components for each widget type used in the flow.
-- **`sessionId?: string | null`**: Session ID for resuming an existing authentication session.
-- **`language?: string | null`**: Language tag (e.g. `"en-US"`) for the authentication UI. Defaults to `navigator.language`. After the session starts the component calls `onLanguageChange` with the resolved language. See the [Translations](https://docs.strivacity.com/docs/translations) page to learn about language precedence implemented by the product.
-
-**Event callbacks**
-
-- **`onLogin`**: Called on successful authentication. Receives `IdTokenClaims | null`.
-- **`onFallback`**: Called when the native flow needs to fall back to redirect. Receives `FallbackError` with a fallback URL.
-- **`onError`**: Called when an error occurs during authentication.
-- **`onGlobalMessage`**: Called when the flow wants to display a global message (e.g. account lockout warning).
-- **`onBlockReady`**: Called on flow state transitions. Receives `{ previousState: LoginFlowState; state: LoginFlowState }`. Useful for analytics and custom logging.
-- **`onLanguageChange`**: Called after the session starts with the resolved language string.
 
 ## Vulnerability Reporting
 
@@ -632,14 +1794,8 @@ The [Guidelines for responsible disclosure](https://www.strivacity.com/report-a-
 
 ## License
 
-@strivacity/sdk-react is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
+This package is available under the MIT License. See the [LICENSE](https://github.com/Strivacity/sdk-js/blob/main/LICENSE) file for more info.
 
 ## Contributing
 
 Please see our [contributing guide](https://github.com/Strivacity/sdk-js/blob/main/CONTRIBUTING.md).
-
-## Migrating to v3.0
-
-### Entry API Major Changes
-
-Strivacity SDK's `entry()` API now returns a structured object instead of a plain string. Check the example above in the usage section for more details.

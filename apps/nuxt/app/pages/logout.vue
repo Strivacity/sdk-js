@@ -1,21 +1,13 @@
-<script lang="ts" setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+<script setup lang="ts">
+import Server from '../components/logout/Server.vue';
+import Client from '../components/logout/Client.vue';
 
-const router = useRouter();
-const { isAuthenticated, logout } = useStrivacity();
-
-onMounted(async () => {
-	if (isAuthenticated.value) {
-		await logout({ postLogoutRedirectUri: location.origin });
-	} else {
-		await router.push('/');
-	}
-});
+const { sdk } = useStrivacity();
 </script>
 
 <template>
-	<section>
-		<h1>Logging out...</h1>
-	</section>
+	<!-- This demo shows both session modes side by side. -->
+	<!-- in your own app, keep only the branch matching your `serverSessionUri` setting. -->
+	<Server v-if="sdk.options.serverSessionUri" />
+	<Client v-else />
 </template>
