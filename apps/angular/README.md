@@ -36,7 +36,7 @@ Switch between modes by setting `VITE_MODE` (`redirect`, `popup`, `embedded`, or
 
 ## Server-managed sessions
 
-This app is SSR-capable and has its own server (`src/server/server.ts`), so it wires up the SDK's Server SDK directly (see `src/server/strivacity.ts`) rather than pairing with a separate backend. `serverSessionUri` is set to `/auth/login` by default in `src/options.ts`, routing login through this app's own server instead of storing tokens client-side.
+This app is SSR-capable and has its own server (`src/server/server.ts`), so it wires up the SDK's Server SDK directly (see `src/server/strivacity.ts`) rather than pairing with a separate backend. `serverSessionUri` is set to `/auth/login` by default in `src/options.ts`, routing login through this app's own server instead of storing tokens client-side. See the Core SDK's [Server-side session management](../../packages/sdk-core/README.md#server-side-session-management) for details.
 
 ---
 
