@@ -102,6 +102,10 @@ pnpm app:solidstart:serve    # Solidstart
 pnpm app:sveltekit:serve     # SvelteKit
 pnpm app:vue:serve           # Vue.js
 pnpm app:backend:serve       # Express backend (BFF)
+
+pnpm app:react-backend:serve   # React + Express backend (BFF)
+pnpm app:preact-backend:serve  # Preact + Express backend (BFF)
+pnpm app:vue-backend:serve     # Vue.js + Express backend (BFF)
 ```
 
 ### Using the backend app with SPA apps

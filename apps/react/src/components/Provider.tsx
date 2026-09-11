@@ -10,7 +10,7 @@ export const options: SDKInitConfig = {
 	redirectUri: import.meta.env.VITE_REDIRECT_URI as SDKOptions['redirectUri'],
 	storageTokenName: 'sty.session.preact',
 	logging: createDefaultLogging(),
-	// serverSessionUri: '/auth/login', // If you want to use server-side session storage, uncomment this line.
+	serverSessionUri: (import.meta.env.VITE_SERVER_SESSION_URI as SDKOptions['serverSessionUri']) || false, // If you want to use server-side session storage, uncomment this line.
 };
 
 export function AuthProvider({ session, children }: { session?: SessionData | null; children: ReactNode }) {

@@ -155,13 +155,14 @@ It exposes one route per Server SDK operation, all mounted under `/auth`.
 
 Every app reads these from the repository-root `.env.local` (see the root [environment configuration](../README.md#environment-configuration) for the full setup).
 
-| Variable         | Description                                                                       |
-| :--------------- | :-------------------------------------------------------------------------------- |
-| `VITE_MODE`      | Which authentication mode to demo: `redirect`, `popup`, `embedded`, or `native`   |
-| `VITE_ISSUER`    | Your Strivacity cluster domain (for example `https://your-tenant.strivacity.com`) |
-| `VITE_CLIENT_ID` | The client ID of your application                                                 |
-| `VITE_SCOPES`    | Space-separated list of scopes to request (for example `openid profile`)          |
-| `VITE_SECRET`    | encrypts the server-side session cookie                                           |
+| Variable                  | Description                                                                                                                                                                                                                                                                 |
+| :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_MODE`               | Which authentication mode to demo: `redirect`, `popup`, `embedded`, or `native`                                                                                                                                                                                             |
+| `VITE_ISSUER`             | Your Strivacity cluster domain (for example `https://your-tenant.strivacity.com`)                                                                                                                                                                                           |
+| `VITE_CLIENT_ID`          | The client ID of your application                                                                                                                                                                                                                                           |
+| `VITE_SCOPES`             | Space-separated list of scopes to request (for example `openid profile`)                                                                                                                                                                                                    |
+| `VITE_SECRET`             | encrypts the server-side session cookie                                                                                                                                                                                                                                     |
+| `VITE_SERVER_SESSION_URI` | Overrides the `serverSessionUri` SDK option (see [Session strategies](#session-strategies)). Angular, Next.js, Nuxt, SolidStart, and SvelteKit default to `/auth/login` when unset; Vue.js, React, and Preact default to unset (client-managed session) unless this is set. |
 
 ## Running the apps
 
