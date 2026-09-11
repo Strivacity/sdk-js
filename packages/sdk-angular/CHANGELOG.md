@@ -1,3 +1,10 @@
+## 3.1.0 (2026-09-11)
+
+### 🧱 Updated Dependencies
+
+- Updated sdk-core to 3.1.0
+- Updated testing to 3.1.0
+
 ## 3.0.3 (2026-08-03)
 
 ### 🧱 Updated Dependencies

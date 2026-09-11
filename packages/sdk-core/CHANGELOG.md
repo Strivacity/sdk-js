@@ -1,3 +1,13 @@
+## 3.1.0 (2026-09-11)
+
+### 🚀 Features
+
+- add an option to disable access token auto-refresh functionality ([64631e96](https://github.com/strivadev/internal-sdk-js/commit/64631e96))
+
+### 🧱 Updated Dependencies
+
+- Updated testing to 3.1.0
+
 ## 3.0.3 (2026-08-03)
 
 ### 🩹 Fixes
