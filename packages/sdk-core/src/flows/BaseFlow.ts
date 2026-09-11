@@ -214,6 +214,9 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 			throw error;
 		}
 
+		if (typeof options.autoRefresh === 'undefined') {
+			options.autoRefresh = true;
+		}
 		if (!options.scopes) {
 			options.scopes = ['openid'];
 		}
@@ -275,7 +278,7 @@ export abstract class BaseFlow<Options extends SDKOptions = SDKOptions, URLHandl
 		}
 
 		// Attempt to refresh the token if it has expired
-		if (this.accessTokenExpired && this.refreshToken && !this.refreshInProgress) {
+		if (this.options.autoRefresh && this.accessTokenExpired && this.refreshToken && !this.refreshInProgress) {
 			try {
 				this.#refreshInProgressState = true;
 				await this.refresh();

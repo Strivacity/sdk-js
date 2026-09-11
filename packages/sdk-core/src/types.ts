@@ -605,6 +605,13 @@ export type SDKOptions = {
 	customFlow?: FlowType;
 
 	/**
+	 * Indicates whether the SDK should automatically refresh tokens when they are about to expire.
+	 *
+	 * @type {boolean}
+	 */
+	autoRefresh?: boolean;
+
+	/**
 	 * Handles the URL redirection to the specified target.
 	 * You can use this method to implement custom URL handling logic, such as opening a new window or navigating to a different page.
 	 *
