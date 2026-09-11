@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "@strivacity/sdk-preact",
   "version": "3.0.3",
   "description": "Strivacity Preact SDK client",

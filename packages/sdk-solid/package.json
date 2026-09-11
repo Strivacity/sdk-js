@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "@strivacity/sdk-solid",
   "version": "3.0.3",
   "description": "Strivacity SolidJS SDK client",
