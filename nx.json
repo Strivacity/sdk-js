@@ -38,7 +38,13 @@
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk",
-      "preserveLocalDependencyProtocols": false
+      "preserveLocalDependencyProtocols": false,
+      "preserveMatchingDependencyRanges": false,
+      "git": {
+        "tag": true,
+        "commit": true,
+        "push": true
+      }
     },
     "changelog": {
       "workspaceChangelog": false,
@@ -47,12 +53,11 @@
         "renderOptions": {
           "authors": false
         }
+      },
+      "git": {
+        "commit": true,
+        "push": true
       }
-    },
-    "git": {
-      "tag": true,
-      "commit": true,
-      "push": true
     },
     "releaseTag": {
       "pattern": "@strivacity/{projectName}@{version}"

@@ -1,7 +1,6 @@
 {
-  "private": true,
   "name": "@strivacity/sdk-solid",
-  "version": "3.0.3",
+  "version": "4.0.0-beta.0",
   "description": "Strivacity SolidJS SDK client",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -51,7 +50,7 @@
     }
   },
   "dependencies": {
-    "@strivacity/sdk-core": "*"
+    "@strivacity/sdk-core": "4.0.0-beta.0"
   },
   "peerDependencies": {
     "@solidjs/web": ">=2",
