@@ -22,7 +22,7 @@ export default defineConfig({
 	],
 	server: {
 		port: 4200,
-		host: 'localhost',
+		host: process.env.HOST ?? 'localhost',
 		cors: {
 			credentials: true,
 			origin: true,

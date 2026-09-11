@@ -13,7 +13,7 @@ export default defineNuxtConfig({
 			extends: '../tsconfig.app.json',
 		},
 	},
-	devServer: { host: 'localhost', port: 4200 },
+	devServer: { host: process.env.HOST ?? 'localhost', port: 4200 },
 	modules: ['@strivacity/sdk-nuxt'],
 	runtimeConfig: {
 		public: {

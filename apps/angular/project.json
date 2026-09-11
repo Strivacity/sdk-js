@@ -40,6 +40,10 @@
     "serve": {
       "executor": "@angular/build:dev-server",
       "dependsOn": ["sdk-angular:build"],
+      "options": {
+        "host": "0.0.0.0",
+        "allowedHosts": true
+      },
       "configurations": {
         "production": {
           "buildTarget": "app-angular:build:production"
