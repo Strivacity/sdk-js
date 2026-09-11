@@ -1,6 +1,7 @@
 .angular/
 .astro/
 .cache/
+.claude/
 .data/
 .next/
 .nitro/
