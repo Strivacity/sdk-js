@@ -7,6 +7,7 @@ on:
 
 jobs:
   publish:
+    if: github.repository_owner == 'Strivacity'
     runs-on: ubuntu-latest
     permissions:
       contents: read
