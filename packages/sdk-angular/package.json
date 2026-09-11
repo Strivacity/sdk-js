@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-angular",
-  "version": "3.0.3",
+  "version": "4.0.0-beta.0",
   "description": "Strivacity Angular SDK client",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -32,7 +32,7 @@
     }
   },
   "dependencies": {
-    "@strivacity/sdk-core": "*"
+    "@strivacity/sdk-core": "4.0.0-beta.0"
   },
   "peerDependencies": {
     "@angular/core": ">=20",
