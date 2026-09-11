@@ -42,7 +42,7 @@ jobs:
           done
 
           if [ ${#STABLE[@]} -gt 0 ]; then
-            pnpm nx release publish --projects="$(IFS=,; echo "${STABLE[*]}")" --access=public
+            pnpm nx release publish --projects="$(IFS=,; echo "${STABLE[*]}")" --tag="latest" --access=public
           fi
           if [ ${#PRERELEASE[@]} -gt 0 ]; then
             pnpm nx release publish --projects="$(IFS=,; echo "${PRERELEASE[*]}")" --tag="next" --access=public
