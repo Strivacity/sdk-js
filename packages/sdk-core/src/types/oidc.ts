@@ -581,6 +581,13 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	autoRefresh: boolean;
 
 	/**
+	 * The amount of time (in seconds) before the access token's expiration that the SDK should attempt to refresh it.
+	 *
+	 * @default 60
+	 */
+	refreshSkew: number;
+
+	/**
 	 * The URL of your backend-for-frontend (BFF) endpoint that the SDK will route login/registration/start-session requests to instead of building the authorization URL itself.
 	 * Setting this also switches the SDK into server-managed session mode: tokens are never read from or written to client-side storage, and successful authorization responses redirect the browser instead of being exchanged for tokens client-side.
 	 * If not set, the SDK talks to the IDP directly and manages the session client-side.

@@ -22,7 +22,7 @@ export function createServerSDK(initConfig: SvelteKitServerSDKInitConfig): Svelt
 	async function requireSession(event: RequestEvent, guardOpts: { returnTo?: string } = {}): Promise<SessionData> {
 		let session = await base.getSession(event);
 
-		if (session && isSessionExpired(session) && session.refresh_token) {
+		if (session && isSessionExpired(session, base.options.refreshSkew) && session.refresh_token) {
 			try {
 				session = await base.refreshSession(event);
 			} catch {
