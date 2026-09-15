@@ -47,6 +47,7 @@ describe('defaultOptions', () => {
 		expect(defaultOptions).toEqual({
 			lazyLoad: false,
 			autoRefresh: true,
+			refreshSkew: 60,
 			serverSessionUri: null,
 			scopes: ['openid'],
 			responseType: 'code',

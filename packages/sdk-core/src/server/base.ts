@@ -249,9 +249,20 @@ export function createBaseServerSDK<
 	async function handleLogin(event: TEvent, extraParams: Record<string, unknown> = {}): Promise<Response> {
 		const request = await adapter.toRequest(event);
 		const requestUrl = new URL(request.url);
-		const { returnTo, ...params } = Object.fromEntries(requestUrl.searchParams);
+		const { returnTo, prompt, display, login_hint, acr_values, ui_locales, audience, ...params } = Object.fromEntries(requestUrl.searchParams);
 		const safeReturnTo = toSafeRedirect(returnTo, requestUrl.origin);
-		const url = await buildAuthorizationUrl({ params: { ...params, ...extraParams }, options });
+		const url = await buildAuthorizationUrl({
+			params: {
+				prompt: prompt ?? params.prompt,
+				display: display ?? params.display,
+				loginHint: login_hint ?? params.loginHint,
+				acrValues: (acr_values ?? params.acrValues)?.split(' '),
+				uiLocales: (ui_locales ?? params.uiLocales)?.split(' '),
+				audiences: (audience ?? params.audiences)?.split(' '),
+				...extraParams,
+			},
+			options,
+		});
 
 		if (returnTo && !safeReturnTo) {
 			throw new ProtocolError(`Invalid returnTo URL: ${returnTo}. Expected a URL with the same origin as the request: ${requestUrl.origin}`);

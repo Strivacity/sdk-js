@@ -51,6 +51,7 @@ export function getDefaultFlowState(): FlowState {
 export const defaultOptions: Partial<SDKOptions> = {
 	lazyLoad: false,
 	autoRefresh: true,
+	refreshSkew: 60,
 	serverSessionUri: null,
 	scopes: ['openid'],
 	responseType: 'code',
@@ -207,6 +208,7 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(options: 
 	options.callbackHandler ??= redirectCallbackHandler;
 	options.lazyLoad ??= defaultOptions.lazyLoad;
 	options.autoRefresh ??= defaultOptions.autoRefresh;
+	options.refreshSkew ??= defaultOptions.refreshSkew;
 	options.serverSessionUri ??= defaultOptions.serverSessionUri;
 
 	options.scopes ??= defaultOptions.scopes;

@@ -109,7 +109,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 	async function checkAuthentication(
 		params: { autoRefresh: boolean } = { autoRefresh: options.autoRefresh },
 	): ReturnType<SDK<URLHandlerParams>['checkAuthentication']> {
-		if (flowState.session?.access_token && !isSessionExpired(flowState.session)) {
+		if (flowState.session?.access_token && !isSessionExpired(flowState.session, options.refreshSkew)) {
 			return true;
 		}
 
