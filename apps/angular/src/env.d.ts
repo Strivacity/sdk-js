@@ -9,6 +9,7 @@ interface ImportMetaEnv {
 	readonly VITE_UI_LOCALES?: string;
 	readonly VITE_AUDIENCES?: string;
 	readonly VITE_SECRET?: string;
+	readonly VITE_SERVER_SESSION_URI?: string;
 }
 
 interface ImportMeta {

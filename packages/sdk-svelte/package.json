@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-svelte",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "description": "Strivacity Svelte SDK client",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -61,7 +61,7 @@
     }
   },
   "dependencies": {
-    "@strivacity/sdk-core": "4.0.0-beta.0"
+    "@strivacity/sdk-core": "4.0.0-beta.1"
   },
   "peerDependencies": {
     "@sveltejs/kit": ">=2",

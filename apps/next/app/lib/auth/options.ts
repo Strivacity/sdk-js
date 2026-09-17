@@ -7,5 +7,5 @@ export const sdkOptions: SDKInitConfig = {
 	scopes: process.env.SCOPES?.split(' ') as SDKOptions['scopes'],
 	redirectUri: process.env.REDIRECT_URI as SDKOptions['redirectUri'],
 	storageTokenName: 'sty.session.next',
-	serverSessionUri: '/auth/login', // If you want to use client-side session storage, you can set this to false.
+	serverSessionUri: (process.env.SERVER_SESSION_URI as SDKOptions['serverSessionUri']) || '/auth/login', // If you want to use client-side session storage, you can set this to false.
 };

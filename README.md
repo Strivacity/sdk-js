@@ -102,6 +102,10 @@ pnpm app:solidstart:serve    # Solidstart
 pnpm app:sveltekit:serve     # SvelteKit
 pnpm app:vue:serve           # Vue.js
 pnpm app:backend:serve       # Express backend (BFF)
+
+pnpm app:react-backend:serve   # React + Express backend (BFF)
+pnpm app:preact-backend:serve  # Preact + Express backend (BFF)
+pnpm app:vue-backend:serve     # Vue.js + Express backend (BFF)
 ```
 
 ### Using the backend app with SPA apps
@@ -124,6 +128,31 @@ Once enabled:
 - Before rendering, the app fetches the backend's `/auth/session` endpoint (with `credentials: 'include'`) to learn whether the user is authenticated and read the decoded ID token claims - raw tokens are never sent to the browser
 
 See [Server-side session management](./packages/sdk-core/README.md#server-side-session-management) for the underlying SDK option, and [`apps/backend`](./apps/backend) for the server-side implementation.
+
+---
+
+## Running example applications with Docker
+
+A single [`Dockerfile`](./Dockerfile) in the repository root can run any of the example apps. Build it once:
+
+```bash
+docker build -t sdk-js-apps .
+```
+
+Then select an app with `$APP` and pass its configuration as plain `-e` flags - the same variables as [`.env.local.example`](./.env.local.example) (see [Environment configuration](#environment-configuration) and the [apps README](./apps/README.md#environment-variables) for the full list):
+
+```bash
+docker run --rm -p 4200:4200 \
+  -e APP=react \
+  -e VITE_MODE=redirect \
+  -e VITE_ISSUER=https://your-tenant.strivacity.com \
+  -e VITE_CLIENT_ID=your-client-id \
+  -e VITE_SCOPES="openid email" \
+  -e VITE_REDIRECT_URI=http://localhost:4200/callback \
+  sdk-js-apps
+```
+
+`$APP` is one of: `angular`, `backend`, `next`, `nuxt`, `preact`, `react`, `solidstart`, `sveltekit`, `vue`, `preact-backend`, `react-backend`, `vue-backend`.
 
 ---
 

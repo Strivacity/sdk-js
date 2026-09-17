@@ -13,7 +13,7 @@ export default defineNuxtConfig({
 			extends: '../tsconfig.app.json',
 		},
 	},
-	devServer: { host: 'localhost', port: 4200 },
+	devServer: { host: process.env.HOST ?? 'localhost', port: 4200 },
 	modules: ['@strivacity/sdk-nuxt'],
 	runtimeConfig: {
 		public: {
@@ -36,6 +36,6 @@ export default defineNuxtConfig({
 		secret: process.env.VITE_SECRET,
 		storageTokenName: 'sty.session.nuxt',
 		postLoginRedirectUri: '/profile',
-		serverSessionUri: '/auth/login', // If you want to use client-side session storage, you can set this to false.
+		serverSessionUri: process.env.VITE_SERVER_SESSION_URI || '/auth/login', // If you want to use client-side session storage, you can set this to false.
 	},
 });

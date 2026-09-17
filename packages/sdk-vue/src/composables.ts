@@ -3,7 +3,7 @@ import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, NativeParams, N
 import type { LoginContext, SDKContext, UseNativeLoginOptions } from './types';
 import { provide, inject, ref, onMounted, onUnmounted } from 'vue';
 import { FallbackError } from '@strivacity/sdk-core/utils/errors';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 
 export const STRIVACITY_SDK: InjectionKey<SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow>> = Symbol('strivacity-sdk');
 export const STRIVACITY_LOGIN_CONTEXT: InjectionKey<LoginContext> = Symbol('strivacity-login-context');
@@ -78,7 +78,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): ReturnType<
 	onUnmounted(() => abortController.abort());
 
 	function handleResponse(nextState: Partial<NativeFlowState>) {
-		if (sdk.session) {
+		if (sdk.session && !isSessionExpired(sdk.session)) {
 			return void options.onLogin?.(sdk.session);
 		}
 

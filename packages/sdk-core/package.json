@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-core",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "license": "MIT",
   "description": "Strivacity JavaScript SDK client",
   "author": "strivacity <opensource@strivacity.com>",

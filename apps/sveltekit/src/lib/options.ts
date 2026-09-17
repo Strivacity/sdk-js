@@ -7,5 +7,5 @@ export const sdkOptions: SDKInitConfig = {
 	scopes: import.meta.env.VITE_SCOPES?.split(' ') as SDKOptions['scopes'],
 	redirectUri: import.meta.env.VITE_REDIRECT_URI as SDKOptions['redirectUri'],
 	storageTokenName: 'sty.session.sveltekit',
-	serverSessionUri: '/auth/login', // If you want to use client-side session storage, you can set this to false.
+	serverSessionUri: (import.meta.env.VITE_SERVER_SESSION_URI as SDKOptions['serverSessionUri']) || '/auth/login', // If you want to use client-side session storage, you can set this to false.
 };

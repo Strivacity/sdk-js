@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
 		REDIRECT_URI: process.env.VITE_REDIRECT_URI,
 		CLIENT_ID: process.env.VITE_CLIENT_ID,
 		SCOPES: process.env.VITE_SCOPES,
+		SERVER_SESSION_URI: process.env.VITE_SERVER_SESSION_URI,
 		AUDIENCES: process.env.VITE_AUDIENCES,
 		LOGIN_HINT: process.env.VITE_LOGIN_HINT,
 		ACR_VALUES: process.env.VITE_ACR_VALUES,

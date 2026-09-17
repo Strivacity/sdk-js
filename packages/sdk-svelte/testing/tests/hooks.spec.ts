@@ -112,7 +112,7 @@ describe('useNativeLogin', () => {
 	});
 
 	test('calls onLogin and leaves the tracked state untouched when the sdk already has a session', async () => {
-		const session = { access_token: 'access-token' } as unknown as SessionData;
+		const session = { access_token: 'access-token', expires_at: Math.floor(Date.now() / 1000) + 3600 } as unknown as SessionData;
 		const sdk = createMockFlow<NativeFlow>({ session });
 		vi.mocked(sdk.startSession).mockResolvedValue({ screen: 'identifier' });
 		const onLogin = vi.fn();

@@ -3,7 +3,7 @@ import { SvelteURL } from 'svelte/reactivity';
 import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, NativeParams, NativeFlowState, NativeFlowMessage } from '@strivacity/sdk-core/types';
 import type { LoginContext, SDKContext, UseNativeLoginOptions } from '../types';
 import { FallbackError } from '@strivacity/sdk-core/utils/errors';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 
 export const STRIVACITY_SDK = Symbol('strivacity-sdk');
 export const STRIVACITY_LOGIN_CONTEXT = Symbol('strivacity-login-context');
@@ -100,7 +100,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
 	}
 
 	function handleResponse(nextState: Partial<NativeFlowState>) {
-		if (ctx.sdk.session) {
+		if (ctx.sdk.session && !isSessionExpired(ctx.sdk.session)) {
 			return void options.onLogin?.(ctx.sdk.session);
 		}
 

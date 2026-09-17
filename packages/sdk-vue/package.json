@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-vue",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "description": "Strivacity Vue SDK client",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -56,7 +56,7 @@
     }
   },
   "dependencies": {
-    "@strivacity/sdk-core": "4.0.0-beta.0"
+    "@strivacity/sdk-core": "4.0.0-beta.1"
   },
   "peerDependencies": {
     "vue": ">=3.3"
