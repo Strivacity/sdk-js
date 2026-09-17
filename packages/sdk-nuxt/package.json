@@ -1,6 +1,6 @@
 {
   "name": "@strivacity/sdk-nuxt",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.1",
   "description": "Strivacity Nuxt SDK client",
   "license": "MIT",
   "author": "strivacity <opensource@strivacity.com>",
@@ -42,7 +42,7 @@
     }
   },
   "dependencies": {
-    "@strivacity/sdk-core": "4.0.0-beta.0"
+    "@strivacity/sdk-core": "4.0.0-beta.1"
   },
   "peerDependencies": {
     "nuxt": ">=4.0"
