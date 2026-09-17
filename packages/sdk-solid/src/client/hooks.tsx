@@ -13,7 +13,7 @@ import type {
 	WithAuthGuardOptions,
 } from './types';
 import { createContext, createEffect, createSignal, onSettled, useContext, Show } from 'solid-js';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 import { FallbackError } from '../errors';
 
 /**
@@ -89,7 +89,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
 	});
 
 	function handleResponse(nextState: Partial<NativeFlowState>): void {
-		if (sdk.session) {
+		if (sdk.session && !isSessionExpired(sdk.session)) {
 			return void options.onLogin?.(sdk.session);
 		}
 

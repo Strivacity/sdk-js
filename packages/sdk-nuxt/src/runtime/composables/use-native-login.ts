@@ -3,7 +3,7 @@ import type { LoginContext, UseNativeLoginOptions } from '../types';
 import { STRIVACITY_LOGIN_CONTEXT, type useNativeLoginContext } from './use-native-login-context';
 import { provide, ref, onMounted, onUnmounted } from 'vue';
 import { FallbackError } from '@strivacity/sdk-core/utils/errors';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 import { useStrivacity } from './use-strivacity';
 
 /**
@@ -41,7 +41,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): ReturnType<
 	onUnmounted(() => abortController.abort());
 
 	function handleResponse(nextState: Partial<NativeFlowState>) {
-		if (sdk.session) {
+		if (sdk.session && !isSessionExpired(sdk.session)) {
 			return void options.onLogin?.(sdk.session);
 		}
 

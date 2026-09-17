@@ -1,7 +1,7 @@
 import type { NativeFlowMessage, NativeFlowState, NativeParams, NativeLoginOptions } from '../../types';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { FallbackError } from '@strivacity/sdk-core/utils/errors';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 import { StrivacityAuthService } from './auth.service';
 
 @Injectable()
@@ -122,7 +122,7 @@ export class StrivacityNativeLoginService {
 	}
 
 	private async handleResponse(nextState: Partial<NativeFlowState>): Promise<void> {
-		if (this.sdk.session) {
+		if (this.sdk.session && !isSessionExpired(this.sdk.session)) {
 			return await this.options.onLogin?.(this.sdk.session);
 		}
 

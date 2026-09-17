@@ -13,7 +13,7 @@ import type {
 	WithAuthGuardOptions,
 } from './types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'preact/compat';
-import { unflattenObject } from '@strivacity/sdk-core/utils';
+import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
 import { FallbackError } from './errors';
 
 export const STRIVACITY_SDK = createContext<SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow>>(null!);
@@ -102,7 +102,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): ReturnType<
 
 	const handleResponse = useCallback(
 		async (nextState: Partial<NativeFlowState>) => {
-			if (sdk.session) {
+			if (sdk.session && !isSessionExpired(sdk.session)) {
 				return await optionsRef.current.onLogin?.(sdk.session);
 			}
 
