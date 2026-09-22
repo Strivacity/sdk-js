@@ -163,6 +163,7 @@ onMounted(async () => {
 		loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 		acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 		audiences: ['https://api.example.com'], // target resources for the access token
+		resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		locationMethod: 'assign', // window.location method: 'assign' adds to browser history, 'replace' doesn't (default: 'assign')
 		targetWindow: 'self', // 'self' redirects current window, 'top' redirects top-level window (default: 'self')
 	});
@@ -347,6 +348,7 @@ onMounted(async () => {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			popupWindowTarget: '_blank', // any valid browsing context name
 			popupWindowFeatures: {
 				width: 500,
@@ -423,6 +425,7 @@ onMounted(async () => {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			popupWindowTarget: '_blank', // any valid browsing context name
 			popupWindowFeatures: {
 				width: 500,
@@ -557,6 +560,7 @@ const params = {
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	language: 'en-US', // set the UI language (BCP 47 language tag)
 	prompt: 'login', // use 'create' to open the registration flow instead
 };
@@ -610,6 +614,7 @@ async function onStartClick() {
 		loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 		acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 		audiences: ['https://api.example.com'], // target resources for the access token
+		resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		language: 'en-US', // set the UI language (BCP 47 language tag)
 		prompt: 'login', // use 'create' to open the registration flow instead
 	});
@@ -652,6 +657,7 @@ async function onStartClick() {
 		loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 		acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 		audiences: ['https://api.example.com'], // target resources for the access token
+		resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		language: 'en-US', // set the UI language (BCP 47 language tag)
 		prompt: 'login', // use 'create' to open the registration flow instead
 	};

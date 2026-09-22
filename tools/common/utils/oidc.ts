@@ -10,6 +10,7 @@ export function getExtraParams(extraArgs?: ExtraRequestArgs): ExtraRequestArgs {
 		acrValues: import.meta.env?.VITE_ACR_VALUES?.split(' ') ?? env?.ACR_VALUES?.split(' '),
 		uiLocales: import.meta.env?.VITE_UI_LOCALES?.split(' ') ?? env?.UI_LOCALES?.split(' '),
 		audiences: import.meta.env?.VITE_AUDIENCES?.split(' ') ?? env?.AUDIENCES?.split(' '),
+		resources: import.meta.env?.VITE_RESOURCES?.split(' ') ?? env?.RESOURCES?.split(' '),
 		...extraArgs,
 	};
 }

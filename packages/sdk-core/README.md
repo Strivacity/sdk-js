@@ -118,6 +118,7 @@ await sdk.login({
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	locationMethod: 'assign', // window.location method: 'assign' adds to browser history, 'replace' doesn't (default: 'assign')
 	targetWindow: 'self', // 'self' redirects current window, 'top' redirects top-level window (default: 'self')
 });
@@ -152,6 +153,7 @@ await sdk.register({
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	locationMethod: 'assign', // window.location method: 'assign' adds to browser history, 'replace' doesn't (default: 'assign')
 	targetWindow: 'self', // 'self' redirects current window, 'top' redirects top-level window (default: 'self')
 });
@@ -234,6 +236,7 @@ await sdk.login({
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	popupWindowTarget: '_blank', // any valid browsing context name
 	popupWindowFeatures: {
 		width: 500,
@@ -277,6 +280,7 @@ await sdk.register({
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	popupWindowTarget: '_blank', // any valid browsing context name
 	popupWindowFeatures: {
 		width: 500,
@@ -390,6 +394,7 @@ await login.start({
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	language: 'en-US', // set the UI language (BCP 47 language tag)
 	prompt: 'login', // use 'create' to open the registration flow instead
 });
@@ -399,6 +404,7 @@ login.params = {
 	loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 	acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 	audiences: ['https://api.example.com'], // target resources for the access token
+	resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 	language: 'en-US', // set the UI language (BCP 47 language tag)
 	prompt: 'login', // use 'create' to open the registration flow instead
 };
@@ -787,7 +793,7 @@ const sdk = initFlow({
 await sdk.login();
 ```
 
-Sensitive OAuth2 parameters (`client_id`, `redirect_uri`, `scope`, ...) are never sent to `serverSessionUri` - your endpoint is responsible for adding those itself; only the non-sensitive extras (`prompt`, `display`, `acrValues`, `loginHint`, `uiLocales`, `audiences`) are appended as query params.
+Sensitive OAuth2 parameters (`client_id`, `redirect_uri`, `scope`, ...) are never sent to `serverSessionUri` - your endpoint is responsible for adding those itself; only the non-sensitive extras (`prompt`, `display`, `acrValues`, `loginHint`, `uiLocales`, `audiences`, `resources`) are appended as query params.
 
 In this mode, the SDK relies on your backend to:
 - Build/sign the authorization request and proxy it to the IDP

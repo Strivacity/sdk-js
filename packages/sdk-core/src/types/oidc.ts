@@ -469,6 +469,13 @@ export type ExtraRequestArgs = {
 	 * @example ['https://api.example.com', 'https://service.example.com']
 	 */
 	audiences?: Array<string> | null;
+
+	/**
+	 * Specifies the resources for which the access token is intended.
+	 *
+	 * @example ['https://api.example.com', 'https://service.example.com']
+	 */
+	resources?: Array<string> | null;
 };
 
 export type EntryResponse = {

@@ -241,6 +241,7 @@ Call this to start the login flow. It redirects the user to the Strivacity login
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		});
 	});
 </script>
@@ -499,6 +500,7 @@ By default a centered popup window opens. Pass `popupWindowTarget` to change whe
 				loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 				acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 				audiences: ['https://api.example.com'], // target resources for the access token
+				resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 				popupWindowTarget: '_blank', // any valid browsing context name
 				popupWindowFeatures: {
 					width: 500,
@@ -581,6 +583,7 @@ Call this to start the registration flow. It works the same way as `login()` but
 				loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 				acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 				audiences: ['https://api.example.com'], // target resources for the access token
+				resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 				popupWindowTarget: '_blank', // any valid browsing context name
 				popupWindowFeatures: {
 					width: 500,
@@ -743,6 +746,7 @@ The login UI renders inside your own page using Strivacity web components (`<sty
 		loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 		acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 		audiences: ['https://api.example.com'], // target resources for the access token
+		resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		language: 'en-US', // set the UI language (BCP 47 language tag)
 		prompt: 'login', // use 'create' to open the registration flow instead
 	};
@@ -785,6 +789,7 @@ By default the login flow starts automatically as soon as `<sty-login>` connects
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			language: 'en-US', // set the UI language (BCP 47 language tag)
 			prompt: 'login', // use 'create' to open the registration flow instead
 		});
@@ -813,6 +818,7 @@ You can also set params via the `params` property before calling `start()`:
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			language: 'en-US', // set the UI language (BCP 47 language tag)
 			prompt: 'login', // use 'create' to open the registration flow instead
 		};

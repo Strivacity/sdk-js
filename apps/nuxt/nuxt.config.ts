@@ -22,6 +22,7 @@ export default defineNuxtConfig({
 			ACR_VALUES: process.env.VITE_ACR_VALUES,
 			UI_LOCALES: process.env.VITE_UI_LOCALES,
 			AUDIENCES: process.env.VITE_AUDIENCES,
+			RESOURCES: process.env.VITE_RESOURCES,
 		},
 	},
 	vue: {

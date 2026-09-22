@@ -150,13 +150,30 @@ describe('buildAuthorizationUrl', () => {
 
 	test('never emits any parameter more than once', async () => {
 		const url = await buildAuthorizationUrl({
-			params: { prompt: 'login', display: 'page', loginHint: 'user@example.com', acrValues: ['urn:a'], uiLocales: ['en-US'], audiences: ['aud-1'] },
+			params: {
+				prompt: 'login',
+				display: 'page',
+				loginHint: 'user@example.com',
+				acrValues: ['urn:a'],
+				uiLocales: ['en-US'],
+				audiences: ['aud-1'],
+				resources: ['res-1'],
+			},
 			options: createOptions(),
 		});
 
 		for (const key of url.searchParams.keys()) {
 			expect(url.searchParams.getAll(key)).toHaveLength(1);
 		}
+	});
+
+	test('emits one resource parameter per entry', async () => {
+		const url = await buildAuthorizationUrl({
+			params: { resources: ['https://api.example.com', 'https://api2.example.com'] },
+			options: createOptions(),
+		});
+
+		expect(url.searchParams.getAll('resource')).toEqual(['https://api.example.com', 'https://api2.example.com']);
 	});
 
 	test('preserves an existing query string on a custom authorization endpoint', async () => {
@@ -196,7 +213,7 @@ describe('buildAuthorizationUrl', () => {
 	test('omits optional parameters entirely when unset, rather than emitting them empty', async () => {
 		const url = await buildAuthorizationUrl({ params: {}, options: createOptions() });
 
-		for (const key of ['prompt', 'display', 'login_hint', 'acr_values', 'ui_locales', 'audience', 'max_age']) {
+		for (const key of ['prompt', 'display', 'login_hint', 'acr_values', 'ui_locales', 'audience', 'resource', 'max_age']) {
 			expect(url.searchParams.has(key)).toBe(false);
 		}
 	});

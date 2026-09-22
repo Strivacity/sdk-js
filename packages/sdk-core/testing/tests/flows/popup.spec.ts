@@ -60,6 +60,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.has('acr_values')).toBeFalsy();
 				expect(url.searchParams.has('ui_locales')).toBeFalsy();
 				expect(url.searchParams.has('audience')).toBeFalsy();
+				expect(url.searchParams.has('resource')).toBeFalsy();
 				expect(params).toEqual({ display: 'popup' });
 			});
 
@@ -71,6 +72,7 @@ describe('createPopupFlow', () => {
 					acrValues: ['urn:mace:incommon:iap:silver', 'urn:mace:incommon:iap:bronze'],
 					uiLocales: ['en-US', 'hu-HU'],
 					audiences: ['https://api.example.com', 'https://api2.example.com'],
+					resources: ['https://res.example.com', 'https://res2.example.com'],
 				};
 
 				await flow.login(extraParams).catch(() => undefined);
@@ -96,6 +98,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.get('acr_values')).toBe('urn:mace:incommon:iap:silver urn:mace:incommon:iap:bronze');
 				expect(url.searchParams.get('ui_locales')).toBe('en-US hu-HU');
 				expect(url.searchParams.get('audience')).toBe('https://api.example.com https://api2.example.com');
+				expect(url.searchParams.getAll('resource')).toEqual(['https://res.example.com', 'https://res2.example.com']);
 				expect(params).toEqual(extraParams);
 			});
 		});
@@ -127,6 +130,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.has('acr_values')).toBeFalsy();
 				expect(url.searchParams.has('ui_locales')).toBeFalsy();
 				expect(url.searchParams.has('audience')).toBeFalsy();
+				expect(url.searchParams.has('resource')).toBeFalsy();
 				expect(params).toEqual({ display: 'popup' });
 			});
 
@@ -141,6 +145,7 @@ describe('createPopupFlow', () => {
 					acrValues: ['urn:mace:incommon:iap:silver', 'urn:mace:incommon:iap:bronze'],
 					uiLocales: ['en-US', 'hu-HU'],
 					audiences: ['https://api.example.com', 'https://api2.example.com'],
+					resources: ['https://res.example.com', 'https://res2.example.com'],
 				};
 
 				await flow.login(extraParams);
@@ -165,6 +170,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.get('acr_values')).toBe('urn:mace:incommon:iap:silver urn:mace:incommon:iap:bronze');
 				expect(url.searchParams.get('ui_locales')).toBe('en-US hu-HU');
 				expect(url.searchParams.get('audience')).toBe('https://api.example.com https://api2.example.com');
+				expect(url.searchParams.getAll('resource')).toEqual(['https://res.example.com', 'https://res2.example.com']);
 				expect(params).toEqual(extraParams);
 			});
 		});
@@ -225,6 +231,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.has('acr_values')).toBeFalsy();
 				expect(url.searchParams.has('ui_locales')).toBeFalsy();
 				expect(url.searchParams.has('audience')).toBeFalsy();
+				expect(url.searchParams.has('resource')).toBeFalsy();
 				expect(params).toEqual({ prompt: 'create', display: 'popup' });
 			});
 
@@ -236,6 +243,7 @@ describe('createPopupFlow', () => {
 					acrValues: ['urn:mace:incommon:iap:silver', 'urn:mace:incommon:iap:bronze'],
 					uiLocales: ['en-US', 'hu-HU'],
 					audiences: ['https://api.example.com', 'https://api2.example.com'],
+					resources: ['https://res.example.com', 'https://res2.example.com'],
 				};
 
 				await flow.register({ ...extraParams, prompt: undefined }).catch(() => undefined);
@@ -261,6 +269,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.get('acr_values')).toBe('urn:mace:incommon:iap:silver urn:mace:incommon:iap:bronze');
 				expect(url.searchParams.get('ui_locales')).toBe('en-US hu-HU');
 				expect(url.searchParams.get('audience')).toBe('https://api.example.com https://api2.example.com');
+				expect(url.searchParams.getAll('resource')).toEqual(['https://res.example.com', 'https://res2.example.com']);
 				expect(params).toEqual(extraParams);
 			});
 		});
@@ -292,6 +301,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.has('acr_values')).toBeFalsy();
 				expect(url.searchParams.has('ui_locales')).toBeFalsy();
 				expect(url.searchParams.has('audience')).toBeFalsy();
+				expect(url.searchParams.has('resource')).toBeFalsy();
 				expect(params).toEqual({ prompt: 'create', display: 'popup' });
 			});
 
@@ -306,6 +316,7 @@ describe('createPopupFlow', () => {
 					acrValues: ['urn:mace:incommon:iap:silver', 'urn:mace:incommon:iap:bronze'],
 					uiLocales: ['en-US', 'hu-HU'],
 					audiences: ['https://api.example.com', 'https://api2.example.com'],
+					resources: ['https://res.example.com', 'https://res2.example.com'],
 				};
 
 				await flow.register({ ...extraParams, prompt: undefined });
@@ -330,6 +341,7 @@ describe('createPopupFlow', () => {
 				expect(url.searchParams.get('acr_values')).toBe('urn:mace:incommon:iap:silver urn:mace:incommon:iap:bronze');
 				expect(url.searchParams.get('ui_locales')).toBe('en-US hu-HU');
 				expect(url.searchParams.get('audience')).toBe('https://api.example.com https://api2.example.com');
+				expect(url.searchParams.getAll('resource')).toEqual(['https://res.example.com', 'https://res2.example.com']);
 				expect(params).toEqual(extraParams);
 			});
 		});

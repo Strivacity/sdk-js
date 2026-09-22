@@ -509,6 +509,15 @@ export async function buildAuthorizationUrl<URLHandlerParams extends ExtraReques
 			stateData.metadata.audiences = audiences;
 		}
 	}
+	if (params.resources?.length) {
+		const resources = params.resources.filter(Boolean);
+
+		for (const resource of resources) {
+			url.searchParams.append('resource', resource);
+		}
+
+		stateData.metadata.resources = resources;
+	}
 
 	const returnTo = toSameOriginPath(params.returnTo);
 
