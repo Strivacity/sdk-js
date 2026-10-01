@@ -98,9 +98,9 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 				handler: resolver.resolve('./runtime/server/api/auth/logout.get'),
 			});
 			addServerHandler({
-				method: 'get',
+				method: 'post',
 				route: `${options.authUrlPrefix}/backchannel-logout`,
-				handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.get'),
+				handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
 			});
 		}
 	},
