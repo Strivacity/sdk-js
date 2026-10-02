@@ -21,7 +21,7 @@ export default function Logout() {
 			}
 
 			if (ctx.isAuthenticated()) {
-				void ctx.logout();
+				void ctx.logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 			} else {
 				navigate('/');
 			}

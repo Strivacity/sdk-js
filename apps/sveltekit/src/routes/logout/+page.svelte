@@ -13,7 +13,7 @@
 			globalThis.location.href = `/auth/logout${location.search}`;
 		} else {
 			if (ctx.isAuthenticated) {
-				await ctx.logout();
+				await ctx.logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 			} else {
 				await goto(resolve('/'));
 			}

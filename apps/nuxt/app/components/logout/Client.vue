@@ -2,7 +2,7 @@
 const { logout } = useStrivacity();
 
 onMounted(async () => {
-	await logout();
+	await logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 });
 </script>
 

@@ -21,7 +21,7 @@ export class LogoutPage implements OnInit {
 				this.responseInit.headers = new Headers({ Location: '/auth/logout' });
 			}
 		} else if (isPlatformBrowser(this.platformId)) {
-			void this.authService.logout();
+			void this.authService.logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 		}
 	}
 }

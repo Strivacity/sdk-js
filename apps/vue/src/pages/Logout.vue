@@ -11,7 +11,7 @@ onMounted(async () => {
 		globalThis.location.href = '/auth/logout';
 		return;
 	} else {
-		await logout();
+		await logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 	}
 });
 </script>
