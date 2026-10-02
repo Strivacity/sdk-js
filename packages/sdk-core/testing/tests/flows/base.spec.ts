@@ -890,6 +890,22 @@ describe('createBaseFlow', () => {
 			expect(options.urlHandler).toHaveBeenCalledTimes(1);
 		});
 
+		test('should use the urlHandlerOverride instead of options.urlHandler when given', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' }, null);
+			const urlHandlerOverride = vi.fn().mockResolvedValue(undefined);
+
+			await base.logout({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' }, urlHandlerOverride);
+
+			expect(options.urlHandler).not.toHaveBeenCalled();
+			expect(urlHandlerOverride).toHaveBeenCalledTimes(1);
+
+			const [url, params] = urlHandlerOverride.mock.calls[0] as [URL, Record<string, unknown>];
+			expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/sessions/logout');
+			expect(url.searchParams.get('id_token_hint')).toBe('id-token');
+			expect(params).toEqual({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' });
+		});
+
 		test('should be a clean no-op when there was never a session at all', async () => {
 			flowState.initialized = true;
 

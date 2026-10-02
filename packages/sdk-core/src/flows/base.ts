@@ -376,7 +376,10 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return promises.revoke;
 	}
 
-	async function logout(params?: Parameters<SDK<URLHandlerParams>['logout']>[0]): ReturnType<SDK<URLHandlerParams>['logout']> {
+	async function logout(
+		params?: Parameters<SDK<URLHandlerParams>['logout']>[0],
+		urlHandlerOverride?: typeof options.urlHandler,
+	): ReturnType<SDK<URLHandlerParams>['logout']> {
 		await init();
 
 		if (promises.logout) {
@@ -418,8 +421,9 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 						idToken: currentSession.id_token,
 						postLogoutRedirectUri: params?.postLogoutRedirectUri,
 					});
+					const urlHandler = urlHandlerOverride ?? options.urlHandler;
 
-					await options.urlHandler(logoutUrl, params);
+					await urlHandler(logoutUrl, params);
 				} catch (error) {
 					options.logging?.error('Unable to redirect to the end-session endpoint', error);
 				}
