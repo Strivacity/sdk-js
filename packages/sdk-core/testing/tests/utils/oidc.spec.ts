@@ -17,7 +17,7 @@ import {
 	getDefaultFlowState,
 	defaultOptions,
 } from '../../../src/utils/oidc';
-import { NetworkError, ServerError, ProtocolError } from '../../../src/utils/errors';
+import { NetworkError, ServerError, ProtocolError, OidcError } from '../../../src/utils/errors';
 import { encodeBase64URL, decodeBase64URL } from '../../../src/utils/base64url';
 import { buildIdToken, buildIdTokenClaims, exportSigningKey, generateRSAKeyPair, signRS256 } from '@strivacity/testing/mocks/oidc';
 import type { IdTokenClaims } from '../../../src/types/oidc';
@@ -695,6 +695,17 @@ describe('exchangeCode', () => {
 		);
 
 		await expect(exchangeCode({ params: { code: 'abc123', state: stateData.id }, options })).resolves.toMatchObject({ scope: 'openid' });
+	});
+
+	test('deletes the pending state when the callback carries an OIDC error, instead of leaving it behind', async () => {
+		const options = createOptions();
+		const stateData = await getMockStorage(options.stateStorage).generateState();
+
+		await expect(exchangeCode({ params: { error: 'access_denied', error_description: 'User denied access', state: stateData.id }, options })).rejects.toThrow(
+			new OidcError('access_denied', 'User denied access'),
+		);
+
+		expect(getMockStorage(options.stateStorage).keys()).not.toContain(`sty.${stateData.id}`);
 	});
 });
 

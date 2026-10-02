@@ -558,15 +558,16 @@ export async function exchangeCode({
 	options: SDKOptions;
 }): Promise<SessionData> {
 	const session = createSession(params);
+	const stateKey = `sty.${session.state}`;
 
 	if (session.error) {
+		await options.stateStorage.delete(stateKey);
 		throw new OidcError(session.error, session.error_description, session.error_uri);
 	}
 	if (!session.code) {
 		throw new ProtocolError('Invalid or missing authorization code');
 	}
 
-	const stateKey = `sty.${session.state}`;
 	const serializedState = await options.stateStorage.get(stateKey);
 
 	if (!serializedState) {
