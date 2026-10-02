@@ -8,6 +8,7 @@ import {
 	addServerHandler,
 	addServerPlugin,
 	addRouteMiddleware,
+	addPlugin,
 } from '@nuxt/kit';
 
 export type * from './runtime/types';
@@ -50,6 +51,7 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 		nuxt.options.nitro.alias['#strivacity-options-storage'] = storagePath;
 		nuxt.options.nitro.alias['#strivacity-options-stateStorage'] = stateStoragePath;
 
+		addPlugin({ src: resolver.resolve('./runtime/plugins/strivacity.client'), mode: 'client' });
 		addImportsDir(resolver.resolve('./runtime/composables'));
 		addImportsDir(resolver.resolve('./runtime/storages'));
 		addImportsDir(resolver.resolve('./runtime/utils'));

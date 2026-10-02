@@ -30,16 +30,34 @@ async function installPlugin(strivacityConfig: Record<string, unknown>) {
 
 	plugin(app);
 
-	// setupAuthPlugin() is fired via `void` (not awaited) and chains several dynamic imports
-	// (the four '#strivacity-options-*' factories) before it registers the hook, which on a cold
-	// module cache (every test resets it) can outlast a single microtask tick.
-	await vi.waitFor(() => expect(hook).toHaveBeenCalled());
-	const requestHook = hook.mock.calls[0]?.[1] as ((event: H3Event) => void) | undefined;
+	// The "request" hook is registered synchronously by the plugin itself, before any of the awaited
+	// '#strivacity-options-*' dynamic imports resolve - the hook function is what awaits readiness.
+	expect(hook).toHaveBeenCalled();
+	const requestHook = hook.mock.calls[0]?.[1] as ((event: H3Event) => Promise<void>) | undefined;
 
 	return { hook, requestHook };
 }
 
 describe('auth.server nitro plugin', () => {
+	test('registers the "request" hook synchronously, before the async option-factory imports resolve', async () => {
+		let resolveStorageImport: (mod: { default: () => undefined }) => void = () => undefined;
+		vi.doMock('#strivacity-options-storage', () => new Promise((resolve) => (resolveStorageImport = resolve)));
+		vi.doMock('#imports', () => ({
+			useRuntimeConfig: () => ({ strivacity: createServerOptions({ storage: createMockStorage(), stateStorage: createMockStorage() }) }),
+		}));
+
+		const plugin = (await import('../../../src/runtime/server/plugins/auth.server')).default;
+		const { app, hook } = createFakeNitroApp();
+
+		plugin(app);
+
+		// the hook must already be registered even though the '#strivacity-options-storage' import above
+		// is still pending - a request arriving this early must not slip past the hook entirely.
+		expect(hook).toHaveBeenCalledWith('request', expect.any(Function));
+
+		resolveStorageImport({ default: () => undefined });
+	});
+
 	test('registers a "request" hook that wires a fully-shaped sdk onto the event context', async () => {
 		const storage = createMockStorage();
 		const stateStorage = createMockStorage();
@@ -48,7 +66,7 @@ describe('auth.server nitro plugin', () => {
 		expect(hook).toHaveBeenCalledWith('request', expect.any(Function));
 
 		const event = { context: {} } as unknown as H3Event;
-		requestHook!(event);
+		await requestHook!(event);
 
 		const sdk = event.context.strivacity.sdk;
 		expect(sdk.options).toBeDefined();
@@ -81,7 +99,7 @@ describe('auth.server nitro plugin', () => {
 		const { requestHook } = await installPlugin(createServerOptions({ storage, stateStorage }));
 
 		const event = { context: {} } as unknown as H3Event;
-		requestHook!(event);
+		await requestHook!(event);
 		const sdk = event.context.strivacity.sdk;
 
 		await expect(sdk.getSession()).resolves.toBeNull();
@@ -97,7 +115,7 @@ describe('auth.server nitro plugin', () => {
 
 		const existingSdk = { marker: 'existing' };
 		const event = { context: { strivacity: { sdk: existingSdk } } } as unknown as H3Event;
-		requestHook!(event);
+		await requestHook!(event);
 
 		expect(event.context.strivacity.sdk).toBe(existingSdk);
 	});
@@ -117,7 +135,7 @@ describe('auth.server nitro plugin', () => {
 		const { requestHook } = await installPlugin(createServerOptions({ storage: configuredStorage, stateStorage: createMockStorage() }));
 
 		const event = { context: {} } as unknown as H3Event;
-		requestHook!(event);
+		await requestHook!(event);
 		const sdk = event.context.strivacity.sdk;
 
 		const session = getMockStorage(customStorage).generateSession(undefined, null);
@@ -132,7 +150,27 @@ describe('auth.server nitro plugin', () => {
 
 		const event = createFakeH3Event();
 
-		expect(() => requestHook!(event)).not.toThrow();
+		await expect(requestHook!(event)).resolves.toBeUndefined();
 		await expect(event.context.strivacity.sdk.getSession()).resolves.toBeNull();
+	});
+
+	test('logs the error and wires a stub sdk that fails every request with a clear 500, instead of silently leaving the context unset, when setup fails (e.g. missing secret)', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+		const { requestHook } = await installPlugin(createServerOptions({ storage: undefined, stateStorage: createMockStorage(), secret: undefined }));
+
+		const event = { context: {} } as unknown as H3Event;
+		await requestHook!(event);
+
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			'[@strivacity/sdk-nuxt] Failed to initialize the Strivacity server SDK:',
+			expect.objectContaining({ message: 'Secret is required for encrypted cookie storage' }),
+		);
+
+		expect(() => event.context.strivacity.sdk.getSession()).toThrow(
+			expect.objectContaining({ statusCode: 500, statusMessage: 'Strivacity SDK failed to initialize' }),
+		);
+
+		consoleErrorSpy.mockRestore();
 	});
 });
