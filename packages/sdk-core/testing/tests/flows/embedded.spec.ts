@@ -328,7 +328,7 @@ describe('createEmbeddedFlow', () => {
 		options = createOptions({ lazyLoad: true });
 		flow = createEmbeddedFlow(options);
 
-		expect(flow.options).toBe(options);
+		expect(flow.options).toEqual(expect.objectContaining(options));
 		expect(flow.initialized).toBeFalsy();
 		expect(flow.storage).toBe(options.storage);
 		expect(flow.httpClient).toBe(options.httpClient);

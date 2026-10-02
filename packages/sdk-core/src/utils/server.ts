@@ -31,9 +31,10 @@ const cookieJars = new WeakMap<object, Array<string>>();
 /**
  * Returns with the server SDK options merged with the provided options.
  *
- * @param {SDKInitConfig} options - The SDK initialization configuration.
- * @template InitOptions - The type of the SDK initialization configuration.
- * @template Options - The type of the SDK options.
+ * @param {SDKInitConfig} initOptions - The SDK initialization configuration.
+ * @template TEvent - The type of the server request event.
+ * @template Storage - The type of the server storage.
+ * @template StateStorage - The type of the state storage.
  * @returns {Options} The merged SDK options.
  */
 export function getServerSDKOptions<
@@ -41,7 +42,9 @@ export function getServerSDKOptions<
 	Storage extends ServerStorage<TEvent> = ServerStorage<TEvent>,
 	StateStorage extends SDKStorage = SDKStorage,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
->(adapter: ServerAdapter<TEvent>, options: any): ServerSDKOptions<TEvent, Storage, StateStorage> {
+>(adapter: ServerAdapter<TEvent>, initOptions: any): ServerSDKOptions<TEvent, Storage, StateStorage> {
+	const options = { ...initOptions };
+
 	options.postLoginRedirectUri ??= new URL(options.redirectUri).origin;
 	options.postLogoutRedirectUri ??= new URL(options.redirectUri).origin;
 	options.cookieMaxAge ??= DEFAULT_COOKIE_MAX_AGE;

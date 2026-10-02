@@ -193,13 +193,14 @@ async function getJwks({
 /**
  * Returns with the SDK options merged with the provided options.
  *
- * @param {SDKInitConfig} options - The SDK initialization configuration.
- * @template InitOptions - The type of the SDK initialization configuration.
+ * @param {SDKInitConfig} initOptions - The SDK initialization configuration.
  * @template Options - The type of the SDK options.
  * @returns {Options} The merged SDK options.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getSDKOptions<Options extends SDKOptions = SDKOptions>(options: any): Options {
+export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptions: any): Options {
+	const options = { ...initOptions };
+
 	options.issuer = options.issuer.endsWith('/') ? options.issuer.slice(0, -1) : options.issuer;
 	options.storage ??= createLocalStorage();
 	options.stateStorage ??= createSessionStorage();
