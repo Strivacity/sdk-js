@@ -173,6 +173,7 @@ export function createOptions<T = unknown>(overrides?: Partial<SDKOptions>): SDK
 		callbackHandler: redirectCallbackHandler,
 		lazyLoad: false,
 		autoRefresh: true,
+		clockSkew: 60,
 		discoveryDocumentCacheTTL: 3600,
 		jwksCacheTTL: 600,
 		serverSessionUri: false,

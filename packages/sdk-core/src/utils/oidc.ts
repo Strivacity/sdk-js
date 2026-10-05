@@ -52,6 +52,7 @@ export const defaultOptions: Partial<SDKOptions> = {
 	lazyLoad: false,
 	autoRefresh: true,
 	refreshSkew: 60,
+	clockSkew: 60,
 	serverSessionUri: null,
 	scopes: ['openid'],
 	responseType: 'code',
@@ -210,6 +211,7 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptio
 	options.lazyLoad ??= defaultOptions.lazyLoad;
 	options.autoRefresh ??= defaultOptions.autoRefresh;
 	options.refreshSkew ??= defaultOptions.refreshSkew;
+	options.clockSkew ??= defaultOptions.clockSkew;
 	options.serverSessionUri ??= defaultOptions.serverSessionUri;
 
 	options.scopes ??= defaultOptions.scopes;
@@ -380,7 +382,7 @@ export async function generateJwt(header: object, payload: object, privateKey?: 
  * @param {string} [options.expectedSub] - Optional expected subject (`sub`) claim to validate against the ID token
  * @param {string} [options.expectedNonce] - Optional expected nonce claim to validate against the ID token
  * @returns {Promise<IdTokenClaims>} The verified, validated claims.
- * @throws {ProtocolError} If the signature, `iss`, `aud`, `exp`, or `sub` fail validation.
+ * @throws {ProtocolError} If the signature, `iss`, `aud`, `exp` (allowing `clockSkew` seconds of tolerance), or `sub` fail validation.
  */
 export async function verifyIdToken({
 	idToken,
@@ -405,7 +407,7 @@ export async function verifyIdToken({
 	if (Array.isArray(claims?.aud) ? !claims.aud.includes(options.clientId) : claims?.aud !== options.clientId) {
 		throw new ProtocolError('Invalid aud');
 	}
-	if (!claims?.exp || claims.exp <= now) {
+	if (!claims?.exp || claims.exp + options.clockSkew <= now) {
 		throw new ProtocolError('Token has expired');
 	}
 	if (!claims?.sub || (expectedSub && claims.sub !== expectedSub)) {

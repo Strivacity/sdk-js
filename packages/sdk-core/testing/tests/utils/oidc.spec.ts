@@ -48,6 +48,7 @@ describe('defaultOptions', () => {
 			lazyLoad: false,
 			autoRefresh: true,
 			refreshSkew: 60,
+			clockSkew: 60,
 			serverSessionUri: null,
 			scopes: ['openid'],
 			responseType: 'code',
@@ -580,6 +581,26 @@ describe('verifyIdToken', () => {
 		const idToken = await signRS256({ alg: 'RS256', kid: 'id-token-kid' }, claims, keyPair.privateKey);
 
 		await expect(verifyIdToken({ idToken, options: createOptions(), verifySignature: true })).resolves.toEqual(claims);
+	});
+
+	test('accepts a token that expired within the clock tolerance (device clock slightly ahead)', async () => {
+		const claims = buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 30 });
+		const idToken = buildIdToken(claims);
+
+		await expect(verifyIdToken({ idToken, options: createOptions() })).resolves.toEqual(claims);
+	});
+
+	test('rejects a token that expired beyond the clock tolerance', async () => {
+		const idToken = buildIdToken(buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 120 }));
+
+		await expect(verifyIdToken({ idToken, options: createOptions() })).rejects.toThrow('Token has expired');
+	});
+
+	test('honors a custom clockSkew', async () => {
+		const idToken = buildIdToken(buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 120 }));
+
+		await expect(verifyIdToken({ idToken, options: createOptions({ clockSkew: 300 }) })).resolves.toBeDefined();
+		await expect(verifyIdToken({ idToken, options: createOptions({ clockSkew: 0 }) })).rejects.toThrow('Token has expired');
 	});
 
 	describe('error handling', () => {
