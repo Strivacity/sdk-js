@@ -382,10 +382,13 @@ export function createBaseServerSDK<
 
 	async function handleLogout(event: TEvent): Promise<Response> {
 		const request = await adapter.toRequest(event);
-		const origin = new URL(request.url).origin;
+		const requestUrl = new URL(request.url);
+		const origin = requestUrl.origin;
+		const returnTo = requestUrl.searchParams.get('returnTo');
+		const safeReturnTo = toSafeRedirect(returnTo, origin);
 
 		try {
-			const logoutUrl = await logout(new URL(options.postLogoutRedirectUri, origin), event);
+			const logoutUrl = await logout(new URL(safeReturnTo ?? options.postLogoutRedirectUri, origin), event);
 			return flushSetCookies(event, await redirect(logoutUrl, 302, event));
 		} catch (error) {
 			return flushSetCookies(event, await errorRedirect(origin, error, event));
