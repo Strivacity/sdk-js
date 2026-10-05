@@ -2,6 +2,11 @@
   "name": "@strivacity/sdk-js",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=12"
+  },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "pnpm exec simple-git-hooks",
