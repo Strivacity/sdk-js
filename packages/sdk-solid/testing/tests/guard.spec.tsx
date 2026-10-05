@@ -1,5 +1,6 @@
 import type { RedirectFlow, SDKContext } from '../../src/client/types';
 import { describe, test, expect, vi, afterEach } from 'vitest';
+import { createSignal } from 'solid-js';
 import { STRIVACITY_SDK, withAuthGuard } from '../../src/client/hooks';
 import { createMockFlow } from '@strivacity/testing/mocks/sdk';
 import { flushPromises } from '@strivacity/testing/mocks/common';
@@ -18,6 +19,33 @@ function Protected(props: { label: string }) {
 }
 
 describe('withAuthGuard', () => {
+	test('reads the sdk lazily, so it works when the provider creates the sdk after the guard has rendered (first load)', async () => {
+		const sdk = createMockFlow<RedirectFlow>({ checkAuthentication: vi.fn().mockResolvedValue(true) });
+		const [loading, setLoading] = createSignal(true);
+		let createdSdk: RedirectFlow | undefined = undefined;
+		const context = {
+			get sdk() {
+				return createdSdk;
+			},
+			loading,
+		} as unknown as SDKContext<RedirectFlow>;
+		const Guarded = withAuthGuard(Protected);
+
+		const { container } = mount(() => (
+			<STRIVACITY_SDK value={context}>
+				<Guarded label="secret" />
+			</STRIVACITY_SDK>
+		));
+
+		createdSdk = sdk;
+		setLoading(false);
+		flush();
+		await flushPromises();
+
+		expect(sdk.checkAuthentication).toHaveBeenCalledTimes(1);
+		expect(container.textContent).toBe('secret');
+	});
+
 	test('renders nothing while the sdk is still loading', () => {
 		const sdk = createMockFlow<RedirectFlow>();
 		const Guarded = withAuthGuard(Protected);

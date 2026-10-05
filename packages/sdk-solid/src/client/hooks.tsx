@@ -243,11 +243,11 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
  */
 export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, options?: WithAuthGuardOptions): Component<P> {
 	return function AuthGuard(props: P) {
-		const { loading, sdk } = useStrivacity();
+		const ctx = useStrivacity();
 		const [authenticated, setAuthenticated] = createSignal<boolean | null>(null);
 
 		createEffect(
-			() => loading(),
+			() => ctx.loading(),
 			(isLoading) => {
 				if (isLoading) {
 					return;
@@ -255,7 +255,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 
 				let disposed = false;
 
-				void sdk.checkAuthentication().then((result) => {
+				void ctx.sdk.checkAuthentication().then((result) => {
 					if (disposed) {
 						return;
 					}
@@ -276,7 +276,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 		);
 
 		return (
-			<Show when={!loading() && authenticated()} fallback={options?.onLoading?.() ?? null}>
+			<Show when={!ctx.loading() && authenticated()} fallback={options?.onLoading?.() ?? null}>
 				<WrappedComponent {...props} />
 			</Show>
 		);
