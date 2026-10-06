@@ -8,12 +8,12 @@ export function AppClient({ children }: { children: React.ReactNode }) {
 	const { sdk } = useStrivacity();
 	const session = sdk?.session;
 	const isAuthenticated = !!session?.access_token;
-	const name = isAuthenticated ? `${session.claims?.given_name} ${session?.claims?.family_name}` : null;
+	const name = isAuthenticated ? `${session.claims?.given_name ?? ''} ${session.claims?.family_name ?? ''}`.trim() : null;
 
 	return (
 		<div id="app">
 			<header>
-				<div>{isAuthenticated ? <strong>Welcome, {name}!</strong> : null}</div>
+				<div>{isAuthenticated ? <strong>Welcome {name}!</strong> : null}</div>
 				<div>
 					<a href="/" data-button="home">
 						Home

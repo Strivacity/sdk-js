@@ -12,6 +12,6 @@ export class App {
 	readonly name = computed(() => {
 		const claims = this.authService.idTokenClaims();
 
-		return `${claims?.given_name ?? ''} ${claims?.family_name ?? ''}`;
+		return `${claims?.given_name ?? ''} ${claims?.family_name ?? ''}`.trim();
 	});
 }

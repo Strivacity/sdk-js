@@ -24,8 +24,9 @@
 				await goto(`${resolve('/login')}?${url.searchParams}`);
 			} else {
 				try {
-					await ctx.handleCallback();
-					await goto(resolve('/profile'));
+					const { returnTo } = await ctx.handleCallback();
+					// eslint-disable-next-line svelte/no-navigation-without-resolve
+					await goto(returnTo ?? resolve('/profile'));
 				} catch (error) {
 					// eslint-disable-next-line no-console
 					console.error('Error during callback handling:', error);

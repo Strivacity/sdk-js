@@ -11,7 +11,7 @@ const name = computed(() => (isAuthenticated.value ? `${idTokenClaims.value?.giv
 	<header>
 		<div>
 			<ClientOnly>
-				<strong v-if="isAuthenticated">Welcome, {{ name }}!</strong>
+				<strong v-if="isAuthenticated">Welcome {{ name }}!</strong>
 			</ClientOnly>
 		</div>
 		<div>

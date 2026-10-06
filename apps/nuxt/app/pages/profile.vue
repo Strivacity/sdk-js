@@ -1,30 +1,34 @@
 <script setup lang="ts">
 import '@strivacity/common/components/token-field';
 
-import { useStrivacity } from '#imports';
+import { useFetch, useStrivacity } from '#imports';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const ctx = useStrivacity();
-const session = computed(() => ctx.sdk.session);
+const serverManaged = !!ctx.sdk.options.serverSessionUri;
+
+// This demo shows both session modes side by side.
+// Server-managed: the SDK keeps the ID and refresh tokens out of the page payload, so this demo reads the full session
+// from its own demo-only route (server/api/session.get.ts). Client-managed: the browser SDK holds the full session.
+const { data: serverSession } = await useFetch('/api/session', { immediate: serverManaged });
+const session = computed(() => (serverManaged ? serverSession.value : ctx.sdk.session));
 
 definePageMeta({
 	middleware: ['auth'],
 });
 
 async function handleRefresh() {
-	// This demo shows both session modes side by side.
-	// in your own app, keep only the branch matching your `serverSessionUri` setting.
-	if (ctx.sdk.options.serverSessionUri) {
-		globalThis.location.href = '/auth/refresh?returnTo=/profile';
-	} else {
-		try {
-			await ctx.refresh();
+	// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUrlPrefix}/refresh`), which comes back to /profile
+	try {
+		await ctx.refresh({ returnTo: '/profile' });
+
+		if (!ctx.sdk.options.serverSessionUri) {
 			globalThis.location.reload();
-		} catch (error) {
-			void router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 		}
+	} catch (error) {
+		void router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 	}
 }
 </script>

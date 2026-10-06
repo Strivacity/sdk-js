@@ -22,8 +22,8 @@ export default function Callback() {
 
 			ctx
 				.handleCallback()
-				.then(() => {
-					globalThis.location.href = '/profile';
+				.then(({ returnTo }) => {
+					globalThis.location.href = returnTo ?? '/profile';
 				})
 				.catch(() => {
 					globalThis.location.href = `/error?error=${encodeURIComponent('An error occurred during callback handling.')}`;

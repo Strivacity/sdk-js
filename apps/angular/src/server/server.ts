@@ -1,13 +1,24 @@
 import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node';
 import express from 'express';
-import { sdkOptions, getServerSdk } from './strivacity';
+import { applyResponse, flushSetCookies } from '@strivacity/sdk-angular/server';
+import { getServerSdk } from './strivacity';
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 const serverSdk = getServerSdk();
 
 if (serverSdk) {
-	app.use(sdkOptions.authUrlPrefix!, serverSdk.handlers);
+	app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+
+	// NOTE: Demo only: returns the full server-managed session, including the ID and refresh tokens, so the profile page can
+	// display them. The SDK keeps these two tokens out of the rendered page (TransferState); in your own app, return only what
+	// the UI needs - never the refresh token.
+	// getSession() may refresh the session, so the rotated session cookie is flushed onto the response.
+	app.get('/api/session', async (req, res) => {
+		const session = await serverSdk.getSession(req);
+
+		await applyResponse(flushSetCookies(req, Response.json(session)), res);
+	});
 }
 
 /**

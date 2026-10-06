@@ -17,24 +17,19 @@ export default function Callback() {
 				globalThis.location.href = `/auth/callback?${searchParams.toString()}`;
 			} else {
 				handleCallback()
-					.then(() => {
-						globalThis.location.href = '/profile';
+					.then(({ returnTo }) => {
+						globalThis.location.href = returnTo ?? '/profile';
 					})
-					.catch(() => {
-						globalThis.location.href = `/error?error=${encodeURIComponent('An error occurred during callback handling.')}`;
+					.catch((error) => {
+						globalThis.location.href = `/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`;
 					});
 			}
 		})();
 	}, [loading]);
 
-	if (searchParams.get('error') || searchParams.get('error_description')) {
-		globalThis.location.href = `/error?${searchParams.toString()}`;
-		return null;
-	} else {
-		return (
-			<section>
-				<h1>Logging in...</h1>
-			</section>
-		);
-	}
+	return (
+		<section>
+			<h1>Logging in...</h1>
+		</section>
+	);
 }

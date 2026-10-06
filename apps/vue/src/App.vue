@@ -3,23 +3,7 @@ import { useStrivacity } from '@strivacity/sdk-vue';
 import { computed } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 
-const { sdk, isAuthenticated, idTokenClaims } = useStrivacity();
-
-async function init() {
-	if (!sdk.options.serverSessionUri) {
-		return;
-	}
-
-	// This demo shows both session modes side by side.
-	// Only called when the app runs in server-side mode (sdk.options.serverSessionUri is set)
-	const response = await fetch('/auth/session', { credentials: 'include' });
-
-	if (response.ok) {
-		sdk.updateSession(await response.json());
-	}
-}
-
-await init();
+const { isAuthenticated, idTokenClaims } = useStrivacity();
 
 const name = computed(() => (isAuthenticated.value ? `${idTokenClaims.value?.given_name ?? ''} ${idTokenClaims.value?.family_name ?? ''}`.trim() : null));
 </script>
@@ -27,7 +11,7 @@ const name = computed(() => (isAuthenticated.value ? `${idTokenClaims.value?.giv
 <template>
 	<header>
 		<div>
-			<strong v-if="isAuthenticated">Welcome, {{ name }}!</strong>
+			<strong v-if="isAuthenticated">Welcome {{ name }}!</strong>
 		</div>
 		<div>
 			<RouterLink to="/" data-button="home">Home</RouterLink>

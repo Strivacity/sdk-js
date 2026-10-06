@@ -10,9 +10,13 @@ const ctx = useStrivacity();
 const session = computed(() => ctx.sdk.session);
 
 async function handleRefresh() {
+	// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUrlPrefix}/refresh`), which comes back to /profile
 	try {
-		await ctx.refresh();
-		globalThis.location.reload();
+		await ctx.refresh({ returnTo: '/profile' });
+
+		if (!ctx.sdk.options.serverSessionUri) {
+			globalThis.location.reload();
+		}
 	} catch (error) {
 		void router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 	}

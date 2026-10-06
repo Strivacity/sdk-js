@@ -6,7 +6,7 @@ export default function Header() {
 
 	return (
 		<header>
-			<div>{!ctx.loading() && ctx.isAuthenticated() && <strong>Welcome, {name()}!</strong>}</div>
+			<div>{!ctx.loading() && ctx.isAuthenticated() && <strong>Welcome {name()}!</strong>}</div>
 			<div>
 				{!ctx.loading() && (
 					<>

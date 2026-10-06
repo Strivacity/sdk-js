@@ -3,12 +3,12 @@ import { useStrivacity } from '@strivacity/sdk-react';
 
 export function App() {
 	const { isAuthenticated, idTokenClaims } = useStrivacity();
-	const name = isAuthenticated ? `${idTokenClaims?.given_name} ${idTokenClaims?.family_name}` : null;
+	const name = isAuthenticated ? `${idTokenClaims?.given_name ?? ''} ${idTokenClaims?.family_name ?? ''}`.trim() : null;
 
 	return (
 		<div id="app">
 			<header>
-				<div>{isAuthenticated ? <strong>Welcome, {name}!</strong> : null}</div>
+				<div>{isAuthenticated ? <strong>Welcome {name}!</strong> : null}</div>
 				<div>
 					<Link to="/" data-button="home">
 						Home
