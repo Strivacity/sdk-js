@@ -29,6 +29,16 @@ export type SessionIdCookieStorageOptions = {
 	uuidGenerator?: () => string;
 };
 
+/**
+ * Minimal cookie access used by the encrypted cookie helpers (`readEncryptedCookie`, `writeEncryptedCookie`, `deleteEncryptedCookie`).
+ * `get` reads the incoming request's cookies; `set` and `delete` write to the outgoing response.
+ */
+export type CookieJar<TOptions = ServerCookieOptions> = {
+	get(name: string): string | null | undefined | Promise<string | null | undefined>;
+	set(name: string, value: string, options: TOptions): void | Promise<void>;
+	delete(name: string, options: TOptions): void | Promise<void>;
+};
+
 export type EncryptedCookieStorageOptions = {
 	/**
 	 * Default cookie options for the encrypted cookie.

@@ -1,10 +1,13 @@
 import type { H3Event } from 'h3';
-import type { EncryptedCookieStorageOptions, ServerStorage, SessionIdCookieStorageOptions } from '@strivacity/sdk-core/types';
-import type { NuxtServerStorage } from '../types';
+import type { CookieJar, EncryptedCookieStorageOptions, ServerStorage, SessionIdCookieStorageOptions } from '@strivacity/sdk-core/types';
+import type { CookieOptions, NuxtServerStorage } from '../types';
 import { getCookie, setCookie, deleteCookie, toWebRequest } from 'h3';
-import { encryptString, decryptString } from '@strivacity/sdk-core/utils/crypto';
-import { COOKIE_CONTEXT, COOKIE_CHUNK_SIZE } from '@strivacity/sdk-core/server';
-import { createSessionIdCookieStorage as createSessionIdCookieStorageBase } from '@strivacity/sdk-core/storages/server';
+import {
+	createSessionIdCookieStorage as createSessionIdCookieStorageBase,
+	readEncryptedCookie,
+	writeEncryptedCookie,
+	deleteEncryptedCookie,
+} from '@strivacity/sdk-core/storages/server';
 
 /**
  * Creates a session storage that puts a random unique id value cookie on the client and keeping the actual session data in the given `storage`.
@@ -41,71 +44,23 @@ export function createEncryptedCookieStorage(secret: string, options?: Encrypted
 		...options?.defaultCookieOptions,
 	};
 
-	const storage: NuxtServerStorage = {
-		async get(key, event) {
-			if (!event) {
-				return null;
-			}
+	const createJar = (event: H3Event): CookieJar<CookieOptions> => ({
+		get: (name) => getCookie(event, name),
+		set: (name, value, cookieOptions) => void setCookie(event, name, value, cookieOptions),
+		delete: (name, cookieOptions) => deleteCookie(event, name, cookieOptions),
+	});
 
-			const cookie = getCookie(event, key) ?? null;
-
-			if (cookie) {
-				return await decryptString(cookie, secret, COOKIE_CONTEXT);
-			}
-
-			const cookieChunks: Array<string> = [];
-
-			for (let i = 0; ; i++) {
-				const chunk = getCookie(event, `${key}.${i}`);
-
-				if (!chunk) {
-					break;
-				}
-
-				cookieChunks.push(chunk);
-			}
-
-			if (cookieChunks.length === 0) {
-				return null;
-			}
-
-			return await decryptString(cookieChunks.join(''), secret, COOKIE_CONTEXT);
-		},
-
-		async set(key, value, event, cookieOptions = {}) {
-			if (!event) {
-				return;
-			}
-
-			cookieOptions = { ...defaultCookieOptions, ...cookieOptions };
-
-			await storage.delete(key, event, cookieOptions);
-
-			const encrypted = await encryptString(value, secret, COOKIE_CONTEXT);
-
-			if (encrypted.length <= COOKIE_CHUNK_SIZE) {
-				setCookie(event, key, encrypted, cookieOptions);
-			} else {
-				for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
-					setCookie(event, `${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), cookieOptions);
-				}
+	return {
+		get: async (key, event) => (event ? await readEncryptedCookie(createJar(event), key, secret) : null),
+		set: async (key, value, event, cookieOptions = {}) => {
+			if (event) {
+				await writeEncryptedCookie(createJar(event), key, value, secret, { ...defaultCookieOptions, ...cookieOptions });
 			}
 		},
-
-		async delete(key, event, cookieOptions = {}) {
-			if (!event) {
-				return;
+		delete: async (key, event, cookieOptions = {}) => {
+			if (event) {
+				await deleteEncryptedCookie(createJar(event), key, { ...defaultCookieOptions, ...cookieOptions });
 			}
-
-			deleteCookie(event, key, cookieOptions);
-
-			for (let i = 0; getCookie(event, `${key}.${i}`); i++) {
-				deleteCookie(event, `${key}.${i}`, cookieOptions);
-			}
-
-			return Promise.resolve();
 		},
 	};
-
-	return storage;
 }
