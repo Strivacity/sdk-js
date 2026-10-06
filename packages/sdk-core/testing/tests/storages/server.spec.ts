@@ -312,6 +312,15 @@ describe('createSessionIdCookieStorage', () => {
 		expect(underlying.deleteByLogoutToken).toHaveBeenCalledWith(token);
 	});
 
+	test('should not expose deleteByLogoutToken when the underlying storage lacks it', () => {
+		const underlying = createUnderlyingStorage();
+		delete underlying.deleteByLogoutToken;
+		const storage = createSessionIdCookieStorage(createSessionAdapter(), underlying);
+
+		// NOTE: the back-channel logout route then answers 501 instead of reporting a logout that never happened
+		expect(storage.deleteByLogoutToken).toBeUndefined();
+	});
+
 	test('should use a pre-existing adapter.getSessionId instead of the cookie-based default', async () => {
 		const underlying = createUnderlyingStorage();
 		const adapter = createSessionAdapter();

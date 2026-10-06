@@ -106,7 +106,7 @@ export function createSessionIdCookieStorage<TEvent = unknown>(
 		};
 	}
 
-	return {
+	const sessionIdStorage: ServerStorage<TEvent> = {
 		async get(key, event) {
 			const id = await adapter.getSessionId!(key, event);
 
@@ -131,10 +131,14 @@ export function createSessionIdCookieStorage<TEvent = unknown>(
 
 			pushSetCookie(event, serializeCookie(key, '', { ...defaultCookieOptions, maxAge: 0, expires: new Date(0) }));
 		},
-		async deleteByLogoutToken(token) {
-			await storage.deleteByLogoutToken?.(token);
-		},
 	};
+
+	// NOTE: only when the inner storage can do it, so the back-channel logout route answers 501 instead of a silent 200
+	if (storage.deleteByLogoutToken) {
+		sessionIdStorage.deleteByLogoutToken = (token) => storage.deleteByLogoutToken!(token);
+	}
+
+	return sessionIdStorage;
 }
 
 /**

@@ -17,6 +17,7 @@ import { buildLogoutTokenClaims, exportSigningKey, generateRSAKeyPair, signLogou
 import type { ServerAdapter } from '../../../src/types';
 import { BACKCHANNEL_LOGOUT_EVENT, timestamp, ConfigurationError, ProtocolError, serializeSession } from '../../../src/utils';
 import { createBaseServerSDK } from '../../../src/server/base';
+import { createSessionIdCookieStorage } from '../../../src/storages/server';
 
 describe('createBaseServerSDK', () => {
 	describe('init', () => {
@@ -610,6 +611,14 @@ describe('createBaseServerSDK', () => {
 
 		test('should return 501 when the storage does not support deleteByLogoutToken', async () => {
 			const { sdk } = createServerSDK();
+
+			const response = await sdk.handleBackChannelLogout(getPostLogoutTokenRequest('token'));
+
+			expect(response.status).toBe(501);
+		});
+
+		test('should return 501 for a session-id cookie storage whose store does not support deleteByLogoutToken', async () => {
+			const { sdk } = createServerSDK({ storage: createSessionIdCookieStorage(serverAdapter, createMockStorage()) });
 
 			const response = await sdk.handleBackChannelLogout(getPostLogoutTokenRequest('token'));
 
