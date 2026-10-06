@@ -73,9 +73,12 @@ export function serializeSession(session: SessionData): string {
  * Checks if a session is expired based on its access token and expiration timestamp.
  *
  * @param {Partial<SessionData> | null} session - The session object to check for expiration.
- * @param {number} [skew=0] - The number of seconds before the actual expiration to already treat the session as expired.
+ * @param {number} [skew=0] - The number of seconds before the actual expiration to already treat the session as expired. Capped at half of the token lifetime (`expires_in`), so a short-lived token is not treated as expired the moment it is issued.
  * @returns {boolean} True if the session is expired or invalid, false otherwise.
  */
 export function isSessionExpired(session?: Partial<SessionData> | null, skew = 0): boolean {
-	return !session?.access_token || !session.expires_at || session.expires_at <= timestamp() + skew;
+	const lifetime = typeof session?.expires_in === 'number' && session.expires_in > 0 ? session.expires_in : null;
+	const effectiveSkew = lifetime === null ? skew : Math.min(skew, Math.floor(lifetime / 2));
+
+	return !session?.access_token || !session.expires_at || session.expires_at <= timestamp() + effectiveSkew;
 }
