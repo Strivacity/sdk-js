@@ -1,0 +1,34 @@
+{
+  "name": "strivacity",
+  "owner": { "name": "Strivacity", "email": "opensource@strivacity.com" },
+  "metadata": { "description": "Agent skills for the Strivacity JavaScript SDKs.", "version": "0.2.0", "pluginRoot": "plugins" },
+  "plugins": [
+    {
+      "name": "strivacity",
+      "source": "strivacity",
+      "description": "Add Strivacity authentication to JavaScript and TypeScript web apps with the @strivacity/sdk-* packages: login, registration, logout, protected routes, access tokens, hosted / pop-up / embedded / fully custom (native) login, and server-managed sessions (BFF). Also covers access tokens for APIs (audiences), token storage and refresh, debugging, and upgrading from v3. Covers React, Next.js, Vue, Nuxt, Angular, Preact, SolidStart, SvelteKit and plain JavaScript / Node.js.",
+      "version": "0.2.0",
+      "license": "MIT",
+      "keywords": [
+        "strivacity",
+        "authentication",
+        "oidc",
+        "oauth",
+        "pkce",
+        "login",
+        "sdk",
+        "bff",
+        "session",
+        "react",
+        "nextjs",
+        "vue",
+        "nuxt",
+        "angular",
+        "preact",
+        "solid",
+        "svelte",
+        "node"
+      ]
+    }
+  ]
+}

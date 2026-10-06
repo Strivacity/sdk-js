@@ -1,7 +1,10 @@
 .angular/
 .astro/
 .cache/
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/agents/
 .data/
 .next/
 .nitro/
