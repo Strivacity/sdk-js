@@ -2,6 +2,7 @@ import type { Component } from 'solid-js';
 import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, LoginContext, SDKContext, UseNativeLoginOptions, WithAuthGuardOptions } from './types';
 import { createContext, createEffect, createMemo, createSignal, onCleanup, onSettled, useContext, Show } from 'solid-js';
 import { createNativeLoginController } from '@strivacity/sdk-core/utils';
+import { appendReturnTo } from '@strivacity/sdk-core/utils/path';
 
 /**
  * Context carrying the Strivacity SDK instance and reactive session state. Scope it to your app with `<STRIVACITY_SDK value={...}>`.
@@ -102,9 +103,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 							return ctx.sdk.refresh();
 						}
 
-						options ??= {};
-						options.loginUri ??= '/login';
-						globalThis.location.href = options.loginUri;
+						globalThis.location.href = appendReturnTo(options?.loginUri ?? '/login');
 					}
 				});
 

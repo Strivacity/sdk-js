@@ -2,6 +2,7 @@ import type { ComponentType } from 'preact';
 import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, LoginContext, SDKContext, UseNativeLoginOptions, WithAuthGuardOptions } from './types';
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'preact/compat';
 import { createNativeLoginController } from '@strivacity/sdk-core/utils';
+import { appendReturnTo } from '@strivacity/sdk-core/utils/path';
 
 export const STRIVACITY_SDK = createContext<SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow>>(null!);
 
@@ -148,9 +149,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: ComponentType<
 						return sdk.refresh();
 					}
 
-					options ??= {};
-					options.loginUri ??= '/login';
-					globalThis.location.href = options.loginUri;
+					globalThis.location.href = appendReturnTo(options?.loginUri ?? '/login');
 				}
 			});
 

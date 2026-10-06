@@ -77,6 +77,7 @@ describe('withAuthGuard', () => {
 
 	test('redirects to the default login URI when checkAuthentication resolves false', async () => {
 		const originalHref = globalThis.location.href;
+		const currentPath = `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`;
 		const sdk = createMockFlow<RedirectFlow>({ checkAuthentication: vi.fn().mockResolvedValue(false) });
 		const Guarded = withAuthGuard(Protected);
 
@@ -87,7 +88,8 @@ describe('withAuthGuard', () => {
 		);
 		await flush();
 
-		expect(globalThis.location.href).toContain('/login');
+		// the protected page is handed to the login page, which passes it on to login({ returnTo })
+		expect(globalThis.location.href).toContain(`/login?returnTo=${encodeURIComponent(currentPath)}`);
 
 		globalThis.location.href = originalHref;
 	});

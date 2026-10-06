@@ -1,6 +1,6 @@
 import { beforeEach, describe, test, expect, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { createOptions, getMockStorage } from '@strivacity/testing/mocks/sdk';
+import { createOptions, getMockStorage, seedState } from '@strivacity/testing/mocks/sdk';
 import { worker } from '@strivacity/testing/mocks/msw';
 import openidConfiguration from '@strivacity/testing/fixtures/openid-configuration.json';
 import { createBaseFlow } from '../../../src/flows/base';
@@ -536,9 +536,19 @@ describe('createBaseFlow', () => {
 				http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ access_token: 'access-token', token_type: 'Bearer', expires_in: 3600 })),
 			);
 
-			await base.handleCallback(`https://brandtegrity.io/callback?code=abc123&state=${stateData.id}`);
+			await expect(base.handleCallback(`https://brandtegrity.io/callback?code=abc123&state=${stateData.id}`)).resolves.toEqual({});
 
 			expect(flowState.session?.access_token).toBe('access-token');
+		});
+
+		test('returns the returnTo kept with the login state', async () => {
+			const stateData = await seedState(options.stateStorage, { metadata: { returnTo: '/orders?page=2' } });
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ access_token: 'access-token', token_type: 'Bearer', expires_in: 3600 })),
+			);
+
+			await expect(base.handleCallback(`https://brandtegrity.io/callback?code=abc123&state=${stateData.id}`)).resolves.toEqual({ returnTo: '/orders?page=2' });
+			await expect(options.stateStorage.get(`sty.${stateData.id}`)).resolves.toBeNull();
 		});
 	});
 

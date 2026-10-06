@@ -416,6 +416,13 @@ export type LogoutParams = {
 
 export type ExtraRequestArgs = {
 	/**
+	 * Where to send the user after the login completes: a same-origin path or URL (e.g. the page a route guard protected).
+	 * In `redirect` mode the SDK keeps it with the login state and `handleCallback()` returns it. With `serverSessionUri` it is
+	 * forwarded to the Server SDK login route, which redirects there after its callback. The other modes ignore it.
+	 */
+	returnTo?: string;
+
+	/**
 	 * Specifies the type of prompt to display to the user during authentication or authorization.
 	 *
 	 * @example 'none' | 'login' | 'create'
@@ -870,10 +877,10 @@ export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, En
 	 * Handles the authentication callback by parsing the response from the given URL.
 	 *
 	 * @param {string | URL} [url] - The callback URL to process. Defaults to the current page URL if omitted.
-	 * @returns {Promise<void>}
+	 * @returns {Promise<CallbackResult>} The `returnTo` given to `login()` / `register()`, if any.
 	 * @throws {Error} Throws an error if the callback handling fails or if the URL is invalid.
 	 */
-	handleCallback(url?: string | URL): Promise<void>;
+	handleCallback(url?: string | URL): Promise<CallbackResult>;
 
 	/**
 	 * Refreshes the current access token using the refresh token.
@@ -929,4 +936,12 @@ export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, En
 	 * @throws {Error} Throws an error if the entry URL is invalid or if the entry process fails.
 	 */
 	entry(url?: string | URL, params?: RedirectOptions): EntryReturnType;
+};
+
+/**
+ * The result of `handleCallback()`.
+ */
+export type CallbackResult = {
+	/** The same-origin path given to `login({ returnTo })` / `register({ returnTo })`, to navigate to after the login. */
+	returnTo?: string;
 };

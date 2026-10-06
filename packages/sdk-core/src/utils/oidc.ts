@@ -9,6 +9,7 @@ import { redirectUrlHandler, redirectCallbackHandler } from '../handlers/redirec
 import { createLocalStorage } from '../storages/local';
 import { createSessionStorage } from '../storages/session';
 import { timestamp } from './common';
+import { toSameOriginPath } from './path.ts';
 
 /**
  * Stores the expiration timestamp of the cached OpenID configuration discovery document.
@@ -507,6 +508,15 @@ export async function buildAuthorizationUrl<URLHandlerParams extends ExtraReques
 			url.searchParams.set('audience', audiences.join(' '));
 			stateData.metadata.audiences = audiences;
 		}
+	}
+
+	const returnTo = toSameOriginPath(params.returnTo);
+
+	if (returnTo && includeOAuthParams) {
+		stateData.metadata.returnTo = returnTo;
+	} else if (returnTo) {
+		// NOTE: server-managed login: the Server SDK login route keeps it and redirects there after its callback
+		url.searchParams.set('returnTo', returnTo);
 	}
 
 	if (persistState) {
