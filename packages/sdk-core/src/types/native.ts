@@ -333,7 +333,7 @@ export type NativeFlowState = {
 
 export type NativeParams = ExtraRequestArgs & {
 	/**
-	 * The SDK type to use for the native login flow. This is typically set to 'web-minimal' for web-based applications.
+	 * The SDK type to request for the native login flow (e.g. `'web-minimal'`).
 	 */
 	sdk?: string;
 

@@ -4,13 +4,14 @@ import type { IdTokenClaims, RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, 
 import { STRIVACITY_SDK } from './hooks.svelte';
 
 /**
- * The `StyAuthProvider` component is a Svelte context provider that initializes the Strivacity SDK and provides its state and methods to the rest of the application.
+ * Initializes the Strivacity SDK and stores its reactive state and methods in the Svelte context, so `useStrivacity()` can read them in every descendant component.
+ * Call it during the initialization of a root component (e.g. the root `+layout.svelte`). The SDK is only created in the browser: during SSR `sdk` is `undefined` and `loading` stays `true`.
  *
- * @param {StyAuthProviderProps} props - The properties for the `StyAuthProvider` component.
+ * @param {StyAuthProviderProps} props - The options and the optional session getter used to configure the SDK.
  * @param {SDKInitConfig} props.options - The configuration options for initializing the Strivacity SDK.
- * @param {() => SessionData | null | undefined} [props.session] - Optional getter for session data to initialize/refresh the SDK with.
+ * @param {() => SessionData | null | undefined} [props.session] - Optional getter for the session data the SDK is initialized and kept in sync with.
  *
- * @returns {SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow>} A Svelte context provider that wraps its children and provides access to the Strivacity SDK.
+ * @returns {SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow>} The context value that was set, the same object `useStrivacity()` returns.
  */
 export function createStyAuthProvider(props: StyAuthProviderProps): SDKContext<RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow> {
 	let sdk: SDKInstance;

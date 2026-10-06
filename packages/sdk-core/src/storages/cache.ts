@@ -9,7 +9,7 @@ const DUMMY_BASE_URL = 'https://sdk.strivacity/';
  *
  * Values are stored as synthetic `Response` objects keyed by a fake URL derived from the storage key.
  *
- * @param {string} [cacheName='sdk-storage'] - The name of the cache bucket to use.
+ * @param {string} [cacheName='strivacity-sdk'] - The name of the cache bucket to use.
  * @returns {SDKStorage} An object implementing the SDKStorage interface.
  */
 export function createCacheAPIStorage(cacheName = DEFAULT_CACHE_NAME): SDKStorage {

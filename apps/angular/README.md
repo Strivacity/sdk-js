@@ -38,6 +38,8 @@ Switch between modes by setting `VITE_MODE` (`redirect`, `popup`, `embedded`, or
 
 This app is SSR-capable and has its own server (`src/server/server.ts`), so it wires up the SDK's Server SDK directly (see `src/server/strivacity.ts`) rather than pairing with a separate backend. `serverSessionUri` is set to `/auth/login` by default in `src/options.ts`, routing login through this app's own server instead of storing tokens client-side. See the Core SDK's [Server-side session management](../../packages/sdk-core/README.md#server-side-session-management) for details.
 
+The SDK keeps the ID and refresh tokens out of the rendered page (`TransferState`). To still display them, the profile page fetches the full session from a demo-only route, `/api/session` in [`src/server/server.ts`](./src/server/server.ts). Don't copy that route into a real app: return only what the UI needs, and never the refresh token.
+
 ---
 
 ## Native mode renderer
