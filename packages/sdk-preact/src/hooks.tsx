@@ -336,6 +336,10 @@ export function withAuthGuard<P extends object>(WrappedComponent: ComponentType<
 				setAuthenticated(result);
 
 				if (!result) {
+					if (sdk.options.serverSessionUri && sdk.session) {
+						return sdk.refresh();
+					}
+
 					options ??= {};
 					options.loginUri ??= '/login';
 					globalThis.location.href = options.loginUri;

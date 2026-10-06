@@ -110,13 +110,6 @@ export type ServerSDKOptions<
 	 * Encrypted cookie storage secret. Required when no custom `storage` is provided.
 	 */
 	secret?: string;
-
-	/**
-	 * URL prefix for auth routes (login, logout, callback, etc.) matched by `dispatch`.
-	 *
-	 * @default '/auth'
-	 */
-	authUrlPrefix: string;
 };
 
 export type ServerSDKInitConfig<

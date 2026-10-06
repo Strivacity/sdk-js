@@ -83,7 +83,7 @@ export function StyAuthProvider(props: StyAuthProviderProps): JSX.Element {
 		checkAuthentication: (...args: Parameters<typeof sdk.checkAuthentication>) => sdk.checkAuthentication(...args),
 		tokenExchange: (...args: Parameters<typeof sdk.tokenExchange>) => sdk.tokenExchange(...args),
 		handleCallback: (...args: Parameters<typeof sdk.handleCallback>) => sdk.handleCallback(...args),
-		refresh: () => sdk.refresh(),
+		refresh: (...args: Parameters<typeof sdk.refresh>) => sdk.refresh(...args),
 		revoke: () => sdk.revoke(),
 		logout: (...args: Parameters<typeof sdk.logout>) => sdk.logout(...args),
 		login: (...args: Parameters<typeof sdk.login>) => sdk.login(...args),

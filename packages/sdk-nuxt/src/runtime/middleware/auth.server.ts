@@ -15,8 +15,9 @@ export default defineNuxtRouteMiddleware(async () => {
 	const sdk = useStrivacity(h3Event);
 
 	const session = await sdk.getSession();
+	const cookies = flushSetCookies(h3Event, new Response(null)).headers.getSetCookie();
 
-	for (const cookie of flushSetCookies(h3Event, new Response(null)).headers.getSetCookie()) {
+	for (const cookie of cookies) {
 		appendResponseHeader(h3Event, 'set-cookie', cookie);
 	}
 

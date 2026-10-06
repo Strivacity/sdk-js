@@ -76,8 +76,8 @@ export class StrivacityAuthService {
 		return this.sdk.handleCallback(...args);
 	}
 
-	refresh(): ReturnType<typeof this.sdk.refresh> {
-		return this.sdk.refresh();
+	refresh(...args: Parameters<typeof this.sdk.refresh>): ReturnType<typeof this.sdk.refresh> {
+		return this.sdk.refresh(...args);
 	}
 
 	revoke(): ReturnType<typeof this.sdk.revoke> {

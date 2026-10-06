@@ -2,6 +2,7 @@ import type { EventFunctions, ExtraRequestArgs, FlowState, SDK, SDKOptions, Sess
 import { buildEndSessionUrl, exchangeCode, getDiscoveryDocument, refreshToken, revokeToken, verifyIdToken } from '../utils/oidc';
 import { loadSession, serializeSession, isSessionExpired } from '../utils/session';
 import { ConfigurationError, NetworkError, ProtocolError, ServerError } from '../utils/errors';
+import { redirectUrlHandler } from '../handlers/redirect';
 
 /**
  * Creates a base flow for the Strivacity SDK, providing common functionality for managing authentication sessions.
@@ -138,7 +139,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return true;
 		}
 
-		if (params?.autoRefresh && flowState.session?.refresh_token) {
+		if (params?.autoRefresh && flowState.session?.refresh_token && !options.serverSessionUri) {
 			try {
 				await refresh();
 			} catch {
@@ -272,7 +273,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		await tokenExchange(params);
 	}
 
-	async function refresh(): ReturnType<SDK<URLHandlerParams>['refresh']> {
+	async function refresh(params?: { returnTo?: string }): ReturnType<SDK<URLHandlerParams>['refresh']> {
 		await init();
 
 		if (promises.refresh) {
@@ -280,6 +281,15 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		}
 
 		options.logging?.debug('Attempting to refresh session');
+
+		// NOTE: with server-managed sessions the server owns the refresh token: let its refresh route rotate the cookie and come back
+		if (options.serverSessionUri) {
+			const location = globalThis.location;
+			const returnTo = params?.returnTo ?? (location ? `${location.pathname}${location.search}${location.hash}` : '/');
+
+			await redirectUrlHandler(`${options.authUrlPrefix}/refresh?returnTo=${encodeURIComponent(returnTo)}`);
+			return;
+		}
 
 		if (typeof flowState.session?.refresh_token !== 'string') {
 			options.logging?.debug('Refresh called without refresh token');

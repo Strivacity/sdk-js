@@ -50,6 +50,7 @@ describe('defaultOptions', () => {
 			refreshSkew: 60,
 			clockSkew: 60,
 			serverSessionUri: null,
+			authUrlPrefix: '/auth',
 			scopes: ['openid'],
 			responseType: 'code',
 			responseMode: 'query',

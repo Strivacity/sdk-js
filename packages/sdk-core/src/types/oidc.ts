@@ -574,7 +574,9 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	lazyLoad: boolean;
 
 	/**
-	 * Indicates whether the SDK should automatically refresh tokens when they are about to expire.
+	 * Refreshes an expired (or about to expire, see `refreshSkew`) access token automatically.
+	 * - Client SDK: refreshes when the authentication state is checked. Ignored when `serverSessionUri` is set.
+	 * - Server SDK: refreshes when the session is read. With `false` an expired session is not refreshed.
 	 *
 	 * @default true
 	 */
@@ -597,11 +599,22 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	/**
 	 * The URL of your backend-for-frontend (BFF) endpoint that the SDK will route login/registration/start-session requests to instead of building the authorization URL itself.
 	 * Setting this also switches the SDK into server-managed session mode: tokens are never read from or written to client-side storage, and successful authorization responses redirect the browser instead of being exchanged for tokens client-side.
-	 * If not set, the SDK talks to the IDP directly and manages the session client-side.
+	 * If not set (or set to `false` / `null`), the SDK talks to the IDP directly and manages the session client-side.
+	 * Setting it to `true` enables server-managed session mode without routing through a BFF endpoint (the SDK builds the authorization URL itself).
 	 *
-	 * @default '/auth/login'
+	 * @default null (client SDK) / `${authUrlPrefix}/login` (server SDK)
 	 */
 	serverSessionUri?: boolean | string | null;
+
+	/**
+	 * URL prefix of the Server SDK auth routes (`/login`, `/callback`, `/refresh`, `/logout`, ...).
+	 * With server-managed sessions (`serverSessionUri`) the browser never refreshes tokens itself: `refresh()` and the route guards
+	 * (`withAuthGuard`) send the browser to `${authUrlPrefix}/refresh` with `returnTo` set to the current URL, so the server
+	 * refreshes the session, writes the rotated cookie and redirects back.
+	 *
+	 * @default '/auth'
+	 */
+	authUrlPrefix: string;
 
 	/**
 	 * Discovery document metadata is cached for this amount of time (in seconds) before being refreshed from the authorization server.
@@ -864,11 +877,13 @@ export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, En
 
 	/**
 	 * Refreshes the current access token using the refresh token.
+	 * With server-managed sessions, navigates the browser to the server's refresh route (`${authUrlPrefix}/refresh`) instead.
 	 *
+	 * @param {{ returnTo?: string }} [params] - Server-managed only: where the refresh route should return to (defaults to the current URL).
 	 * @returns {Promise<void>}
 	 * @throws {Error} Throws an error if the refresh process fails or if no refresh token is available.
 	 */
-	refresh(): Promise<void>;
+	refresh(params?: { returnTo?: string }): Promise<void>;
 
 	/**
 	 * Revokes the current tokens.

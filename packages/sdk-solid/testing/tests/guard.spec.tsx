@@ -46,6 +46,26 @@ describe('withAuthGuard', () => {
 		expect(container.textContent).toBe('secret');
 	});
 
+	test('with server-managed sessions, sends an expired session through the server refresh route instead of login', async () => {
+		const originalHref = globalThis.location.href;
+		const sdk = createMockFlow<RedirectFlow>({
+			checkAuthentication: vi.fn().mockResolvedValue(false),
+			options: { serverSessionUri: '/auth/login' },
+			session: { access_token: 'expired' },
+		});
+		const Guarded = withAuthGuard(Protected);
+
+		mount(() => (
+			<STRIVACITY_SDK value={withContext(sdk, false)}>
+				<Guarded label="secret" />
+			</STRIVACITY_SDK>
+		));
+		await flushPromises();
+
+		expect(sdk.refresh).toHaveBeenCalledTimes(1);
+		expect(globalThis.location.href).toBe(originalHref);
+	});
+
 	test('renders nothing while the sdk is still loading', () => {
 		const sdk = createMockFlow<RedirectFlow>();
 		const Guarded = withAuthGuard(Protected);

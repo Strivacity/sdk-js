@@ -54,6 +54,7 @@ export const defaultOptions: Partial<SDKOptions> = {
 	refreshSkew: 60,
 	clockSkew: 60,
 	serverSessionUri: null,
+	authUrlPrefix: '/auth',
 	scopes: ['openid'],
 	responseType: 'code',
 	responseMode: 'query',
@@ -213,6 +214,7 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptio
 	options.refreshSkew ??= defaultOptions.refreshSkew;
 	options.clockSkew ??= defaultOptions.clockSkew;
 	options.serverSessionUri ??= defaultOptions.serverSessionUri;
+	options.authUrlPrefix ??= defaultOptions.authUrlPrefix;
 
 	options.scopes ??= defaultOptions.scopes;
 	options.responseType ??= defaultOptions.responseType;

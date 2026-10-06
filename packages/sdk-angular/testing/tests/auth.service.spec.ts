@@ -202,7 +202,7 @@ describe('StrivacityAuthService', () => {
 		['checkAuthentication', [{ autoRefresh: false }]],
 		['tokenExchange', [{ code: 'abc' }]],
 		['handleCallback', ['https://brandtegrity.io/callback?code=abc']],
-		['refresh', []],
+		['refresh', [{ returnTo: '/orders' }]],
 		['revoke', []],
 		['logout', [{ postLogoutRedirectUri: 'https://brandtegrity.io' }]],
 		['login', [{ scopes: ['openid'] }]],

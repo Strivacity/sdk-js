@@ -4,10 +4,16 @@ import { createOptions, getMockStorage } from '@strivacity/testing/mocks/sdk';
 import { worker } from '@strivacity/testing/mocks/msw';
 import openidConfiguration from '@strivacity/testing/fixtures/openid-configuration.json';
 import { createBaseFlow } from '../../../src/flows/base';
+import { redirectUrlHandler } from '../../../src/handlers/redirect';
 import { getDefaultFlowState, ConfigurationError, OidcError, ProtocolError, NetworkError, ServerError } from '../../../src/utils';
 import { timestamp } from '../../../src/utils/common';
 import type { FlowState } from '../../../src/types/oidc';
 import { buildIdToken } from '@strivacity/testing/mocks/oidc';
+
+vi.mock('../../../src/handlers/redirect', async (importOriginal) => ({
+	...(await importOriginal<typeof import('../../../src/handlers/redirect')>()),
+	redirectUrlHandler: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('createBaseFlow', () => {
 	let options: ReturnType<typeof createOptions>;
@@ -263,6 +269,19 @@ describe('createBaseFlow', () => {
 			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 });
 
 			await expect(base.checkAuthentication({ autoRefresh: false })).resolves.toBe(false);
+		});
+
+		test('should not refresh client-side when serverSessionUri is set', async () => {
+			options = createOptions({ serverSessionUri: 'https://app.example.com/login' });
+			base = createBaseFlow(flowState, options);
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 }, null);
+
+			const tokenRequest = vi.fn(() => HttpResponse.json({ access_token: 'new-access-token', token_type: 'Bearer', expires_in: 3600 }));
+			worker.use(http.post('https://brandtegrity.io/oauth2/token', tokenRequest));
+
+			await expect(base.checkAuthentication()).resolves.toBe(false);
+			expect(tokenRequest).not.toHaveBeenCalled();
 		});
 	});
 
@@ -806,6 +825,47 @@ describe('createBaseFlow', () => {
 
 			expect(flowState.session).not.toBeNull();
 			expect(getMockStorage(options.storage).getSession()).not.toBeUndefined();
+		});
+
+		describe('with server-managed sessions', () => {
+			beforeEach(() => {
+				vi.mocked(redirectUrlHandler).mockClear();
+				window.history.replaceState(null, '', '/profile?tab=tokens');
+			});
+
+			test('navigates to the Server SDK refresh route (`${authUrlPrefix}/refresh`) with the current URL as returnTo, and does not call the token endpoint', async () => {
+				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/auth/login' });
+				const sendTokenRequest = vi.spyOn(options.httpClient, 'sendTokenRequest');
+				base = createBaseFlow(flowState, options);
+				flowState.initialized = true;
+				flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+
+				await base.refresh();
+
+				expect(redirectUrlHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Fprofile%3Ftab%3Dtokens');
+				expect(options.urlHandler).not.toHaveBeenCalled();
+				expect(sendTokenRequest).not.toHaveBeenCalled();
+			});
+
+			test('uses the given returnTo (e.g. the target of a navigation a route guard blocked)', async () => {
+				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/auth/login' });
+				base = createBaseFlow(flowState, options);
+				flowState.initialized = true;
+
+				await base.refresh({ returnTo: '/orders/42' });
+
+				expect(redirectUrlHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Forders%2F42');
+			});
+
+			test('builds the refresh route from a custom authUrlPrefix', async () => {
+				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/api/auth/login', authUrlPrefix: '/api/auth' });
+				base = createBaseFlow(flowState, options);
+				flowState.initialized = true;
+
+				await base.refresh({ returnTo: '/orders' });
+
+				expect(redirectUrlHandler).toHaveBeenCalledWith('/api/auth/refresh?returnTo=%2Forders');
+			});
 		});
 	});
 
