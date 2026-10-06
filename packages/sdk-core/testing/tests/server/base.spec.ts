@@ -71,6 +71,87 @@ describe('createBaseServerSDK', () => {
 		});
 	});
 
+	describe('getSession', () => {
+		const tokenResponse = () =>
+			http.post('https://brandtegrity.io/oauth2/token', () =>
+				HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
+			);
+
+		test('returns a valid session as is, without refreshing', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			const session = createSessionData();
+			await storage.set(options.storageTokenName, serializeSession(session));
+			const refreshSpy = vi.spyOn(sdk, 'refreshSession');
+
+			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
+			expect(refreshSpy).not.toHaveBeenCalled();
+		});
+
+		test('returns an expired session as is when autoRefresh is disabled', async () => {
+			const { sdk, storage, options } = createServerSDK({ autoRefresh: false });
+			const session = { ...createSessionData(), expires_at: 0 };
+			await storage.set(options.storageTokenName, serializeSession(session));
+			const refreshSpy = vi.spyOn(sdk, 'refreshSession');
+
+			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
+			expect(refreshSpy).not.toHaveBeenCalled();
+		});
+
+		test('returns an expired session as is when autoRefresh is disabled for the call', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			const session = { ...createSessionData(), expires_at: 0 };
+			await storage.set(options.storageTokenName, serializeSession(session));
+			let tokenRequests = 0;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () => {
+					tokenRequests++;
+					return HttpResponse.json({ access_token: 'new-access-token', token_type: 'Bearer', expires_in: 3600 });
+				}),
+			);
+
+			await expect(sdk.getSession(createMockEvent(), { autoRefresh: false })).resolves.toEqual(session);
+			expect(tokenRequests).toBe(0);
+		});
+
+		test('refreshes an expired session once per event and shares the result with concurrent callers', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			await storage.set(options.storageTokenName, serializeSession({ ...createSessionData(), expires_at: 0 }));
+			let tokenRequests = 0;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () => {
+					tokenRequests++;
+					return HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 });
+				}),
+			);
+			const event = createMockEvent();
+
+			const [first, second] = await Promise.all([sdk.getSession(event), sdk.getSession(event)]);
+			const later = await sdk.getSession(event);
+
+			expect(tokenRequests).toBe(1);
+			expect(first?.access_token).toBe('new-access-token');
+			expect(second).toBe(first);
+			expect(later).toBe(first);
+		});
+
+		test('resolves to null when the refresh fails', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			await storage.set(options.storageTokenName, serializeSession({ ...createSessionData(), expires_at: 0 }));
+			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ error: 'invalid_grant' }, { status: 400 })));
+
+			await expect(sdk.getSession(createMockEvent())).resolves.toBeNull();
+		});
+
+		test('returns an expired session without a refresh token as is', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			const session = { ...createSessionData({ refresh_token: null }), expires_at: 0 };
+			await storage.set(options.storageTokenName, serializeSession(session));
+			worker.use(tokenResponse());
+
+			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
+		});
+	});
+
 	describe('refreshSession', () => {
 		test('should refresh the session and persist the new tokens', async () => {
 			const { sdk, storage, options } = createServerSDK();

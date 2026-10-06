@@ -70,6 +70,7 @@ test('should export the correct things', () => {
 		'throwHttpError',
 		'throwTokenEndpointError',
 		'timestamp',
+		'toClientSession',
 		'toSafeRedirect',
 		'unflattenObject',
 		'verifyIdToken',

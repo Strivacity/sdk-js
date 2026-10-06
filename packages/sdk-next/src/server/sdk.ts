@@ -86,8 +86,10 @@ export function createServerSDK(initConfig: NextServerSDKInitConfig): NextServer
 		},
 		withAuthGuard,
 		withApiAuthRequired,
-		getSession: (req) => base.getSession(req),
-		updateSession: (event, session) => base.updateSession(event, session),
+		// NOTE: refreshes (with autoRefresh) only for App Router requests, whose route handlers can write the rotated cookie.
+		// Server Components (no request) and Pages Router requests read the stored session: a refresh there could not be saved.
+		getSession: (req, params) => base.getSession(req, req instanceof Request ? params : { autoRefresh: false }),
+		updateSession: (session, req) => base.updateSession(session, req),
 		refreshSession: (req) => base.refreshSession(req),
 		revokeSession: (req) => base.revokeSession(req),
 		getEntrySession: (entryUrl) => base.getEntrySession(entryUrl),

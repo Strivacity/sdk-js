@@ -13,7 +13,7 @@ export const appRouteHandlerFactory =
 	(sdk: BaseServerSDK<NextRequest | Request | PagesRouterRequest | undefined>): WithAuthGuardAppRouter =>
 	<P extends AppRouterPageRouteOpts = AppRouterPageRouteOpts>(handler: AppRouterPageRoute<P>, opts: WithAuthGuardAppRouterOptions<P> = {}) =>
 	async (params: P) => {
-		const session = await sdk.getSession();
+		const session = await sdk.getSession(undefined, { autoRefresh: false });
 
 		if (!session) {
 			const returnTo = typeof opts.returnTo === 'function' ? await opts.returnTo(params) : opts.returnTo;
@@ -29,7 +29,7 @@ export const pageRouteHandlerFactory =
 	(sdk: BaseServerSDK<NextRequest | Request | PagesRouterRequest | undefined>): WithAuthGuardPageRouter =>
 	({ getServerSideProps, returnTo } = {}) =>
 	async (ctx) => {
-		const session = await sdk.getSession();
+		const session = await sdk.getSession(undefined, { autoRefresh: false });
 
 		if (!session) {
 			return {

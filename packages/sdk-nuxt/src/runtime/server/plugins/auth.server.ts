@@ -61,7 +61,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 			get options() {
 				return sdk.options;
 			},
-			getSession: () => sdk.getSession(event),
+			getSession: (_event, params) => sdk.getSession(event, params),
 			updateSession: (session) => sdk.updateSession(session, event),
 			refreshSession: () => sdk.refreshSession(event),
 			revokeSession: () => sdk.revokeSession(event),

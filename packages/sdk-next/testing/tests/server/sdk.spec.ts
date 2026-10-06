@@ -94,6 +94,28 @@ describe('createServerSDK', () => {
 		expect(response.headers.get('location')).toBe('https://brandtegrity.io/');
 	});
 
+	test('getSession refreshes (with autoRefresh) for App Router requests, whose route handlers can write the cookie', async () => {
+		const base = installBase({ getSession: vi.fn().mockResolvedValue({ access_token: 'fresh' }) });
+		const sdk = createServerSDK(validInitConfig);
+		const req = new Request('https://brandtegrity.io/api/orders');
+
+		await expect(sdk.getSession(req)).resolves.toEqual({ access_token: 'fresh' });
+		await sdk.getSession(req, { autoRefresh: false });
+		expect(base.getSession).toHaveBeenNthCalledWith(1, req, undefined);
+		expect(base.getSession).toHaveBeenNthCalledWith(2, req, { autoRefresh: false });
+	});
+
+	test('getSession never refreshes in Server Components and for Pages Router requests, where the cookie cannot be written', async () => {
+		const base = installBase({ getSession: vi.fn().mockResolvedValue({ access_token: 'stored' }) });
+		const sdk = createServerSDK(validInitConfig);
+		const pagesReq = { headers: {} } as never;
+
+		await sdk.getSession();
+		await sdk.getSession(pagesReq, { autoRefresh: true });
+		expect(base.getSession).toHaveBeenNthCalledWith(1, undefined, { autoRefresh: false });
+		expect(base.getSession).toHaveBeenNthCalledWith(2, pagesReq, { autoRefresh: false });
+	});
+
 	test('exposes the base server sdk options', () => {
 		const base = installBase({ options: { loginUri: '/login' } });
 		const sdk = createServerSDK(validInitConfig);
@@ -102,7 +124,6 @@ describe('createServerSDK', () => {
 	});
 
 	test.each([
-		['getSession', [{}]],
 		['refreshSession', [{}]],
 		['revokeSession', [{}]],
 		['getEntrySession', ['https://brandtegrity.io/entry']],

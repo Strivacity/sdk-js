@@ -93,7 +93,7 @@ export function createServerSDK(initConfig: AngularServerSDKInitConfig): Angular
 			return base.options;
 		},
 		handlers: getRouteHandlers(base),
-		getSession: (req) => base.getSession(req),
+		getSession: (req, params) => base.getSession(req, params),
 		updateSession: (session, req) => base.updateSession(session, req),
 		refreshSession: (req) => base.refreshSession(req),
 		revokeSession: (req) => base.revokeSession(req),

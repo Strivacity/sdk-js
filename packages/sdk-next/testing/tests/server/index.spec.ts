@@ -91,6 +91,7 @@ test('should export the correct things', () => {
 		'throwHttpError',
 		'throwTokenEndpointError',
 		'timestamp',
+		'toClientSession',
 		'toNextRequest',
 		'toSafeRedirect',
 		'unflattenObject',

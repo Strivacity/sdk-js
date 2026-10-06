@@ -62,7 +62,9 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 			addServerImportsDir(resolver.resolve('./runtime/storages'));
 
 			addServerPlugin(resolver.resolve('./runtime/server/plugins/auth.server'));
-			addRouteMiddleware({ name: 'strivacity', path: resolver.resolve('./runtime/middleware/auth.server'), global: true });
+			// NOTE: prepend, so the session is loaded (and refreshed) before any app middleware runs - including global ones such as
+			// `app/middleware/auth.global.ts`, which Nuxt otherwise runs before module-registered middleware.
+			addRouteMiddleware({ name: 'strivacity', path: resolver.resolve('./runtime/middleware/auth.server'), global: true }, { prepend: true });
 
 			addServerHandler({
 				method: 'get',

@@ -62,6 +62,7 @@ test('should export the correct things', () => {
 		'loadSession',
 		'serializeSession',
 		'isSessionExpired',
+		'toClientSession',
 		'createState',
 		'parseState',
 		'serializeState',

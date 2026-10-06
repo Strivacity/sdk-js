@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach } from 'vitest';
 import type { SessionData } from '../../../src/types/oidc';
-import { isSessionExpired } from '../../../src/utils/session';
+import { isSessionExpired, toClientSession } from '../../../src/utils/session';
 
 describe('isSessionExpired', () => {
 	afterEach(() => {
@@ -101,5 +101,19 @@ describe('isSessionExpired skew cap', () => {
 
 		expect(isSessionExpired({ access_token: 'a', expires_at: now + 30 }, 60)).toBe(true);
 		expect(isSessionExpired({ access_token: 'a', expires_in: 3600, expires_at: now + 30 }, 60)).toBe(true);
+	});
+});
+
+describe('toClientSession', () => {
+	test('drops the refresh token and the ID token, keeping everything else, without mutating the input', () => {
+		const session = { access_token: 'access', refresh_token: 'refresh', id_token: 'id', expires_at: 123, claims: { sub: 'user' } } as SessionData;
+
+		expect(toClientSession(session)).toEqual({ access_token: 'access', expires_at: 123, claims: { sub: 'user' } });
+		expect(session.refresh_token).toBe('refresh');
+	});
+
+	test('returns null for a missing session', () => {
+		expect(toClientSession(null)).toBeNull();
+		expect(toClientSession(undefined)).toBeNull();
 	});
 });

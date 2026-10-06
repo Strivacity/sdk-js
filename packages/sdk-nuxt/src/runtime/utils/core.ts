@@ -53,6 +53,7 @@ export {
 	serializeState,
 	submitLoginForm,
 	timestamp,
+	toClientSession,
 	toSafeRedirect,
 	unflattenObject,
 	verifyIdToken,

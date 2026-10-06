@@ -1,4 +1,6 @@
+import { appendResponseHeader } from 'h3';
 import { defineNuxtRouteMiddleware, useNuxtApp } from '#imports';
+import { flushSetCookies, toClientSession } from '@strivacity/sdk-core/utils';
 import { useSession } from '../composables/use-session';
 
 export default defineNuxtRouteMiddleware(async () => {
@@ -14,10 +16,9 @@ export default defineNuxtRouteMiddleware(async () => {
 
 	const session = await sdk.getSession();
 
-	if (session) {
-		delete session.refresh_token;
-		delete session.id_token;
+	for (const cookie of flushSetCookies(h3Event, new Response(null)).headers.getSetCookie()) {
+		appendResponseHeader(h3Event, 'set-cookie', cookie);
 	}
 
-	useSession().value = session ?? undefined;
+	useSession().value = toClientSession(session) ?? undefined;
 });
