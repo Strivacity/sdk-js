@@ -20,6 +20,9 @@
         "parallel": false
       }
     },
+    "eslint": {
+      "dependsOn": ["^build", "prepare"]
+    },
     "build": {
       "executor": "nx:run-commands",
       "dependsOn": ["sdk-core:build", "prepare"],
