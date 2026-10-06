@@ -1,4 +1,4 @@
-<div data-widget="multiselect" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id">
+<div #container data-widget="multiselect" [attr.data-form-id]="formId()" [attr.data-widget-id]="config().id">
 	@for (option of config().options; track option.label) {
 	<div class="item">
 		@if (option.type === 'group') {
@@ -6,25 +6,27 @@
 		@for (subOption of option.options; track subOption.value) {
 		<div>
 			<input
-				[id]="subOption.value"
+				[id]="config().id + '-' + subOption.value"
 				type="checkbox"
 				[name]="config().id"
 				[value]="subOption.value"
+				[disabled]="isDisabled(subOption.value)"
 				[checked]="selectedValues().includes(subOption.value)"
 				(change)="onChange($event)"
 			/>
-			<label [for]="subOption.value">{{ subOption.label }}</label>
+			<label [for]="config().id + '-' + subOption.value">{{ subOption.label }}</label>
 		</div>
 		} } @else {
 		<input
-			[id]="option.value"
+			[id]="config().id + '-' + option.value"
 			type="checkbox"
 			[name]="config().id"
 			[value]="option.value"
+			[disabled]="isDisabled(option.value)"
 			[checked]="selectedValues().includes(option.value)"
 			(change)="onChange($event)"
 		/>
-		<label [for]="option.value">{{ option.label }}</label>
+		<label [for]="config().id + '-' + option.value">{{ option.label }}</label>
 		}
 	</div>
 	} @if (errorMessage()) {

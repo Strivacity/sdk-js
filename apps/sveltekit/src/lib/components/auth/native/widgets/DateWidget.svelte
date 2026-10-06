@@ -17,7 +17,7 @@
 	let month = $state<string>('');
 	let day = $state<string>('');
 
-	const value = $derived((context.forms[formId]?.[config.id] as string) || config.value);
+	const value = $derived((context.forms[formId]?.[config.id] as string | undefined) ?? config.value);
 	const disabled = $derived(context.loading || !!config.readonly);
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
@@ -51,15 +51,30 @@
 		const field = input.name;
 
 		if (field === 'year') {
-			year = input.value.padStart(4, '0');
+			year = input.value ? input.value.padStart(4, '0') : '';
 		} else if (field === 'month') {
-			month = input.value.padStart(2, '0');
+			month = input.value ? input.value.padStart(2, '0') : '';
 		} else if (field === 'day') {
-			day = input.value.padStart(2, '0');
+			day = input.value ? input.value.padStart(2, '0') : '';
 		}
 
-		const dateValue = `${year}-${month}-${day}`;
-		context.setFormValue(formId, config.id, dateValue);
+		context.setFormValue(formId, config.id, toISODate(year, month, day));
+	}
+
+	// Returns the composed date as YYYY-MM-DD, or null when it is incomplete or not a real calendar date
+	function toISODate(y: string, m: string, d: string): string | null {
+		if (!/^\d{4}$/.test(y) || !/^\d{2}$/.test(m) || !/^\d{2}$/.test(d)) {
+			return null;
+		}
+
+		const date = new Date(0);
+		date.setUTCFullYear(Number(y), Number(m) - 1, Number(d));
+
+		if (date.getUTCFullYear() !== Number(y) || date.getUTCMonth() !== Number(m) - 1 || date.getUTCDate() !== Number(d)) {
+			return null;
+		}
+
+		return `${y}-${m}-${d}`;
 	}
 
 	function onChange(event: Event) {
@@ -68,6 +83,19 @@
 		}
 
 		context.setFormValue(formId, config.id, (event.target as HTMLInputElement).value);
+	}
+
+	async function onFieldsetKeyDown(event: KeyboardEvent) {
+		if (disabled) {
+			return;
+		}
+
+		const input = event.target as HTMLInputElement;
+
+		if (input.reportValidity()) {
+			onFieldsetChange(event);
+			await context.submitForm(formId);
+		}
 	}
 
 	async function onKeyDown(event: KeyboardEvent) {
@@ -102,7 +130,7 @@
 					onchange={onFieldsetChange}
 					onkeydown={(e) => {
 						if (e.key === 'Enter') {
-							void onKeyDown(e);
+							void onFieldsetKeyDown(e);
 						}
 					}}
 				/>

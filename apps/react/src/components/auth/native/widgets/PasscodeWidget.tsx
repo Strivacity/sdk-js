@@ -54,12 +54,12 @@ export default function Passcode({ formId, config }: { formId: string; config: P
 			<input
 				id={config.id}
 				name={config.id}
-				type={config.type}
 				readOnly={disabled}
 				minLength={validator?.length}
 				maxLength={validator?.length}
 				autoComplete="off"
 				inputMode="numeric"
+				type="text"
 				size={1}
 				onInput={onInput}
 				onChange={onChange}

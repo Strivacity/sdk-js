@@ -4,14 +4,22 @@ import { useNativeLoginContext } from '@strivacity/sdk-solid/client';
 
 export default function Select(props: { formId: string; config: SelectWidget }) {
 	const ctx = useNativeLoginContext();
-	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string) || props.config.value);
+	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value);
 	const disabled = createMemo(() => ctx.loading() || !!props.config.readonly);
 	const errorMessage = createMemo(() => ctx.messages()[props.formId]?.[props.config.id]?.text);
 	const validator = createMemo(() => props.config.validator);
 
 	onSettled(() => {
-		if (value()) {
-			ctx.setFormValue(props.formId, props.config.id, value());
+		let initialValue = value();
+
+		// A dropdown always shows an option as selected, so store it to keep the submitted value in sync with the UI
+		if (!initialValue && props.config.render?.type !== 'radio') {
+			const [firstOption] = props.config.options.flatMap((option) => (option.type === 'group' ? option.options : [option]));
+			initialValue = firstOption?.value;
+		}
+
+		if (initialValue) {
+			ctx.setFormValue(props.formId, props.config.id, initialValue);
 		}
 	});
 
@@ -67,22 +75,32 @@ export default function Select(props: { formId: string; config: SelectWidget }) 
 								{option.options.map((subOption) => (
 									<div class="item">
 										<input
-											id={subOption.value}
+											id={`${props.config.id}-${subOption.value}`}
 											type="radio"
 											name={props.config.id}
-											readonly={disabled()}
+											disabled={disabled()}
+											required={validator()?.required}
 											value={subOption.value}
 											checked={subOption.value === value()}
 											onChange={onChange}
 										/>
-										<label for={subOption.value}>{subOption.label}</label>
+										<label for={`${props.config.id}-${subOption.value}`}>{subOption.label}</label>
 									</div>
 								))}
 							</>
 						) : (
 							<div class="item">
-								<input id={option.value} type="radio" name={props.config.id} value={option.value} checked={option.value === value()} onChange={onChange} />
-								<label for={option.value}>{option.label}</label>
+								<input
+									id={`${props.config.id}-${option.value}`}
+									type="radio"
+									name={props.config.id}
+									disabled={disabled()}
+									required={validator()?.required}
+									value={option.value}
+									checked={option.value === value()}
+									onChange={onChange}
+								/>
+								<label for={`${props.config.id}-${option.value}`}>{option.label}</label>
 							</div>
 						)}
 					</div>

@@ -9,7 +9,7 @@ const placeholders = { year: 'YYYY', month: 'MM', day: 'DD' };
 const props = defineProps<{ formId: string; config: DateWidget }>();
 
 const { loading, forms, messages, setFormValue, submitForm } = useNativeLoginContext();
-const value = (forms.value[props.formId]?.[props.config.id] as string) || props.config.value;
+const value = (forms.value[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value;
 const disabled = computed(() => !!loading.value || !!props.config.readonly);
 const errorMessage = computed(() => messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
@@ -51,11 +51,11 @@ function onFieldsetChange(event: Event) {
 	const field = input.name;
 
 	if (field === 'year') {
-		year.value = input.value.padStart(4, '0');
+		year.value = input.value ? input.value.padStart(4, '0') : '';
 	} else if (field === 'month') {
-		month.value = input.value.padStart(2, '0');
+		month.value = input.value ? input.value.padStart(2, '0') : '';
 	} else if (field === 'day') {
-		day.value = input.value.padStart(2, '0');
+		day.value = input.value ? input.value.padStart(2, '0') : '';
 	}
 
 	const value = DateTime.fromObject({
@@ -73,6 +73,19 @@ function onChange(event: Event) {
 	}
 
 	setFormValue(props.formId, props.config.id, (event.target as HTMLInputElement).value);
+}
+
+async function onFieldsetKeyDown(event: KeyboardEvent) {
+	if (disabled.value) {
+		return;
+	}
+
+	const input = event.target as HTMLInputElement;
+
+	if (input.reportValidity()) {
+		onFieldsetChange(event);
+		await submitForm(props.formId);
+	}
 }
 
 async function onKeyDown(event: KeyboardEvent) {
@@ -108,7 +121,7 @@ async function onKeyDown(event: KeyboardEvent) {
 				type="text"
 				size="1"
 				@change="onFieldsetChange($event)"
-				@keydown.enter="onKeyDown($event)"
+				@keydown.enter="onFieldsetKeyDown($event)"
 			/>
 		</div>
 		<input

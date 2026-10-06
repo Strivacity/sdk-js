@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, type OnInit, computed, inject, input } from '@angular/core';
 import type { CheckboxWidget } from '@strivacity/sdk-angular';
 import { StrivacityNativeLoginService } from '@strivacity/sdk-angular';
 
@@ -13,15 +13,21 @@ import { StrivacityNativeLoginService } from '@strivacity/sdk-angular';
 		`,
 	],
 })
-export class CheckboxWidgetComponent {
+export class CheckboxWidgetComponent implements OnInit {
 	readonly nativeLoginService = inject(StrivacityNativeLoginService);
 
 	readonly formId = input.required<string>();
 	readonly config = input.required<CheckboxWidget>();
 
-	readonly disabled = computed(() => this.nativeLoginService.loading());
-	readonly checked = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as boolean) || this.config().value || false);
+	readonly disabled = computed(() => this.nativeLoginService.loading() || !!this.config().readonly);
+	readonly checked = computed(
+		() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as boolean | undefined) ?? this.config().value ?? false,
+	);
 	readonly errorMessage = computed(() => this.nativeLoginService.messages()[this.formId()]?.[this.config().id]?.text);
+
+	ngOnInit(): void {
+		this.nativeLoginService.setFormValue(this.formId(), this.config().id, this.checked());
+	}
 
 	onChange(checked: boolean): void {
 		if (this.disabled()) {

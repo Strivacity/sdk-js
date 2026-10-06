@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SelectWidget } from '@strivacity/sdk-svelte/client';
+	import { onMount } from 'svelte';
 	import { useNativeLoginContext } from '@strivacity/sdk-svelte/client';
 
 	let { formId, config }: { formId: string; config: SelectWidget } = $props();
@@ -9,10 +10,19 @@
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
 
-	// svelte-ignore state_referenced_locally
-	if (config.value) {
-		context.setFormValue(formId, config.id, config.value);
-	}
+	onMount(() => {
+		let value = (context.forms[formId]?.[config.id] as string | undefined) ?? config.value;
+
+		// A dropdown always shows an option as selected, so store it to keep the submitted value in sync with the UI
+		if (!value && config.render?.type !== 'radio') {
+			const [firstOption] = config.options.flatMap((option) => (option.type === 'group' ? option.options : [option]));
+			value = firstOption?.value;
+		}
+
+		if (value) {
+			context.setFormValue(formId, config.id, value);
+		}
+	});
 
 	function onChange(event: Event) {
 		if (disabled) {
@@ -32,27 +42,30 @@
 					{#each option.options as subOption (subOption.value)}
 						<div class="item">
 							<input
-								id={subOption.value}
+								id="{config.id}-{subOption.value}"
 								type="radio"
 								name={config.id}
-								readonly={disabled}
+								disabled={disabled}
+								required={validator?.required}
 								value={subOption.value}
 								checked={subOption.value === context.forms[formId]?.[config.id]}
 								onchange={onChange}
 							/>
-							<label for={subOption.value}>{subOption.label}</label>
+							<label for="{config.id}-{subOption.value}">{subOption.label}</label>
 						</div>
 					{/each}
 				{:else}
 					<input
-						id={option.value}
+						id="{config.id}-{option.value}"
 						type="radio"
 						name={config.id}
+						disabled={disabled}
+						required={validator?.required}
 						value={option.value}
 						checked={option.value === context.forms[formId]?.[config.id]}
 						onchange={onChange}
 					/>
-					<label for={option.value}>{option.label}</label>
+					<label for="{config.id}-{option.value}">{option.label}</label>
 				{/if}
 			</div>
 		{/each}

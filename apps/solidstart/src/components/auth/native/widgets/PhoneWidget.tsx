@@ -4,7 +4,7 @@ import { useNativeLoginContext } from '@strivacity/sdk-solid/client';
 
 export default function Phone(props: { formId: string; config: PhoneWidget }) {
 	const ctx = useNativeLoginContext();
-	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string) || props.config.value);
+	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value);
 	const disabled = createMemo(() => ctx.loading() || !!props.config.readonly);
 	const errorMessage = createMemo(() => ctx.messages()[props.formId]?.[props.config.id]?.text);
 
@@ -47,7 +47,7 @@ export default function Phone(props: { formId: string; config: PhoneWidget }) {
 			<input
 				id={props.config.id}
 				name={props.config.id}
-				type={props.config.type}
+				type="tel"
 				autocomplete="tel"
 				inputmode="tel"
 				readonly={disabled()}

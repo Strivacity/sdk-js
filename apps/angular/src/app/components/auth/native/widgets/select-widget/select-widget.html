@@ -6,26 +6,29 @@
 		@for (subOption of option.options; track subOption.value) {
 		<div class="item">
 			<input
-				[id]="subOption.value"
+				[id]="config().id + '-' + subOption.value"
 				type="radio"
 				[name]="config().id"
-				[readOnly]="disabled()"
+				[disabled]="disabled()"
+				[required]="!!config().validator?.required"
 				[value]="subOption.value"
 				[checked]="subOption.value === formValues()[config().id]"
 				(change)="onChange($event)"
 			/>
-			<label [for]="subOption.value">{{ subOption.label }}</label>
+			<label [for]="config().id + '-' + subOption.value">{{ subOption.label }}</label>
 		</div>
 		} } @else {
 		<input
-			[id]="option.value"
+			[id]="config().id + '-' + option.value"
 			type="radio"
 			[name]="config().id"
+			[disabled]="disabled()"
+			[required]="!!config().validator?.required"
 			[value]="option.value"
 			[checked]="option.value === formValues()[config().id]"
 			(change)="onChange($event)"
 		/>
-		<label [for]="option.value">{{ option.label }}</label>
+		<label [for]="config().id + '-' + option.value">{{ option.label }}</label>
 		}
 	</div>
 	} @if (errorMessage()) {

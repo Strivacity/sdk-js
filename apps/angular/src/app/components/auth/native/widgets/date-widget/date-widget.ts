@@ -27,7 +27,7 @@ export class DateWidgetComponent implements OnInit {
 	readonly placeholders = placeholders;
 	readonly format: Array<'year' | 'month' | 'day'> = ['year', 'month', 'day'];
 
-	readonly value = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as string) || this.config().value);
+	readonly value = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as string | undefined) ?? this.config().value);
 	readonly disabled = computed(() => this.nativeLoginService.loading() || !!this.config().readonly);
 	readonly errorMessage = computed(() => this.nativeLoginService.messages()[this.formId()]?.[this.config().id]?.text);
 
@@ -64,11 +64,11 @@ export class DateWidgetComponent implements OnInit {
 		const field = input.name;
 
 		if (field === 'year') {
-			this.yearSignal.set(input.value.padStart(4, '0'));
+			this.yearSignal.set(input.value ? input.value.padStart(4, '0') : '');
 		} else if (field === 'month') {
-			this.monthSignal.set(input.value.padStart(2, '0'));
+			this.monthSignal.set(input.value ? input.value.padStart(2, '0') : '');
 		} else if (field === 'day') {
-			this.daySignal.set(input.value.padStart(2, '0'));
+			this.daySignal.set(input.value ? input.value.padStart(2, '0') : '');
 		}
 
 		const value = DateTime.fromObject({
@@ -86,6 +86,19 @@ export class DateWidgetComponent implements OnInit {
 		}
 
 		this.nativeLoginService.setFormValue(this.formId(), this.config().id, (event.target as HTMLInputElement).value);
+	}
+
+	async onFieldsetKeyDown(event: Event): Promise<void> {
+		if (this.disabled()) {
+			return;
+		}
+
+		const input = event.target as HTMLInputElement;
+
+		if (input.reportValidity()) {
+			this.onFieldsetChange(event);
+			await this.nativeLoginService.submitForm(this.formId());
+		}
 	}
 
 	async onKeyDown(event: Event): Promise<void> {

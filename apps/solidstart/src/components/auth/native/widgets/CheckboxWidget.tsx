@@ -1,12 +1,16 @@
 import type { CheckboxWidget } from '@strivacity/sdk-solid/client';
-import { createMemo } from 'solid-js';
+import { createMemo, onSettled } from 'solid-js';
 import { useNativeLoginContext } from '@strivacity/sdk-solid/client';
 
 export default function Checkbox(props: { formId: string; config: CheckboxWidget }) {
 	const ctx = useNativeLoginContext();
-	const disabled = createMemo(() => ctx.loading());
-	const checked = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as boolean) || props.config.value || false);
+	const disabled = createMemo(() => ctx.loading() || !!props.config.readonly);
+	const checked = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as boolean | undefined) ?? props.config.value ?? false);
 	const errorMessage = createMemo(() => ctx.messages()[props.formId]?.[props.config.id]?.text);
+
+	onSettled(() => {
+		ctx.setFormValue(props.formId, props.config.id, checked());
+	});
 
 	function onChange(event: Event) {
 		if (disabled()) {

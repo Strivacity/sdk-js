@@ -5,7 +5,7 @@ import { useNativeLoginContext } from '@strivacity/sdk-react';
 
 export default function Phone({ formId, config }: { formId: string; config: PhoneWidget }) {
 	const { loading, forms, messages, setFormValue, submitForm } = useNativeLoginContext();
-	const value = (forms[formId]?.[config.id] as string) || config.value;
+	const value = (forms[formId]?.[config.id] as string | undefined) ?? config.value;
 	const disabled = !!loading || !!config.readonly;
 	const errorMessage = messages[formId]?.[config.id]?.text;
 	const validator = config.validator;
@@ -50,7 +50,7 @@ export default function Phone({ formId, config }: { formId: string; config: Phon
 			<input
 				id={config.id}
 				name={config.id}
-				type={config.type}
+				type="tel"
 				autoComplete="tel"
 				inputMode="tel"
 				readOnly={disabled}

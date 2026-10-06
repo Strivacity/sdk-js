@@ -19,7 +19,7 @@ export class PhoneWidgetComponent implements OnInit {
 	readonly formId = input.required<string>();
 	readonly config = input.required<PhoneWidget>();
 
-	readonly value = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as string) || this.config().value);
+	readonly value = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as string | undefined) ?? this.config().value);
 	readonly disabled = computed(() => this.nativeLoginService.loading() || !!this.config().readonly);
 	readonly errorMessage = computed(() => this.nativeLoginService.messages()[this.formId()]?.[this.config().id]?.text);
 

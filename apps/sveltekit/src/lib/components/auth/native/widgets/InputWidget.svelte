@@ -18,7 +18,7 @@
 			return 'on';
 		}
 	});
-	const value = $derived((context.forms[formId]?.[config.id] as string) ?? config.value ?? '');
+	const value = $derived((context.forms[formId]?.[config.id] as string | undefined) ?? config.value ?? '');
 
 	onMount(() => {
 		// Default value handling

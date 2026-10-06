@@ -9,7 +9,7 @@ const fields: Array<'year' | 'month' | 'day'> = ['year', 'month', 'day'];
 
 export default function DateField(props: { formId: string; config: DateWidget }) {
 	const ctx = useNativeLoginContext();
-	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string) || props.config.value);
+	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value);
 	const disabled = createMemo(() => ctx.loading() || !!props.config.readonly);
 	const errorMessage = createMemo(() => ctx.messages()[props.formId]?.[props.config.id]?.text);
 	const validator = createMemo(() => props.config.validator);
@@ -50,13 +50,13 @@ export default function DateField(props: { formId: string; config: DateWidget })
 		let nextDay = day();
 
 		if (field === 'year') {
-			nextYear = input.value.padStart(4, '0');
+			nextYear = input.value ? input.value.padStart(4, '0') : '';
 			setYear(nextYear);
 		} else if (field === 'month') {
-			nextMonth = input.value.padStart(2, '0');
+			nextMonth = input.value ? input.value.padStart(2, '0') : '';
 			setMonth(nextMonth);
 		} else if (field === 'day') {
-			nextDay = input.value.padStart(2, '0');
+			nextDay = input.value ? input.value.padStart(2, '0') : '';
 			setDay(nextDay);
 		}
 
@@ -71,6 +71,19 @@ export default function DateField(props: { formId: string; config: DateWidget })
 		}
 
 		ctx.setFormValue(props.formId, props.config.id, (event.currentTarget as HTMLInputElement).value);
+	}
+
+	async function onFieldsetKeyDown(event: KeyboardEvent) {
+		if (disabled() || event.key !== 'Enter') {
+			return;
+		}
+
+		const input = event.currentTarget as HTMLInputElement;
+
+		if (input.reportValidity()) {
+			onFieldsetChange(event);
+			await ctx.submitForm(props.formId);
+		}
 	}
 
 	async function onKeyDown(event: KeyboardEvent) {
@@ -105,7 +118,7 @@ export default function DateField(props: { formId: string; config: DateWidget })
 							type="text"
 							size={1}
 							onChange={onFieldsetChange}
-							onKeyDown={onKeyDown}
+							onKeyDown={onFieldsetKeyDown}
 						/>
 					))}
 				</div>
