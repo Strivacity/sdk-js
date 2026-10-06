@@ -207,10 +207,19 @@ describe('useNativeLogin', () => {
 		expect(getLogin().state()).toEqual({});
 	});
 
-	// NOTE: unlike sdk-react's useNativeLogin, the mount effect here has no `.catch()` around `sdk.init()` itself
-	// (only around the `startSession(...)` call chained onto its `.then()`), so an `init()` rejection surfaces as an
-	// unhandled promise rejection instead of being routed to `onError` - not meaningfully testable without asserting
-	// on an unhandled rejection, so it's intentionally left uncovered here.
+	test('routes an sdk.init() rejection to onError', async () => {
+		const sdk = createMockFlow<NativeFlow>();
+		const error = new Error('metadata unavailable');
+		vi.mocked(sdk.init).mockRejectedValue(error);
+		const onError = vi.fn();
+
+		const { getLogin } = mountNativeLogin(sdk, { onError });
+		await flushPromises();
+
+		expect(onError).toHaveBeenCalledWith(error);
+		expect(sdk.startSession).not.toHaveBeenCalled();
+		expect(getLogin().loading()).toBe(false);
+	});
 
 	test('routes a FallbackError from sdk.startSession to onFallback and logs it', async () => {
 		const sdk = createMockFlow<NativeFlow>();

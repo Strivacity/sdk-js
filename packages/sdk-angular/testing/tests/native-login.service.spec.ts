@@ -149,19 +149,17 @@ describe('StrivacityNativeLoginService', () => {
 			expect(login.loading()).toBe(true);
 		});
 
-		test('propagates a rejection from sdk.init() as-is, since only the startSession() call is guarded by the try/catch', async () => {
-			// the AbortError short-circuit in start()'s own catch guards `this.startSession(...)`, not `await this.sdk.init()`
-			// above it - startSession() also swallows every error itself (including AbortError) and reports it through onError,
-			// so that branch is unreachable via a mocked flow; a rejecting init() is the one thing genuinely uncaught here.
+		test('reports a rejection from sdk.init() to onError and stops loading, without starting a session', async () => {
 			const flow = createMockFlow<NativeFlow>();
-			const abortError = new DOMException('The operation was aborted', 'AbortError');
-			vi.mocked(flow.init).mockRejectedValue(abortError);
+			const error = new Error('init failed');
+			vi.mocked(flow.init).mockRejectedValue(error);
 			const onError = vi.fn();
 			const login = configure(flow);
 
-			await expect(login.start({ onError })).rejects.toBe(abortError);
+			await login.start({ onError });
 
-			expect(onError).not.toHaveBeenCalled();
+			expect(onError).toHaveBeenCalledWith(error);
+			expect(login.loading()).toBe(false);
 			expect(flow.startSession).not.toHaveBeenCalled();
 		});
 	});
@@ -293,19 +291,17 @@ describe('StrivacityNativeLoginService', () => {
 		expect(flow.logging!.debug).toHaveBeenCalledWith('Triggering close');
 	});
 
-	test('aborts the in-flight abort controller when the owning injector is destroyed', () => {
+	test('stops tracking the flow state when the owning injector is destroyed', () => {
 		const flow = createMockFlow<NativeFlow>();
 		vi.mocked(initFlow).mockReturnValue(flow);
 		TestBed.configureTestingModule({ providers: [{ provide: STRIVACITY_SDK, useValue: createOptions({ mode: 'native' }) }, StrivacityAuthService] });
 
-		const abortSpy = vi.spyOn(AbortController.prototype, 'abort');
-
 		// both services must live on the component's own injector for fixture.destroy() to fire their DestroyRef callbacks
-		const { destroy } = mountWithProviders([StrivacityAuthService, StrivacityNativeLoginService], () => inject(StrivacityNativeLoginService));
+		const { value: login, destroy } = mountWithProviders([StrivacityAuthService, StrivacityNativeLoginService], () => inject(StrivacityNativeLoginService));
 
 		destroy();
+		login.setFormValue('form1', 'email', 'a@b.c');
 
-		expect(abortSpy).toHaveBeenCalledTimes(1);
-		abortSpy.mockRestore();
+		expect(login.forms()).toEqual({});
 	});
 });

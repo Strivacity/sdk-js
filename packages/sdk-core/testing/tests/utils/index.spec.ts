@@ -28,6 +28,7 @@ test('should export the correct things', () => {
 		'throwHttpError',
 		'createHttpClient',
 		'createDefaultLogging',
+		'createNativeLoginController',
 		'getDefaultFlowState',
 		'defaultOptions',
 		'getDiscoveryDocument',

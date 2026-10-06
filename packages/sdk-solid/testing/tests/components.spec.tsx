@@ -1,8 +1,8 @@
-import type { SDKContext, RedirectFlow, SessionData } from '../../src/client/types';
+import type { SDKContext, RedirectFlow, NativeFlow, SessionData } from '../../src/client/types';
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { initFlow } from '@strivacity/sdk-core';
 import { StyAuthProvider } from '../../src/client/components';
-import { useStrivacity } from '../../src/client/hooks';
+import { useStrivacity, useNativeLogin } from '../../src/client/hooks';
 import { createMockFlow } from '@strivacity/testing/mocks/sdk';
 import { flushPromises } from '@strivacity/testing/mocks/common';
 import { mount, cleanupMounts } from '../dom';
@@ -150,5 +150,30 @@ describe('StyAuthProvider', () => {
 		expect(context().language()).toBe('de-DE');
 		expect(context().accessToken()).toBe('new-token');
 		expect(context().isAuthenticated()).toBe(true);
+	});
+
+	test('useNativeLogin called directly under the provider starts the session with the flow created on mount', async () => {
+		const flow = createMockFlow<NativeFlow>();
+		vi.mocked(flow.startSession).mockResolvedValue({ screen: 'identifier' });
+		vi.mocked(initFlow).mockReturnValue(flow);
+		const onError = vi.fn();
+		let loading!: () => boolean;
+
+		function NativeLoginConsumer() {
+			loading = useNativeLogin({ onError }).loading;
+			return null;
+		}
+
+		mount(() => (
+			<StyAuthProvider options={{ mode: 'native', issuer: 'https://brandtegrity.io', clientId: 'client-id', redirectUri: 'https://brandtegrity.io/callback' }}>
+				<NativeLoginConsumer />
+			</StyAuthProvider>
+		));
+		await flushPromises();
+
+		expect(flow.init).toHaveBeenCalled();
+		expect(flow.startSession).toHaveBeenCalled();
+		expect(onError).not.toHaveBeenCalled();
+		expect(loading()).toBe(false);
 	});
 });

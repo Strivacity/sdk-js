@@ -5,13 +5,12 @@ import type {
 	NativeFlow,
 	EmbeddedFlow,
 	initFlow,
-	NativeParams,
 	NativeFlowState,
 	SessionData,
 	NativeFlowMessage,
 	SDKInitConfig,
+	NativeLoginControllerOptions,
 } from '@strivacity/sdk-core';
-import type { FallbackError } from '@strivacity/sdk-core/utils';
 
 export * from '@strivacity/sdk-core/types';
 
@@ -266,34 +265,7 @@ export type NativeFlowContextValue = {
 	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
 };
 
-export type UseNativeLoginOptions = {
-	/**
-	 * Optional parameters to be passed to the login session request. These parameters will be sent to the `authorizationUri` endpoint.
-	 */
-	params?: NativeParams;
-
-	/**
-	 * Called when the user successfully completes the login flow.
-	 */
-	onLogin?: (session: SessionData) => void | Promise<void>;
-
-	/**
-	 * Called when the fallback flow is triggered, typically due to an error or unsupported environment. Receives a `FallbackError` object containing the hosted URL to redirect to.
-	 */
-	onFallback?: (error: FallbackError) => void | Promise<void>;
-
-	/**
-	 * Called when the login flow is closed by the user.
-	 */
-	onClose?: () => void | Promise<void>;
-
-	/**
-	 * Called when an error occurs during the login session initialization or flow.
-	 */
-	onError?: (error: Error) => void | Promise<void>;
-
-	/**
-	 * Called when a global message is received during the login flow.
-	 */
-	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>;
-};
+/**
+ * Callbacks and parameters of the native login flow. See `NativeLoginControllerOptions` in `@strivacity/sdk-core`.
+ */
+export type UseNativeLoginOptions = NativeLoginControllerOptions;

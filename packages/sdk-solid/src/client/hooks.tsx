@@ -1,20 +1,7 @@
 import type { Component } from 'solid-js';
-import type {
-	NativeFlowState,
-	NativeFlowMessage,
-	RedirectFlow,
-	PopupFlow,
-	EmbeddedFlow,
-	NativeFlow,
-	NativeParams,
-	LoginContext,
-	SDKContext,
-	UseNativeLoginOptions,
-	WithAuthGuardOptions,
-} from './types';
-import { createContext, createEffect, createSignal, onSettled, useContext, Show } from 'solid-js';
-import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
-import { FallbackError } from '../errors';
+import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, LoginContext, SDKContext, UseNativeLoginOptions, WithAuthGuardOptions } from './types';
+import { createContext, createEffect, createMemo, createSignal, onCleanup, onSettled, useContext, Show } from 'solid-js';
+import { createNativeLoginController } from '@strivacity/sdk-core/utils';
 
 /**
  * Context carrying the Strivacity SDK instance and reactive session state. Scope it to your app with `<STRIVACITY_SDK value={...}>`.
@@ -55,175 +42,28 @@ export const useStrivacity = <
  * @returns {LoginContext} The native login context.
  */
 export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContext {
-	const { sdk } = useStrivacity<NativeFlow>();
+	const ctx = useStrivacity<NativeFlow>();
+	const controller = createNativeLoginController(() => ctx.sdk, options);
+	const [snapshot, setSnapshot] = createSignal(controller.getSnapshot());
 
-	const [loading, setLoading] = createSignal<boolean>(true);
-	const [forms, setForms] = createSignal<Record<string, Record<string, unknown>>>({});
-	const [messages, setMessages] = createSignal<Record<string, Record<string, NativeFlowMessage>>>({});
-	const [state, setState] = createSignal<Partial<NativeFlowState>>({});
+	const loading = createMemo(() => snapshot().loading);
+	const forms = createMemo(() => snapshot().forms);
+	const messages = createMemo(() => snapshot().messages);
+	const state = createMemo(() => snapshot().state);
 
-	onSettled(() => {
-		const abortController = new AbortController();
-
-		// eslint-disable-next-line @typescript-eslint/no-floating-promises
-		sdk.init().then(() =>
-			startSession(options.params).catch((error) => {
-				if (error instanceof DOMException && error.name === 'AbortError') {
-					return;
-				}
-
-				sdk.logging?.error('Error fetching authorization URI', error);
-				void options.onError?.(error as Error);
-				setLoading(false);
-			}),
-		);
-
-		return () => {
-			abortController.abort();
-		};
-	});
-
-	function handleResponse(nextState: Partial<NativeFlowState>): void {
-		if (sdk.session && !isSessionExpired(sdk.session)) {
-			return void options.onLogin?.(sdk.session);
-		}
-
-		const currentState = state();
-		const newState: NativeFlowState = {
-			hostedUrl: nextState?.hostedUrl ?? currentState.hostedUrl,
-			finalizeUrl: nextState?.finalizeUrl ?? currentState.finalizeUrl,
-			screen: nextState?.screen ?? currentState.screen,
-			forms: nextState?.forms ?? currentState.forms,
-			layout: nextState?.layout ?? currentState.layout,
-			messages: nextState?.messages ?? {},
-			branding: nextState?.branding ?? currentState.branding,
-		};
-
-		const hasScreenChanged = newState.screen !== currentState.screen;
-
-		if (hasScreenChanged) {
-			const nextForms: Record<string, Record<string, unknown>> = {};
-			const nextMessages: Record<string, Record<string, NativeFlowMessage>> = {};
-
-			for (const form of newState.forms ?? []) {
-				nextForms[form.id] = {};
-				nextMessages[form.id] = {};
-			}
-
-			setForms(nextForms);
-			setMessages(nextMessages);
-		} else {
-			sdk.logging?.info(`Updating screen: ${newState.screen}`);
-		}
-
-		const nextMessageMap = { ...messages() };
-
-		for (const formId of Object.keys(newState.messages ?? {})) {
-			if (formId === 'global') {
-				// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-				void options.onGlobalMessage?.(newState.messages?.global!);
-			} else {
-				nextMessageMap[formId] = newState.messages![formId] ?? {};
-			}
-		}
-
-		setMessages(nextMessageMap);
-		setState(newState);
-
-		if (!newState.finalizeUrl) {
-			setLoading(false);
-		}
-	}
-
-	async function startSession(loginParams: NativeParams = {}): Promise<void> {
-		try {
-			setLoading(true);
-
-			const nextState = await sdk.startSession(loginParams);
-
-			if (nextState) {
-				handleResponse(nextState);
-			}
-		} catch (error) {
-			if (error instanceof FallbackError) {
-				sdk.logging?.error('Fallback error occurred', error);
-				void options.onFallback?.(error);
-			} else {
-				sdk.logging?.error('Error starting session', error);
-				void options.onError?.(error as Error);
-			}
-		}
-	}
-
-	function triggerFallback(message?: string): void {
-		sdk.logging?.warn(message ? `Triggering fallback due to: ${message}` : 'Triggering fallback');
-
-		const hostedUrl = state().hostedUrl;
-
-		if (!hostedUrl) {
-			const error = new Error('No hosted URL provided');
-			sdk.logging?.error('Fallback error', error);
-			throw error;
-		}
-
-		void options.onFallback?.(new FallbackError(new URL(hostedUrl)));
-	}
-
-	function triggerClose(): void {
-		sdk.logging?.debug('Triggering close');
-		void options.onClose?.();
-	}
-
-	async function submitForm(formId: string, customBody?: Record<string, unknown>): Promise<void> {
-		try {
-			setLoading(true);
-
-			const nextState = await sdk.submitForm(formId, customBody ?? unflattenObject(forms()[formId] ?? {}));
-
-			if (nextState) {
-				handleResponse(nextState);
-			}
-		} catch (error) {
-			if (error instanceof FallbackError) {
-				sdk.logging?.error('Fallback error occurred', error);
-				void options.onFallback?.(error);
-			} else {
-				sdk.logging?.error('Error submitting form', error);
-				void options.onError?.(error as Error);
-			}
-		}
-	}
-
-	function setFormValue(formId: string, widgetId: string, value: unknown): void {
-		setForms({
-			...forms(),
-			[formId]: {
-				...(forms()[formId] ?? {}),
-				[widgetId]: value === '' ? null : value,
-			},
-		});
-	}
-
-	function setMessage(formId: string, widgetId: string, value: NativeFlowMessage): void {
-		setMessages({
-			...messages(),
-			[formId]: {
-				...(messages()[formId] ?? {}),
-				[widgetId]: value,
-			},
-		});
-	}
+	onSettled(() => void controller.start());
+	onCleanup(controller.subscribe((next) => setSnapshot(() => next)));
 
 	return {
 		loading,
 		forms,
 		messages,
 		state,
-		triggerFallback,
-		triggerClose,
-		submitForm,
-		setFormValue,
-		setMessage,
+		triggerFallback: controller.triggerFallback,
+		triggerClose: controller.triggerClose,
+		submitForm: controller.submitForm,
+		setFormValue: controller.setFormValue,
+		setMessage: controller.setMessage,
 	};
 }
 

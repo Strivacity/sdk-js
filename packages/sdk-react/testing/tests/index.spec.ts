@@ -33,6 +33,7 @@ test('should export the correct things', () => {
 		'buildEndSessionUrl',
 		'createDefaultLogging',
 		'createHttpClient',
+		'createNativeLoginController',
 		'createSession',
 		'createState',
 		'createWebAuthnCredential',

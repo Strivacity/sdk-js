@@ -316,6 +316,21 @@ describe('useNativeLogin', () => {
 			expect(sdk.submitForm).toHaveBeenCalledWith('form1', { raw: true });
 		});
 
+		test('submits a value set immediately beforehand in the same handler, without waiting for a re-render', async () => {
+			const sdk = createMockFlow<NativeFlow>();
+			vi.mocked(sdk.submitForm).mockResolvedValue({ screen: 'done' });
+
+			const { getLogin } = mountNativeLogin(sdk);
+			await flush();
+
+			await act(async () => {
+				getLogin().setFormValue('form1', 'email', 'user@example.com');
+				await getLogin().submitForm('form1');
+			});
+
+			expect(sdk.submitForm).toHaveBeenCalledWith('form1', { email: 'user@example.com' });
+		});
+
 		test('routes a FallbackError to onFallback', async () => {
 			const sdk = createMockFlow<NativeFlow>();
 			const fallbackError = new FallbackError(new URL('https://brandtegrity.io/hosted'));

@@ -17,6 +17,7 @@ export {
 	buildCookieString,
 	buildEndSessionUrl,
 	createDefaultLogging,
+	createNativeLoginController,
 	createHttpClient,
 	createSession,
 	createState,

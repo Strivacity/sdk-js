@@ -6,12 +6,10 @@ import type {
 	NativeFlow,
 	EmbeddedFlow,
 	initFlow,
-	NativeParams,
 	NativeFlowState,
-	SessionData,
 	NativeFlowMessage,
+	NativeLoginControllerOptions,
 } from '@strivacity/sdk-core';
-import type { FallbackError } from '@strivacity/sdk-core/utils';
 
 export * from '@strivacity/sdk-core/types';
 
@@ -186,35 +184,7 @@ export type LoginContext = {
 	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
 };
 
-export type UseNativeLoginOptions = {
-	/**
-	 * Optional parameters to be passed to the login session request. These parameters will be sent to the `authorizationUri` endpoint.
-	 */
-	params?: NativeParams;
-
-	/**
-	 * A render function called when the user successfully completes the login flow.
-	 * This can be used to perform any necessary actions after a successful login, such as redirecting the user or updating the application state. Defaults to `null`.
-	 */
-	onLogin?: (session: SessionData) => void | Promise<void>;
-
-	/**
-	 * Called when the fallback flow is triggered, typically due to an error or unsupported environment. Receives a `FallbackError` object containing the hosted URL to redirect to.
-	 */
-	onFallback?: (error: FallbackError) => void | Promise<void>;
-
-	/**
-	 * Called when the login flow is closed by the user. This can be used to perform any necessary cleanup or state updates in the application. Defaults to `null`.
-	 */
-	onClose?: () => void | Promise<void>;
-
-	/**
-	 * Called when an error occurs during the login session initialization or flow. Receives an `Error` object describing the issue.
-	 */
-	onError?: (error: Error) => void | Promise<void>;
-
-	/**
-	 * Called when a global message is received during the login flow. This can be used to display messages to the user or log them for debugging purposes.
-	 */
-	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>;
-};
+/**
+ * Callbacks and parameters of the native login flow. See `NativeLoginControllerOptions` in `@strivacity/sdk-core`.
+ */
+export type UseNativeLoginOptions = NativeLoginControllerOptions;

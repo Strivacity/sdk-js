@@ -130,9 +130,9 @@ describe('createServerSDK', () => {
 			installBase({ handler: vi.fn().mockResolvedValue(null) });
 			const event = requestEvent();
 			vi.mocked(getRequestEvent).mockReturnValue(event);
-			const next = vi.fn().mockImplementation(async () => {
+			const next = vi.fn().mockImplementation(() => {
 				pushSetCookie(event, 'sty.session=rotated; Path=/');
-				return new Response('next');
+				return Promise.resolve(new Response('next'));
 			});
 			const sdk = createServerSDK(initConfig());
 

@@ -6,6 +6,7 @@ export * from './dom';
 export * from './errors';
 export * from './httpClient';
 export * from './logging';
+export * from './native-login';
 export * from './oidc';
 export * from './server';
 export * from './session';

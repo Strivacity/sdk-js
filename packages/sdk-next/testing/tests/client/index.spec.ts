@@ -35,6 +35,7 @@ test('should export the correct things', () => {
 		'createBaseFlow',
 		'createCacheAPIStorage',
 		'createDefaultLogging',
+		'createNativeLoginController',
 		'createEmbeddedFlow',
 		'createEncryptedCookieStorage',
 		'createHttpClient',
