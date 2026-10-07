@@ -40,17 +40,12 @@ export const useNativeLoginContext = (): LoginContext => {
  *
  * @template T - The type of the Strivacity SDK flow (RedirectFlow, PopupFlow, NativeFlow, or EmbeddedFlow).
  * @returns {SDKContext<T>} The Strivacity SDK context.
+ * @throws {Error} Solid's context-not-found error when called outside of a `StyAuthProvider` (the context has no default value).
  */
 export const useStrivacity = <
 	T extends RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow = RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow,
 >(): SDKContext<T> => {
-	const context = useContext(STRIVACITY_SDK);
-
-	if (!context) {
-		throw new Error('Missing SDK context');
-	}
-
-	return context as SDKContext<T>;
+	return useContext(STRIVACITY_SDK) as SDKContext<T>;
 };
 
 /**
