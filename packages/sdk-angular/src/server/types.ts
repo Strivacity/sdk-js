@@ -16,12 +16,12 @@ export type AngularServerStorage = SDKStorage<
 export type AngularServerSDKOptions<
 	Storage extends AngularServerStorage = AngularServerStorage,
 	StateStorage extends SDKStorage = SDKStorage,
-> = ServerSDKOptions<Storage, StateStorage>;
+> = ServerSDKOptions<AngularServerRequest | undefined, Storage, StateStorage>;
 
 export type AngularServerSDKInitConfig<
 	Storage extends AngularServerStorage = AngularServerStorage,
 	StateStorage extends SDKStorage = SDKStorage,
-> = ServerSDKInitConfig & Partial<AngularServerSDKOptions<Storage, StateStorage>>;
+> = ServerSDKInitConfig<AngularServerRequest | undefined> & Partial<AngularServerSDKOptions<Storage, StateStorage>>;
 
 export type AngularServerSDK<TEvent extends AngularServerRequest | undefined = AngularServerRequest | undefined> = BaseServerSDK<TEvent> & {
 	/**

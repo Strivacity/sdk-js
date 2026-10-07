@@ -33,6 +33,11 @@ export function createServerSDK(initConfig: SolidServerSDKInitConfig): SolidServ
 		},
 		middleware: async (request, next) => {
 			const event = resolveEvent();
+
+			if (!event) {
+				base.options.logging?.warn('No request event available, auth routes are not handled for this request');
+			}
+
 			const response = event ? await base.handler(event) : null;
 
 			return response ?? next(request);

@@ -14,6 +14,7 @@ export type SolidServerStorage = SDKStorage<
 };
 
 export type SolidServerSDKOptions<Storage extends SolidServerStorage = SolidServerStorage, StateStorage extends SDKStorage = SDKStorage> = ServerSDKOptions<
+	RequestEvent | undefined,
 	Storage,
 	StateStorage
 >;
@@ -21,12 +22,13 @@ export type SolidServerSDKOptions<Storage extends SolidServerStorage = SolidServ
 export type SolidServerSDKInitConfig<
 	Storage extends SolidServerStorage = SolidServerStorage,
 	StateStorage extends SDKStorage = SDKStorage,
-> = ServerSDKInitConfig & Partial<SolidServerSDKOptions<Storage, StateStorage>>;
+> = ServerSDKInitConfig<RequestEvent | undefined> & Partial<SolidServerSDKOptions<Storage, StateStorage>>;
 
 export type SolidServerSDK<TEvent extends RequestEvent | undefined = RequestEvent | undefined> = BaseServerSDK<TEvent> & {
 	/**
 	 * A `FetchMiddleware` that intercepts and serves the `authUrlPrefix` auth routes (login, register, callback, refresh, revoke, entry, logout, backchannel-logout), calling `next()` for everything else.
 	 * Wire it up via `solid({ start: { middleware: './src/middleware.ts' } })` in `vite.config.ts` (default-export it from that module, optionally composed with your own middleware).
+	 * The auth routes are served from the ambient request event (`getRequestEvent()`), not from the `request` argument, so place it before any middleware that replaces the request via `next(newRequest)`.
 	 */
 	middleware: FetchMiddleware;
 };

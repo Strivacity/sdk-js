@@ -91,11 +91,14 @@ export type NextServerStorage = SDKStorage<
 };
 
 export type NextServerSDKOptions<Storage extends NextServerStorage = NextServerStorage, StateStorage extends SDKStorage = SDKStorage> = ServerSDKOptions<
+	NextRequest | Request | PagesRouterRequest | undefined,
 	Storage,
 	StateStorage
 >;
 
-export type NextServerSDKInitConfig<Storage extends NextServerStorage = NextServerStorage, StateStorage extends SDKStorage = SDKStorage> = ServerSDKInitConfig &
+export type NextServerSDKInitConfig<Storage extends NextServerStorage = NextServerStorage, StateStorage extends SDKStorage = SDKStorage> = ServerSDKInitConfig<
+	NextRequest | Request | PagesRouterRequest | undefined
+> &
 	Partial<NextServerSDKOptions<Storage, StateStorage>>;
 
 export type NextServerSDK<TEvent extends NextRequest | Request | PagesRouterRequest | undefined = NextRequest | Request | PagesRouterRequest | undefined> =
