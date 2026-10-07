@@ -274,6 +274,18 @@ describe('createSessionIdCookieStorage', () => {
 		expect(header).toContain('Expires=Thu, 01 Jan 1970');
 	});
 
+	test('should expire the cookie immediately even when a max age is configured', async () => {
+		const storage = createSessionIdCookieStorage(createSessionAdapter(), createUnderlyingStorage(), { defaultCookieOptions: { maxAge: 3600 } });
+		const event = createMockEvent({ key: 'session-id' });
+
+		await storage.delete('key', event);
+
+		const [header] = flushSetCookies(event, new Response()).headers.getSetCookie();
+
+		expect(header).toContain('Max-Age=0');
+		expect(header).not.toContain('Max-Age=3600');
+	});
+
 	test('should apply the default and custom cookie attributes', async () => {
 		const storage = createSessionIdCookieStorage(createSessionAdapter(), createUnderlyingStorage(), {
 			defaultCookieOptions: { sameSite: 'strict', path: '/custom' },

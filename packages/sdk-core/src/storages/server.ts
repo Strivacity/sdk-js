@@ -129,7 +129,7 @@ export function createSessionIdCookieStorage<TEvent = unknown>(
 				await storage.delete(id);
 			}
 
-			pushSetCookie(event, serializeCookie(key, '', { ...defaultCookieOptions, expires: new Date(0) }));
+			pushSetCookie(event, serializeCookie(key, '', { ...defaultCookieOptions, maxAge: 0, expires: new Date(0) }));
 		},
 		async deleteByLogoutToken(token) {
 			await storage.deleteByLogoutToken?.(token);
