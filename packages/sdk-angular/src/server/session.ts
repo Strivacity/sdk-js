@@ -6,7 +6,7 @@ export const SESSION_TRANSFER_KEY = makeStateKey<SessionData | null>('sty.sessio
 
 /**
  * Loads the current session from the encrypted cookie storage (using Angular's `REQUEST` token) before the app
- * renders, and hands it over to the client through `TransferState`, so `StrivacityAuthService` can hydrate without
+ * renders, and hands it over to the client through `TransferState` (without the refresh and ID tokens, which stay server-side), so `StrivacityAuthService` can hydrate without
  * an extra round-trip or a loading flash.
  *
  * Add this to the server-only `ApplicationConfig` (e.g. `app.config.server.ts`), alongside `provideServerRendering()`.
@@ -24,6 +24,11 @@ export function provideStrivacityServerSession(serverSdk: AngularServerSDK | und
 
 		const transferState = inject(TransferState);
 		const session = await serverSdk.getSession(request);
+
+		if (session) {
+			delete session.refresh_token;
+			delete session.id_token;
+		}
 
 		transferState.set(SESSION_TRANSFER_KEY, session);
 	});

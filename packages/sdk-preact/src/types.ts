@@ -275,5 +275,5 @@ export type WithAuthGuardOptions = {
 	/**
 	 * A component to render while the authentication state is being determined. Defaults to `null`.
 	 */
-	onLoading?: () => React.ReactNode;
+	onLoading?: () => ComponentChildren;
 };

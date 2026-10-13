@@ -24,12 +24,12 @@ import {
 	toSafeRedirect,
 	getServerSDKOptions,
 	BACKCHANNEL_LOGOUT_EVENT,
+	RETURN_TO_COOKIE,
 } from '../utils/server';
 
-export const COOKIE_CONTEXT = 'strivacity-session-v1';
-export const COOKIE_CHUNK_SIZE = 3900;
-export const DISALLOWED_PROXY_HEADERS = new Set(['transfer-encoding', 'connection', 'keep-alive', 'content-encoding']);
-export const RETURN_TO_COOKIE = 'sty.returnTo';
+export { COOKIE_CONTEXT, COOKIE_CHUNK_SIZE } from '../storages/server';
+export { DISALLOWED_PROXY_HEADERS, RETURN_TO_COOKIE } from '../utils/server';
+
 export const BACKCHANNEL_LOGOUT_TOKEN_MAX_AGE_SECONDS = 120;
 
 /**
@@ -382,10 +382,13 @@ export function createBaseServerSDK<
 
 	async function handleLogout(event: TEvent): Promise<Response> {
 		const request = await adapter.toRequest(event);
-		const origin = new URL(request.url).origin;
+		const requestUrl = new URL(request.url);
+		const origin = requestUrl.origin;
+		const returnTo = requestUrl.searchParams.get('returnTo');
+		const safeReturnTo = toSafeRedirect(returnTo, origin);
 
 		try {
-			const logoutUrl = await logout(new URL(options.postLogoutRedirectUri, origin), event);
+			const logoutUrl = await logout(new URL(safeReturnTo ?? options.postLogoutRedirectUri, origin), event);
 			return flushSetCookies(event, await redirect(logoutUrl, 302, event));
 		} catch (error) {
 			return flushSetCookies(event, await errorRedirect(origin, error, event));

@@ -4,3 +4,11 @@
 export function useRuntimeConfig() {
 	return { public: { strivacity: {} } };
 }
+
+export function tryUseNuxtApp() {
+	return null;
+}
+
+export function defineNuxtPlugin<T>(plugin: T) {
+	return plugin;
+}

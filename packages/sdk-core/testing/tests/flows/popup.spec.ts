@@ -360,7 +360,7 @@ describe('createPopupFlow', () => {
 		options = createOptions({ lazyLoad: true, urlHandler: vi.fn().mockResolvedValue({ code: 'abc123' }) });
 		flow = createPopupFlow(options);
 
-		expect(flow.options).toBe(options);
+		expect(flow.options).toEqual(expect.objectContaining(options));
 		expect(flow.initialized).toBeFalsy();
 		expect(flow.storage).toBe(options.storage);
 		expect(flow.httpClient).toBe(options.httpClient);

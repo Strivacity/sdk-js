@@ -28,9 +28,7 @@ function mountNativeLogin(sdk: NativeFlow, options: UseNativeLoginOptions = {}) 
 }
 
 describe('useStrivacity', () => {
-	// STRIVACITY_SDK is created via createContext<...>() with no default value, so Solid's own useContext() throws
-	// before ever returning undefined when there's no provider in scope - useStrivacity's own `if (!context) throw
-	// new Error('Missing SDK context')` guard is unreachable dead code here; the thrown error is Solid's, not the app's.
+	// STRIVACITY_SDK has no default value, so Solid's own useContext() throws when there is no provider in scope.
 	test('throws when used outside of a Strivacity SDK provider', () => {
 		function Consumer() {
 			useStrivacity();

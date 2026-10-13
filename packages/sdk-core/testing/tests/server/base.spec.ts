@@ -17,6 +17,7 @@ import { buildLogoutTokenClaims, exportSigningKey, generateRSAKeyPair, signLogou
 import type { ServerAdapter } from '../../../src/types';
 import { BACKCHANNEL_LOGOUT_EVENT, timestamp, ConfigurationError, ProtocolError, serializeSession } from '../../../src/utils';
 import { createBaseServerSDK } from '../../../src/server/base';
+import { createSessionIdCookieStorage } from '../../../src/storages/server';
 
 describe('createBaseServerSDK', () => {
 	describe('init', () => {
@@ -560,6 +561,27 @@ describe('createBaseServerSDK', () => {
 			expect(location.searchParams.get('id_token_hint')).toBe('id-token');
 		});
 
+		test('should use a same-origin returnTo as the post-logout redirect', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+
+			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout?returnTo=%2Fgoodbye'));
+
+			const location = new URL(response.headers.get('location') as string);
+			expect(location.searchParams.get('post_logout_redirect_uri')).toBe('https://brandtegrity.io/goodbye');
+		});
+
+		test('should ignore a cross-origin returnTo and fall back to postLogoutRedirectUri', async () => {
+			const { sdk, storage, options } = createServerSDK();
+			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+
+			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout?returnTo=https%3A%2F%2Fevil.example.com'));
+
+			const location = new URL(response.headers.get('location') as string);
+			expect(response.status).toBe(302);
+			expect(location.searchParams.get('post_logout_redirect_uri')).toBe(new URL(options.postLogoutRedirectUri, 'https://brandtegrity.io').toString());
+		});
+
 		test('should redirect to /error with an "Error without category" shape when cleanup fails', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
@@ -589,6 +611,14 @@ describe('createBaseServerSDK', () => {
 
 		test('should return 501 when the storage does not support deleteByLogoutToken', async () => {
 			const { sdk } = createServerSDK();
+
+			const response = await sdk.handleBackChannelLogout(getPostLogoutTokenRequest('token'));
+
+			expect(response.status).toBe(501);
+		});
+
+		test('should return 501 for a session-id cookie storage whose store does not support deleteByLogoutToken', async () => {
+			const { sdk } = createServerSDK({ storage: createSessionIdCookieStorage(serverAdapter, createMockStorage()) });
 
 			const response = await sdk.handleBackChannelLogout(getPostLogoutTokenRequest('token'));
 

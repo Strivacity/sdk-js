@@ -24,6 +24,20 @@ describe('provideStrivacityServerSession', () => {
 		expect(TestBed.inject(TransferState).get(SESSION_TRANSFER_KEY, undefined)).toEqual(session);
 	});
 
+	test('never transfers the refresh token or the ID token to the client', async () => {
+		const request = new Request('https://brandtegrity.io');
+		const session = { access_token: 'access-token', refresh_token: 'refresh-token', id_token: 'id-token', expires_at: 123, claims: { sub: 'user' } };
+		const getSession = vi.fn().mockResolvedValue(session);
+
+		await configure(request, { getSession } as unknown as AngularServerSDK);
+
+		expect(TestBed.inject(TransferState).get(SESSION_TRANSFER_KEY, undefined)).toEqual({
+			access_token: 'access-token',
+			expires_at: 123,
+			claims: { sub: 'user' },
+		});
+	});
+
 	test('transfers null when the server sdk finds no session for the request', async () => {
 		const request = new Request('https://brandtegrity.io');
 		const getSession = vi.fn().mockResolvedValue(null);

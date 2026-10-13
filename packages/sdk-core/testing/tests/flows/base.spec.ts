@@ -237,7 +237,7 @@ describe('createBaseFlow', () => {
 
 		test('should attempt a refresh when the access token expired and autoRefresh is enabled', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 });
 
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
@@ -251,7 +251,7 @@ describe('createBaseFlow', () => {
 
 		test('should return false when the refresh fails', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 });
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => new HttpResponse(null, { status: 400 })));
 
@@ -260,7 +260,7 @@ describe('createBaseFlow', () => {
 
 		test('should not attempt a refresh when autoRefresh is disabled', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 });
 
 			await expect(base.checkAuthentication({ autoRefresh: false })).resolves.toBe(false);
 		});
@@ -524,9 +524,112 @@ describe('createBaseFlow', () => {
 	});
 
 	describe('refresh', () => {
+		test('runs inside the session Web Lock shared by the tabs of the origin', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession();
+			const request = vi.fn((_name: string, callback: () => Promise<void>) => callback());
+			vi.stubGlobal('navigator', { ...globalThis.navigator, locks: { request } });
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () =>
+					HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
+				),
+			);
+
+			try {
+				await base.refresh();
+			} finally {
+				vi.unstubAllGlobals();
+			}
+
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(flowState.session?.access_token).toBe('new-access-token');
+		});
+
+		test('does not use the Web Lock outside the browser', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession();
+			const request = vi.fn((_name: string, callback: () => Promise<void>) => callback());
+			vi.stubGlobal('navigator', { ...globalThis.navigator, locks: { request } });
+			vi.stubGlobal('window', undefined);
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () =>
+					HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
+				),
+			);
+
+			try {
+				await base.refresh();
+			} finally {
+				vi.unstubAllGlobals();
+			}
+
+			expect(request).not.toHaveBeenCalled();
+			expect(flowState.session?.access_token).toBe('new-access-token');
+		});
+
+		test('does not resurrect a session another tab revoked or logged out while this one waited for the lock', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ expires_at: 0 }, null);
+			let tokenRequests = 0;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () => {
+					tokenRequests++;
+					return HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 });
+				}),
+			);
+			const clearedCallback = vi.fn();
+			base.subscribeToEvent('sessionCleared', clearedCallback);
+
+			await base.refresh();
+
+			expect(tokenRequests).toBe(0);
+			expect(flowState.session).toBeNull();
+			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+			expect(clearedCallback).toHaveBeenCalledTimes(1);
+		});
+
+		test('uses the session another tab already refreshed instead of sending the old refresh token again', async () => {
+			flowState.initialized = true;
+			flowState.session = { ...getMockStorage(options.storage).generateSession(undefined, null), expires_at: 0 };
+			const refreshedByOtherTab = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token' }, options.storageTokenName);
+			let tokenRequests = 0;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', () => {
+					tokenRequests++;
+					return HttpResponse.json({ access_token: 'new-access-token', token_type: 'Bearer', expires_in: 3600 });
+				}),
+			);
+			const callback = vi.fn();
+			base.subscribeToEvent('tokenRefreshed', callback);
+
+			await base.refresh();
+
+			expect(tokenRequests).toBe(0);
+			expect(flowState.session?.access_token).toBe(refreshedByOtherTab.access_token);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ accessToken: refreshedByOtherTab.access_token }));
+		});
+
+		test('refreshes with the rotated refresh token of another tab when its session has expired too', async () => {
+			flowState.initialized = true;
+			flowState.session = { ...getMockStorage(options.storage).generateSession(undefined, null), expires_at: 0 };
+			const stored = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token', expires_at: 0 }, options.storageTokenName);
+			let sentRefreshToken: string | null = null;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/token', async ({ request }) => {
+					sentRefreshToken = new URLSearchParams(await request.text()).get('refresh_token');
+					return HttpResponse.json({ access_token: 'new-access-token', token_type: 'Bearer', expires_in: 3600 });
+				}),
+			);
+
+			await base.refresh();
+
+			expect(sentRefreshToken).toBe(stored.refresh_token);
+			expect(flowState.session?.access_token).toBe('new-access-token');
+		});
+
 		test('should refresh the session and dispatch tokenRefreshed', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
 					HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
@@ -549,7 +652,7 @@ describe('createBaseFlow', () => {
 
 		test('should clean up the session and dispatch tokenRefreshFailed on failure', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => new HttpResponse(null, { status: 400 })));
 			const callback = vi.fn();
 			base.subscribeToEvent('tokenRefreshFailed', callback);
@@ -562,7 +665,7 @@ describe('createBaseFlow', () => {
 
 		test('should preserve the session and not clean it up when the refresh fails with a recoverable ServerError', async () => {
 			flowState.initialized = true;
-			const session = getMockStorage(options.storage).generateSession(undefined, null);
+			const session = getMockStorage(options.storage).generateSession();
 			flowState.session = session;
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => new HttpResponse(null, { status: 500 })));
 			const callback = vi.fn();
@@ -576,7 +679,7 @@ describe('createBaseFlow', () => {
 
 		test('should preserve the session and not clean it up when the refresh fails with a recoverable NetworkError', async () => {
 			flowState.initialized = true;
-			const session = getMockStorage(options.storage).generateSession(undefined, null);
+			const session = getMockStorage(options.storage).generateSession();
 			flowState.session = session;
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.error()));
 
@@ -587,7 +690,7 @@ describe('createBaseFlow', () => {
 
 		test('should dedupe concurrent refresh calls', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			let requestCount = 0;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () => {
@@ -603,7 +706,7 @@ describe('createBaseFlow', () => {
 
 		test('should clean up the session and throw an OidcError when the refresh response body contains an error', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ error: 'invalid_grant', error_description: 'Refresh token revoked' })),
 			);
@@ -615,7 +718,7 @@ describe('createBaseFlow', () => {
 
 		test('should throw a ProtocolError when response body is not valid JSON', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.text('<html>not json</html>')));
 
 			await expect(base.refresh()).rejects.toThrow(new ProtocolError('Non-JSON response from token endpoint'));
@@ -623,7 +726,7 @@ describe('createBaseFlow', () => {
 
 		test('should verify the ID token and populate claims when the refreshed session includes an id_token', async () => {
 			flowState.initialized = true;
-			const session = getMockStorage(options.storage).generateSession(undefined, null);
+			const session = getMockStorage(options.storage).generateSession();
 			flowState.session = session;
 			const idToken = buildIdToken({
 				iss: 'https://brandtegrity.io/',
@@ -645,7 +748,7 @@ describe('createBaseFlow', () => {
 
 		test("rejects (and ends the session, per the SDK's fail-closed refresh policy) when the refreshed id_token has a different sub", async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession(undefined, null);
+			flowState.session = getMockStorage(options.storage).generateSession();
 			const idToken = buildIdToken({
 				iss: 'https://brandtegrity.io/',
 				sub: 'a-completely-different-user',
@@ -666,7 +769,7 @@ describe('createBaseFlow', () => {
 
 		test('the old refresh token is gone from raw storage once rotation completes, never reusable', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'old-refresh-token' }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'old-refresh-token' });
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
 					HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
@@ -681,7 +784,7 @@ describe('createBaseFlow', () => {
 
 		test('never requests a scope beyond the original grant', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ scope: 'openid profile' }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ scope: 'openid profile' });
 			let capturedBody: URLSearchParams | undefined;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', async ({ request }) => {
@@ -707,6 +810,42 @@ describe('createBaseFlow', () => {
 	});
 
 	describe('revoke', () => {
+		test('takes and cleans up the session inside the session Web Lock', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession();
+			const request = vi.fn((_name: string, callback: () => Promise<unknown>) => callback());
+			vi.stubGlobal('navigator', { ...globalThis.navigator, locks: { request } });
+			worker.use(http.post('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({})));
+
+			try {
+				await base.revoke();
+			} finally {
+				vi.unstubAllGlobals();
+			}
+
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(flowState.session).toBeNull();
+		});
+
+		test('revokes the refresh token another tab rotated instead of the stale in-memory one', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'stale-refresh-token' }, null);
+			const stored = getMockStorage(options.storage).generateSession({ refresh_token: 'rotated-refresh-token' }, options.storageTokenName);
+			let revokedToken: string | null = null;
+			worker.use(
+				http.post('https://brandtegrity.io/oauth2/revoke', async ({ request }) => {
+					revokedToken = new URLSearchParams(await request.text()).get('token');
+					return HttpResponse.json({});
+				}),
+			);
+
+			await base.revoke();
+
+			expect(revokedToken).toBe(stored.refresh_token);
+			expect(flowState.session).toBeNull();
+			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+		});
+
 		test('should clean up the session before revoking and dispatch tokenRevoked', async () => {
 			flowState.initialized = true;
 			const session = getMockStorage(options.storage).generateSession(undefined, null);
@@ -841,6 +980,35 @@ describe('createBaseFlow', () => {
 	});
 
 	describe('logout', () => {
+		test('takes and cleans up the session inside the session Web Lock', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' });
+			const request = vi.fn((_name: string, callback: () => Promise<unknown>) => callback());
+			vi.stubGlobal('navigator', { ...globalThis.navigator, locks: { request } });
+
+			try {
+				await base.logout();
+			} finally {
+				vi.unstubAllGlobals();
+			}
+
+			expect(request).toHaveBeenCalledTimes(1);
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(flowState.session).toBeNull();
+		});
+
+		test('ends the session with the id_token another tab stored instead of the stale in-memory one', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'stale-id-token' }, null);
+			getMockStorage(options.storage).generateSession({ id_token: 'fresh-id-token' }, options.storageTokenName);
+
+			await base.logout();
+
+			const logoutUrl = new URL(vi.mocked(options.urlHandler).mock.calls[0][0]);
+			expect(logoutUrl.searchParams.get('id_token_hint')).toBe('fresh-id-token');
+			expect(flowState.session).toBeNull();
+		});
+
 		test('should clean up the session and redirect to the end-session endpoint', async () => {
 			flowState.initialized = true;
 			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' }, null);
@@ -888,6 +1056,22 @@ describe('createBaseFlow', () => {
 			await Promise.all([base.logout(), base.logout()]);
 
 			expect(options.urlHandler).toHaveBeenCalledTimes(1);
+		});
+
+		test('should use the urlHandlerOverride instead of options.urlHandler when given', async () => {
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' }, null);
+			const urlHandlerOverride = vi.fn().mockResolvedValue(undefined);
+
+			await base.logout({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' }, urlHandlerOverride);
+
+			expect(options.urlHandler).not.toHaveBeenCalled();
+			expect(urlHandlerOverride).toHaveBeenCalledTimes(1);
+
+			const [url, params] = urlHandlerOverride.mock.calls[0] as [URL, Record<string, unknown>];
+			expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/sessions/logout');
+			expect(url.searchParams.get('id_token_hint')).toBe('id-token');
+			expect(params).toEqual({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' });
 		});
 
 		test('should be a clean no-op when there was never a session at all', async () => {
@@ -965,7 +1149,7 @@ describe('createBaseFlow', () => {
 
 		test('revoke should wait for an in-flight refresh and revoke the freshly refreshed token instead of the stale one', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'old-refresh-token' }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'old-refresh-token' });
 
 			let resolveTokenRequest: ((response: Response) => void) | undefined;
 			worker.use(
@@ -999,9 +1183,48 @@ describe('createBaseFlow', () => {
 			expect(revokedToken).toBe('new-refresh-token');
 		});
 
+		test('without the Web Locks API the operations of the instance are still queued', async () => {
+			vi.stubGlobal('navigator', { ...globalThis.navigator, locks: undefined });
+			flowState.initialized = true;
+			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'old-refresh-token' });
+
+			let resolveTokenRequest: ((response: Response) => void) | undefined;
+			let revokedToken: string | null = null;
+			worker.use(
+				http.post(
+					'https://brandtegrity.io/oauth2/token',
+					() =>
+						new Promise<Response>((resolve) => {
+							resolveTokenRequest = resolve;
+						}),
+				),
+				http.post('https://brandtegrity.io/oauth2/revoke', async ({ request }) => {
+					revokedToken = new URLSearchParams(await request.text()).get('token');
+					return HttpResponse.json({});
+				}),
+			);
+
+			try {
+				const refreshPromise = base.refresh();
+				const revokePromise = base.revoke();
+				const secondRefreshPromise = base.refresh();
+
+				await vi.waitFor(() => expect(resolveTokenRequest).toBeDefined());
+				resolveTokenRequest!(HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }));
+
+				await Promise.all([refreshPromise, revokePromise, secondRefreshPromise]);
+			} finally {
+				vi.unstubAllGlobals();
+			}
+
+			expect(revokedToken).toBe('new-refresh-token');
+			expect(flowState.session).toBeNull();
+			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+		});
+
 		test('logout should wait for an in-flight refresh and reflect the post-refresh session state', async () => {
 			flowState.initialized = true;
-			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'old-id-token' }, null);
+			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'old-id-token' });
 
 			let resolveTokenRequest: ((response: Response) => void) | undefined;
 			worker.use(

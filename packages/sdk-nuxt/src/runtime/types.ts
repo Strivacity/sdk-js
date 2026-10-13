@@ -12,13 +12,13 @@ import type {
 	EmbeddedFlow,
 	NativeFlowMessage,
 	initFlow,
-	FallbackError,
 	NativeParams,
 	NativeFlowState,
 	SessionData,
 	LogoutTokenClaims,
 	BaseServerSDK,
 } from '@strivacity/sdk-core';
+import type { FallbackError } from '@strivacity/sdk-core/utils/errors';
 
 declare module '@nuxt/schema' {
 	interface RuntimeConfig {
@@ -255,11 +255,12 @@ export type NuxtServerStorage = SDKStorage<
 };
 
 export type NuxtServerSDKOptions<Storage extends NuxtServerStorage = NuxtServerStorage, StateStorage extends SDKStorage = SDKStorage> = ServerSDKOptions<
+	H3Event,
 	Storage,
 	StateStorage
 >;
 
-export type NuxtServerSDKInitConfig = ServerSDKInitConfig &
+export type NuxtServerSDKInitConfig = ServerSDKInitConfig<H3Event> &
 	Partial<Omit<NuxtServerSDKOptions, 'storage' | 'stateStorage' | 'logging' | 'httpClient'>> & {
 		/**
 		 * Optional path to a custom storage factory module.

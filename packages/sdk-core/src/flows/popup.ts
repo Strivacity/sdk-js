@@ -4,6 +4,7 @@ import type { PopupFlow } from '../types/popup';
 import { getDefaultFlowState, getSDKOptions, buildAuthorizationUrl } from '../utils/oidc';
 import { isSessionExpired } from '../utils/session';
 import { popupCallbackHandler, popupUrlHandler } from '../handlers/popup';
+import { redirectUrlHandler } from '../handlers/redirect';
 import { createBaseFlow } from './base';
 
 /**
@@ -53,6 +54,10 @@ export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
 
 	async function register(params: Parameters<PopupFlow['register']>[0] = {}): ReturnType<PopupFlow['register']> {
 		return await login({ ...params, prompt: 'create' });
+	}
+
+	async function logout(params?: Parameters<PopupFlow['logout']>[0]): ReturnType<PopupFlow['logout']> {
+		return await base.logout(params, redirectUrlHandler);
 	}
 
 	async function entry(url?: string | URL, params?: RedirectOptions): ReturnType<PopupFlow['entry']> {
@@ -132,6 +137,7 @@ export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
 		},
 		login,
 		register,
+		logout,
 		entry,
 	} satisfies PopupFlow;
 

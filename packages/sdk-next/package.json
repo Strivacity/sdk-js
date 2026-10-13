@@ -9,15 +9,9 @@
     "url": "https://github.com/Strivacity/sdk-js"
   },
   "sideEffects": false,
-  "main": "./dist/client.cjs",
-  "types": "./dist/types.d.ts",
+  "main": "./dist/client/index.cjs",
+  "types": "./dist/client/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
-    },
     "./client": {
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.mjs",

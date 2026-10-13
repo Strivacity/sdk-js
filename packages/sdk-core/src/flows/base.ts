@@ -19,6 +19,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		logout: null,
 		tokenExchange: new Map(),
 	};
+	let localSessionLock: Promise<unknown> = Promise.resolve();
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const eventCallbacks: Record<keyof EventFunctions, Set<(...args: Array<any>) => Promise<void> | void>> = {
 		accessTokenExpired: new Set(),
@@ -64,10 +65,32 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		};
 	}
 
+	function withSessionLock<T>(fn: () => Promise<T>): Promise<T> {
+		const locks = globalThis.window ? (globalThis.navigator as Navigator | undefined)?.locks : undefined;
+
+		if (locks) {
+			return locks.request(`strivacity.session.${options.clientId}.${options.storageTokenName}`, fn);
+		}
+
+		// NOTE: in-process fallback of the session lock where the Web Locks API is not available
+		const result = localSessionLock.then(fn);
+		localSessionLock = result.catch(() => {});
+
+		return result;
+	}
+
 	async function getSession(): Promise<SessionData | null> {
 		await init();
 
 		return flowState.session;
+	}
+
+	async function loadStoredSession(): Promise<SessionData | null> {
+		if (options.serverSessionUri) {
+			return null;
+		}
+
+		return loadSession(await options.storage.get(options.storageTokenName));
 	}
 
 	async function updateSession(newData: SessionData): ReturnType<SDK<URLHandlerParams>['updateSession']> {
@@ -109,6 +132,8 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 	async function checkAuthentication(
 		params: { autoRefresh: boolean } = { autoRefresh: options.autoRefresh },
 	): ReturnType<SDK<URLHandlerParams>['checkAuthentication']> {
+		await init();
+
 		if (flowState.session?.access_token && !isSessionExpired(flowState.session, options.refreshSkew)) {
 			return true;
 		}
@@ -254,18 +279,6 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return promises.refresh;
 		}
 
-		if (promises.revoke) {
-			try {
-				await promises.revoke;
-			} catch {}
-		}
-
-		if (promises.logout) {
-			try {
-				await promises.logout;
-			} catch {}
-		}
-
 		options.logging?.debug('Attempting to refresh session');
 
 		if (typeof flowState.session?.refresh_token !== 'string') {
@@ -273,9 +286,36 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return;
 		}
 
-		promises.refresh = (async () => {
+		promises.refresh = withSessionLock(async () => {
+			const stored = await loadStoredSession();
+
+			if (!stored && !options.serverSessionUri) {
+				if (flowState.session) {
+					options.logging?.debug('Session was cleared by another tab');
+					flowState.session = null;
+					dispatchEvent('sessionCleared', []);
+				}
+				return;
+			}
+
+			if (stored?.access_token && stored.access_token !== flowState.session?.access_token) {
+				options.logging?.debug('Using the session refreshed by another tab');
+				flowState.session = stored;
+
+				if (!isSessionExpired(stored, options.refreshSkew)) {
+					dispatchEvent('tokenRefreshed', [
+						{ idToken: stored.id_token, accessToken: stored.access_token, refreshToken: stored.refresh_token, claims: stored.claims },
+					]);
+					return;
+				}
+			}
+
+			if (typeof flowState.session?.refresh_token !== 'string') {
+				return;
+			}
+
 			try {
-				const session = await refreshToken({ refreshToken: flowState.session!.refresh_token!, options, expectedSub: flowState.session?.claims?.sub });
+				const session = await refreshToken({ refreshToken: flowState.session.refresh_token, options, expectedSub: flowState.session?.claims?.sub });
 				await updateSession(session);
 
 				dispatchEvent('tokenRefreshed', [
@@ -299,10 +339,10 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 				options.logging?.error('Session refresh failed', error);
 
 				throw error;
-			} finally {
-				promises.refresh = null;
 			}
-		})();
+		}).finally(() => {
+			promises.refresh = null;
+		});
 
 		return promises.refresh;
 	}
@@ -314,18 +354,6 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return promises.revoke;
 		}
 
-		if (promises.refresh) {
-			try {
-				await promises.refresh;
-			} catch {}
-		}
-
-		if (promises.logout) {
-			try {
-				await promises.logout;
-			} catch {}
-		}
-
 		promises.revoke = (async () => {
 			try {
 				if (flowState.session?.refresh_token) {
@@ -335,8 +363,12 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 				}
 
 				// NOTE: Cleanup session before revocation
-				const currentSession = flowState.session;
-				await cleanupSession();
+				const currentSession = await withSessionLock(async () => {
+					const currentSession = (await loadStoredSession()) ?? flowState.session;
+					await cleanupSession();
+
+					return currentSession;
+				});
 
 				if (!currentSession?.access_token && !currentSession?.refresh_token) {
 					options.logging?.debug('Revoke called without session');
@@ -374,23 +406,14 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return promises.revoke;
 	}
 
-	async function logout(params?: Parameters<SDK<URLHandlerParams>['logout']>[0]): ReturnType<SDK<URLHandlerParams>['logout']> {
+	async function logout(
+		params?: Parameters<SDK<URLHandlerParams>['logout']>[0],
+		urlHandlerOverride?: typeof options.urlHandler,
+	): ReturnType<SDK<URLHandlerParams>['logout']> {
 		await init();
 
 		if (promises.logout) {
 			return promises.logout;
-		}
-
-		if (promises.revoke) {
-			try {
-				await promises.revoke;
-			} catch {}
-		}
-
-		if (promises.refresh) {
-			try {
-				await promises.refresh;
-			} catch {}
 		}
 
 		promises.logout = (async () => {
@@ -398,8 +421,12 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 				options.logging?.debug('Attempting to logout');
 
 				// NOTE: Cleanup session before logout
-				const currentSession = flowState.session;
-				await cleanupSession();
+				const currentSession = await withSessionLock(async () => {
+					const currentSession = (await loadStoredSession()) ?? flowState.session;
+					await cleanupSession();
+
+					return currentSession;
+				});
 
 				dispatchEvent('logoutInitiated', [{ idToken: currentSession?.id_token, claims: currentSession?.claims }]);
 				options.logging?.debug('Logout initiated');
@@ -416,8 +443,9 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 						idToken: currentSession.id_token,
 						postLogoutRedirectUri: params?.postLogoutRedirectUri,
 					});
+					const urlHandler = urlHandlerOverride ?? options.urlHandler;
 
-					await options.urlHandler(logoutUrl, params);
+					await urlHandler(logoutUrl, params);
 				} catch (error) {
 					options.logging?.error('Unable to redirect to the end-session endpoint', error);
 				}

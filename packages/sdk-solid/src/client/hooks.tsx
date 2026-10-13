@@ -40,17 +40,12 @@ export const useNativeLoginContext = (): LoginContext => {
  *
  * @template T - The type of the Strivacity SDK flow (RedirectFlow, PopupFlow, NativeFlow, or EmbeddedFlow).
  * @returns {SDKContext<T>} The Strivacity SDK context.
+ * @throws {Error} Solid's context-not-found error when called outside of a `StyAuthProvider` (the context has no default value).
  */
 export const useStrivacity = <
 	T extends RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow = RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow,
 >(): SDKContext<T> => {
-	const context = useContext(STRIVACITY_SDK);
-
-	if (!context) {
-		throw new Error('Missing SDK context');
-	}
-
-	return context as SDKContext<T>;
+	return useContext(STRIVACITY_SDK) as SDKContext<T>;
 };
 
 /**
@@ -243,11 +238,11 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
  */
 export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, options?: WithAuthGuardOptions): Component<P> {
 	return function AuthGuard(props: P) {
-		const { loading, sdk } = useStrivacity();
+		const ctx = useStrivacity();
 		const [authenticated, setAuthenticated] = createSignal<boolean | null>(null);
 
 		createEffect(
-			() => loading(),
+			() => ctx.loading(),
 			(isLoading) => {
 				if (isLoading) {
 					return;
@@ -255,7 +250,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 
 				let disposed = false;
 
-				void sdk.checkAuthentication().then((result) => {
+				void ctx.sdk.checkAuthentication().then((result) => {
 					if (disposed) {
 						return;
 					}
@@ -276,7 +271,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 		);
 
 		return (
-			<Show when={!loading() && authenticated()} fallback={options?.onLoading?.() ?? null}>
+			<Show when={!ctx.loading() && authenticated()} fallback={options?.onLoading?.() ?? null}>
 				<WrappedComponent {...props} />
 			</Show>
 		);

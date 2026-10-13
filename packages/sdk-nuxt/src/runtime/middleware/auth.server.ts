@@ -12,5 +12,12 @@ export default defineNuxtRouteMiddleware(async () => {
 	const { useStrivacity } = await import('../server/composables/use-strivacity');
 	const sdk = useStrivacity(h3Event);
 
-	useSession().value = (await sdk.getSession()) ?? undefined;
+	const session = await sdk.getSession();
+
+	if (session) {
+		delete session.refresh_token;
+		delete session.id_token;
+	}
+
+	useSession().value = session ?? undefined;
 });

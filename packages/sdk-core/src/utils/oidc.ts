@@ -52,6 +52,7 @@ export const defaultOptions: Partial<SDKOptions> = {
 	lazyLoad: false,
 	autoRefresh: true,
 	refreshSkew: 60,
+	clockSkew: 60,
 	serverSessionUri: null,
 	scopes: ['openid'],
 	responseType: 'code',
@@ -193,13 +194,14 @@ async function getJwks({
 /**
  * Returns with the SDK options merged with the provided options.
  *
- * @param {SDKInitConfig} options - The SDK initialization configuration.
- * @template InitOptions - The type of the SDK initialization configuration.
+ * @param {SDKInitConfig} initOptions - The SDK initialization configuration.
  * @template Options - The type of the SDK options.
  * @returns {Options} The merged SDK options.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getSDKOptions<Options extends SDKOptions = SDKOptions>(options: any): Options {
+export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptions: any): Options {
+	const options = { ...initOptions };
+
 	options.issuer = options.issuer.endsWith('/') ? options.issuer.slice(0, -1) : options.issuer;
 	options.storage ??= createLocalStorage();
 	options.stateStorage ??= createSessionStorage();
@@ -209,6 +211,7 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(options: 
 	options.lazyLoad ??= defaultOptions.lazyLoad;
 	options.autoRefresh ??= defaultOptions.autoRefresh;
 	options.refreshSkew ??= defaultOptions.refreshSkew;
+	options.clockSkew ??= defaultOptions.clockSkew;
 	options.serverSessionUri ??= defaultOptions.serverSessionUri;
 
 	options.scopes ??= defaultOptions.scopes;
@@ -379,7 +382,7 @@ export async function generateJwt(header: object, payload: object, privateKey?: 
  * @param {string} [options.expectedSub] - Optional expected subject (`sub`) claim to validate against the ID token
  * @param {string} [options.expectedNonce] - Optional expected nonce claim to validate against the ID token
  * @returns {Promise<IdTokenClaims>} The verified, validated claims.
- * @throws {ProtocolError} If the signature, `iss`, `aud`, `exp`, or `sub` fail validation.
+ * @throws {ProtocolError} If the signature, `iss`, `aud`, `exp` (allowing `clockSkew` seconds of tolerance), or `sub` fail validation.
  */
 export async function verifyIdToken({
 	idToken,
@@ -404,7 +407,7 @@ export async function verifyIdToken({
 	if (Array.isArray(claims?.aud) ? !claims.aud.includes(options.clientId) : claims?.aud !== options.clientId) {
 		throw new ProtocolError('Invalid aud');
 	}
-	if (!claims?.exp || claims.exp <= now) {
+	if (!claims?.exp || claims.exp + options.clockSkew <= now) {
 		throw new ProtocolError('Token has expired');
 	}
 	if (!claims?.sub || (expectedSub && claims.sub !== expectedSub)) {
@@ -558,15 +561,16 @@ export async function exchangeCode({
 	options: SDKOptions;
 }): Promise<SessionData> {
 	const session = createSession(params);
+	const stateKey = `sty.${session.state}`;
 
 	if (session.error) {
+		await options.stateStorage.delete(stateKey);
 		throw new OidcError(session.error, session.error_description, session.error_uri);
 	}
 	if (!session.code) {
 		throw new ProtocolError('Invalid or missing authorization code');
 	}
 
-	const stateKey = `sty.${session.state}`;
 	const serializedState = await options.stateStorage.get(stateKey);
 
 	if (!serializedState) {

@@ -25,6 +25,107 @@ afterEach(() => {
 	vi.doUnmock('../../src/runtime/composables/use-session');
 });
 
+describe('useStrivacity during SSR', () => {
+	const future = () => Math.floor(Date.now() / 1000) + 3600;
+
+	async function importForRequest(session: SessionData | undefined, publicOptions: Record<string, unknown> = { serverSessionUri: '/auth/login' }) {
+		const { ref } = await import('vue');
+		vi.doMock('#app', () => ({ tryUseNuxtApp: () => ({ ssrContext: {} }), useRuntimeConfig: () => ({ public: { strivacity: publicOptions } }) }));
+		vi.doMock('../../src/runtime/composables/use-session', () => ({ useSession: () => ref(session) }));
+
+		return import('../../src/runtime/composables/use-strivacity');
+	}
+
+	test('never creates an sdk instance on the server', async () => {
+		const core = await import('@strivacity/sdk-core');
+		const { useStrivacity } = await importForRequest(undefined);
+
+		useStrivacity();
+
+		expect(core.initFlow).not.toHaveBeenCalled();
+	});
+
+	test("derives the read-only state from the current request's session", async () => {
+		const session = { access_token: 'access-token', expires_at: future(), claims: { sub: 'alice' } } as unknown as SessionData;
+		const { useStrivacity } = await importForRequest(session);
+
+		const ctx = useStrivacity<RedirectFlow>();
+
+		expect(ctx.loading.value).toBe(false);
+		expect(ctx.isAuthenticated.value).toBe(true);
+		expect(ctx.idTokenClaims.value).toEqual({ sub: 'alice' });
+		expect(ctx.accessToken.value).toBe('access-token');
+		expect(ctx.refreshToken.value).toBeNull();
+		expect(ctx.sdk.options).toEqual({ serverSessionUri: '/auth/login' });
+		expect(ctx.sdk.session).toEqual(session);
+		await expect(ctx.sdk.isAuthenticated).resolves.toBe(true);
+	});
+
+	test('keeps no state between requests: the same module instance reflects only the current request session', async () => {
+		const { ref } = await import('vue');
+		let requestSession: SessionData | undefined = { access_token: 'alice-token', expires_at: future(), claims: { sub: 'alice' } } as unknown as SessionData;
+		vi.doMock('#app', () => ({
+			tryUseNuxtApp: () => ({ ssrContext: {} }),
+			useRuntimeConfig: () => ({ public: { strivacity: { serverSessionUri: '/auth/login' } } }),
+		}));
+		vi.doMock('../../src/runtime/composables/use-session', () => ({ useSession: () => ref(requestSession) }));
+		const { useStrivacity } = await import('../../src/runtime/composables/use-strivacity');
+
+		const alice = useStrivacity<RedirectFlow>();
+		requestSession = undefined;
+		const anonymous = useStrivacity<RedirectFlow>();
+
+		expect(alice.idTokenClaims.value).toEqual({ sub: 'alice' });
+		expect(anonymous.isAuthenticated.value).toBe(false);
+		expect(anonymous.idTokenClaims.value).toBeNull();
+		expect(anonymous.accessToken.value).toBeNull();
+	});
+
+	test('stays loading and unauthenticated with client-managed sessions, since the server cannot see browser storage', async () => {
+		const { useStrivacity } = await importForRequest(undefined, { serverSessionUri: false });
+
+		const ctx = useStrivacity<RedirectFlow>();
+
+		expect(ctx.loading.value).toBe(true);
+		expect(ctx.isAuthenticated.value).toBe(false);
+	});
+
+	test('throws a descriptive error for authentication methods, and keeps event subscriptions as no-ops', async () => {
+		const { useStrivacity } = await importForRequest(undefined);
+
+		const ctx = useStrivacity<RedirectFlow>();
+
+		expect(() => ctx.login()).toThrow('login() is only available in the browser');
+		expect(() => ctx.sdk.logout()).toThrow('sdk.logout() is only available in the browser');
+		expect(ctx.sdk.logging).toBeUndefined();
+		expect(() => ctx.subscribeToAllEvents(() => undefined).dispose()).not.toThrow();
+		await expect(ctx.checkAuthentication()).resolves.toBe(false);
+	});
+});
+
+describe('useStrivacity hydration', () => {
+	test('the browser context starts from the same state the server rendered with (server-managed), so hydration matches', async () => {
+		const { ref } = await import('vue');
+		const session = { access_token: 'access-token', expires_at: Math.floor(Date.now() / 1000) + 3600, claims: { sub: 'alice' } } as unknown as SessionData;
+		const options = { serverSessionUri: '/auth/login' };
+		let ssrContext: object | undefined = {};
+		vi.doMock('#app', () => ({ tryUseNuxtApp: () => (ssrContext ? { ssrContext } : null), useRuntimeConfig: () => ({ public: { strivacity: options } }) }));
+		vi.doMock('../../src/runtime/composables/use-session', () => ({ useSession: () => ref(session) }));
+		await mockInitFlow(createMockFlow<RedirectFlow>());
+		const { useStrivacity } = await import('../../src/runtime/composables/use-strivacity');
+
+		const server = useStrivacity<RedirectFlow>();
+		ssrContext = undefined;
+		const browser = useStrivacity<RedirectFlow>();
+
+		for (const key of ['loading', 'language', 'isAuthenticated', 'idTokenClaims', 'accessToken', 'accessTokenExpired', 'accessTokenExpirationDate'] as const) {
+			expect(browser[key].value, key).toEqual(server[key].value);
+		}
+		expect(browser.loading.value).toBe(false);
+		expect(browser.isAuthenticated.value).toBe(true);
+	});
+});
+
 describe('useStrivacity', () => {
 	test('initializes the underlying flow through core sdk initFlow with the runtime config merged with the logging/httpClient factories', async () => {
 		const flow = createMockFlow<RedirectFlow>();
@@ -33,7 +134,7 @@ describe('useStrivacity', () => {
 		const publicOptions = { mode: 'redirect', issuer: 'https://brandtegrity.io', clientId: 'client-id', redirectUri: 'https://brandtegrity.io/callback' };
 		const logging = { debug: vi.fn() };
 		const httpClient = { request: vi.fn() };
-		vi.doMock('#app', () => ({ useRuntimeConfig: () => ({ public: { strivacity: publicOptions } }) }));
+		vi.doMock('#app', () => ({ tryUseNuxtApp: () => null, useRuntimeConfig: () => ({ public: { strivacity: publicOptions } }) }));
 		vi.doMock('#strivacity-options-logging', () => ({ default: () => logging }));
 		vi.doMock('#strivacity-options-httpClient', () => ({ default: () => httpClient }));
 
@@ -65,7 +166,7 @@ describe('useStrivacity', () => {
 		const { useStrivacity } = await import('../../src/runtime/composables/use-strivacity');
 		const ctx = useStrivacity<RedirectFlow>();
 
-		expect(ctx.sdk.session).toBe(session);
+		expect(ctx.sdk.session).toEqual(session);
 	});
 
 	test('only initializes the flow once: a second call within the same module instance reuses the same sdk instance', async () => {

@@ -17,7 +17,7 @@ import {
 	getDefaultFlowState,
 	defaultOptions,
 } from '../../../src/utils/oidc';
-import { NetworkError, ServerError, ProtocolError } from '../../../src/utils/errors';
+import { NetworkError, ServerError, ProtocolError, OidcError } from '../../../src/utils/errors';
 import { encodeBase64URL, decodeBase64URL } from '../../../src/utils/base64url';
 import { buildIdToken, buildIdTokenClaims, exportSigningKey, generateRSAKeyPair, signRS256 } from '@strivacity/testing/mocks/oidc';
 import type { IdTokenClaims } from '../../../src/types/oidc';
@@ -48,6 +48,7 @@ describe('defaultOptions', () => {
 			lazyLoad: false,
 			autoRefresh: true,
 			refreshSkew: 60,
+			clockSkew: 60,
 			serverSessionUri: null,
 			scopes: ['openid'],
 			responseType: 'code',
@@ -582,6 +583,26 @@ describe('verifyIdToken', () => {
 		await expect(verifyIdToken({ idToken, options: createOptions(), verifySignature: true })).resolves.toEqual(claims);
 	});
 
+	test('accepts a token that expired within the clock tolerance (device clock slightly ahead)', async () => {
+		const claims = buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 30 });
+		const idToken = buildIdToken(claims);
+
+		await expect(verifyIdToken({ idToken, options: createOptions() })).resolves.toEqual(claims);
+	});
+
+	test('rejects a token that expired beyond the clock tolerance', async () => {
+		const idToken = buildIdToken(buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 120 }));
+
+		await expect(verifyIdToken({ idToken, options: createOptions() })).rejects.toThrow('Token has expired');
+	});
+
+	test('honors a custom clockSkew', async () => {
+		const idToken = buildIdToken(buildIdTokenClaims({ exp: Math.floor(Date.now() / 1000) - 120 }));
+
+		await expect(verifyIdToken({ idToken, options: createOptions({ clockSkew: 300 }) })).resolves.toBeDefined();
+		await expect(verifyIdToken({ idToken, options: createOptions({ clockSkew: 0 }) })).rejects.toThrow('Token has expired');
+	});
+
 	describe('error handling', () => {
 		test('throws a ProtocolError when iss does not match the issuer', async () => {
 			const idToken = buildIdToken(buildIdTokenClaims({ iss: 'https://impostor.example.com/' }));
@@ -695,6 +716,17 @@ describe('exchangeCode', () => {
 		);
 
 		await expect(exchangeCode({ params: { code: 'abc123', state: stateData.id }, options })).resolves.toMatchObject({ scope: 'openid' });
+	});
+
+	test('deletes the pending state when the callback carries an OIDC error, instead of leaving it behind', async () => {
+		const options = createOptions();
+		const stateData = await getMockStorage(options.stateStorage).generateState();
+
+		await expect(exchangeCode({ params: { error: 'access_denied', error_description: 'User denied access', state: stateData.id }, options })).rejects.toThrow(
+			new OidcError('access_denied', 'User denied access'),
+		);
+
+		expect(getMockStorage(options.stateStorage).keys()).not.toContain(`sty.${stateData.id}`);
 	});
 });
 
