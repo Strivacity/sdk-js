@@ -451,7 +451,7 @@ describe('createBaseServerSDK', () => {
 
 			const clearedCookie = response.headers.getSetCookie().find((cookie) => cookie.startsWith('sty.returnTo='));
 
-			expect(clearedCookie).toContain('Expires=Thu, 01 Jan 1970');
+			expect(clearedCookie).toContain('Max-Age=0');
 		});
 
 		test('should redirect to postLoginRedirectUri when there is no returnTo cookie', async () => {

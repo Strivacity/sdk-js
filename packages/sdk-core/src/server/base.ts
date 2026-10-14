@@ -340,7 +340,7 @@ export function createBaseServerSDK<
 			const state = parseState(serializedState);
 			const returnTo = parseCookieHeader(request.headers.get('cookie'))[RETURN_TO_COOKIE] ?? options.postLoginRedirectUri;
 
-			pushSetCookie(event, serializeCookie(RETURN_TO_COOKIE, '', { expires: new Date(0) }));
+			pushSetCookie(event, serializeCookie(RETURN_TO_COOKIE, '', { maxAge: 0 }));
 
 			if (state.metadata?.display === 'popup') {
 				// NOTE: If the login was initiated from a popup, we return a HTML page that will close the popup and notify the opener window.

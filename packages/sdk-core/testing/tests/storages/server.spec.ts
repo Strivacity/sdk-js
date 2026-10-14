@@ -266,7 +266,7 @@ describe('createSessionIdCookieStorage', () => {
 		const [header] = flushSetCookies(incomingEvent, new Response()).headers.getSetCookie();
 
 		expect(header).toContain('key=');
-		expect(header).toContain('Expires=Thu, 01 Jan 1970');
+		expect(header).toContain('Max-Age=0');
 	});
 
 	test('should still expire the cookie when no session id exists on delete', async () => {
@@ -279,7 +279,7 @@ describe('createSessionIdCookieStorage', () => {
 		expect(underlying.delete).not.toHaveBeenCalled();
 		const [header] = flushSetCookies(event, new Response()).headers.getSetCookie();
 
-		expect(header).toContain('Expires=Thu, 01 Jan 1970');
+		expect(header).toContain('Max-Age=0');
 	});
 
 	test('should expire the cookie immediately even when a max age is configured', async () => {
