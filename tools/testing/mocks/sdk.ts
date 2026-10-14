@@ -174,6 +174,7 @@ export function createOptions<T = unknown>(overrides?: Partial<SDKOptions>): SDK
 		callbackHandler: redirectCallbackHandler,
 		lazyLoad: false,
 		autoRefresh: true,
+		refreshSkew: 60,
 		clockSkew: 60,
 		discoveryDocumentCacheTTL: 3600,
 		jwksCacheTTL: 600,
@@ -182,7 +183,7 @@ export function createOptions<T = unknown>(overrides?: Partial<SDKOptions>): SDK
 	};
 }
 
-export function createServerMockStorage(): ServerStorage<MockEvent> {
+export function createServerMockStorage(): ServerStorage<MockEvent> & Required<Pick<ServerStorage<MockEvent>, 'deleteByLogoutToken'>> {
 	return { ...createMockStorage(), deleteByLogoutToken: vi.fn().mockResolvedValue(undefined) };
 }
 

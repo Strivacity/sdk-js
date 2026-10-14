@@ -12,14 +12,14 @@ class MockWorker extends EventTarget implements Partial<Worker> {
 	}
 }
 
-function createLinkedWorkers(): [mainSide: MockWorker, workerSide: MockWorker] {
+function createLinkedWorkers(): [mainSide: Worker, workerSide: MockWorker] {
 	const workerSide = new MockWorker();
 	const mainSide = new MockWorker();
 
 	workerSide.other = mainSide;
 	mainSide.other = workerSide;
 
-	return [mainSide, workerSide];
+	return [mainSide as unknown as Worker, workerSide];
 }
 
 function createMemoryLikeStorage(): SDKStorage {
@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 describe('createWorkerStorage / handleWorkerStorageRequests', () => {
-	let mainSide: MockWorker;
+	let mainSide: Worker;
 	let workerSide: MockWorker;
 
 	beforeEach(() => {

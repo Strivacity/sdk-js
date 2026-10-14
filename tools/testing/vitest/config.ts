@@ -1,7 +1,7 @@
-import type { InlineConfig } from 'vitest/config';
+import type { TestUserConfig } from 'vitest/config';
 import { configDefaults } from 'vitest/config';
 
-export function getVitestConfig(sdkName: string): InlineConfig {
+export function getVitestConfig(sdkName: string): TestUserConfig {
 	return {
 		include: ['**/*.spec.ts', '**/*.spec.tsx'],
 		setupFiles: ['../../tools/testing/vitest/setup.ts'],
@@ -22,7 +22,7 @@ export function getVitestConfig(sdkName: string): InlineConfig {
 			enabled: true,
 			provider: 'istanbul',
 			reporter: ['html', 'lcov'],
-			exclude: [configDefaults.coverage.exclude!],
+			exclude: configDefaults.coverage.exclude,
 			reportsDirectory: `../../coverages/sdk-${sdkName}`,
 		},
 		outputFile: `../../reports/sdk-${sdkName}.xml`,
