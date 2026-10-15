@@ -1,0 +1,213 @@
+{
+  "_comment": "Deterministic routing cases for plugins/strivacity/skills/strivacity/SKILL.md. Each case is what the router detects (intent, framework, mode, server_session) and the reference files Step 4 must load. Run: node evals/skill/check-skill.mjs",
+  "cases": [
+    {
+      "id": "integrate-react-redirect",
+      "intent": "integrate",
+      "framework": "react",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["framework-react/index.md", "mode-redirect/index.md"]
+    },
+    {
+      "id": "integrate-react-popup",
+      "intent": "integrate",
+      "framework": "react",
+      "mode": "popup",
+      "server_session": false,
+      "expect_refs": ["framework-react/index.md", "mode-popup/index.md"]
+    },
+    {
+      "id": "integrate-react-bff",
+      "intent": "integrate",
+      "framework": "react",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["framework-react/index.md", "mode-redirect/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "integrate-vue-embedded",
+      "intent": "integrate",
+      "framework": "vue",
+      "mode": "embedded",
+      "server_session": false,
+      "expect_refs": ["framework-vue/index.md", "mode-embedded/index.md"]
+    },
+    {
+      "id": "integrate-next-default-server-session",
+      "intent": "integrate",
+      "framework": "next",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["framework-next/index.md", "mode-redirect/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "native-login-react",
+      "intent": "feature:native-login",
+      "framework": "react",
+      "mode": "native",
+      "server_session": false,
+      "expect_refs": ["framework-react/index.md", "mode-native/index.md"]
+    },
+    {
+      "id": "native-login-next",
+      "intent": "feature:native-login",
+      "framework": "next",
+      "mode": "native",
+      "server_session": true,
+      "expect_refs": ["framework-next/index.md", "mode-native/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "native-login-vue",
+      "intent": "feature:native-login",
+      "framework": "vue",
+      "mode": "native",
+      "server_session": false,
+      "expect_refs": ["framework-vue/index.md", "mode-native/index.md"]
+    },
+    {
+      "id": "server-session-vue",
+      "intent": "feature:server-session",
+      "framework": "vue",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["feature-server-session/index.md", "framework-vue/index.md"]
+    },
+    {
+      "id": "server-session-angular-ssr",
+      "intent": "feature:server-session",
+      "framework": "angular",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["feature-server-session/index.md", "framework-angular/index.md"]
+    },
+    {
+      "id": "integrate-nuxt-default",
+      "intent": "integrate",
+      "framework": "nuxt",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["framework-nuxt/index.md", "mode-redirect/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "integrate-nuxt-client-session",
+      "intent": "integrate",
+      "framework": "nuxt",
+      "mode": "popup",
+      "server_session": false,
+      "expect_refs": ["framework-nuxt/index.md", "mode-popup/index.md"]
+    },
+    {
+      "id": "integrate-angular-spa",
+      "intent": "integrate",
+      "framework": "angular",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["framework-angular/index.md", "mode-redirect/index.md"]
+    },
+    {
+      "id": "integrate-preact",
+      "intent": "integrate",
+      "framework": "preact",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["framework-preact/index.md", "mode-redirect/index.md"]
+    },
+    {
+      "id": "integrate-solidstart",
+      "intent": "integrate",
+      "framework": "solid",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["framework-solid/index.md", "mode-redirect/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "integrate-sveltekit-native",
+      "intent": "feature:native-login",
+      "framework": "svelte",
+      "mode": "native",
+      "server_session": true,
+      "expect_refs": ["framework-svelte/index.md", "mode-native/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "integrate-vanilla-core",
+      "intent": "integrate",
+      "framework": "core",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["framework-core/index.md", "mode-redirect/index.md"]
+    },
+    {
+      "id": "server-session-express-core",
+      "intent": "feature:server-session",
+      "framework": "core",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["feature-server-session/index.md", "framework-core/index.md"]
+    },
+    {
+      "id": "api-access-react",
+      "intent": "feature:api-access",
+      "framework": "react",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["feature-api-access/index.md", "framework-react/index.md"]
+    },
+    {
+      "id": "api-access-next-bff",
+      "intent": "feature:api-access",
+      "framework": "next",
+      "mode": "redirect",
+      "server_session": true,
+      "expect_refs": ["feature-api-access/index.md", "framework-next/index.md", "feature-server-session/index.md"]
+    },
+    {
+      "id": "guidance-token-storage-vue",
+      "intent": "guidance",
+      "framework": "vue",
+      "mode": null,
+      "server_session": false,
+      "expect_refs": ["pattern-token-handling/index.md", "framework-vue/index.md"]
+    },
+    {
+      "id": "guidance-no-framework",
+      "intent": "guidance",
+      "framework": null,
+      "mode": null,
+      "server_session": false,
+      "expect_refs": ["pattern-token-handling/index.md"]
+    },
+    {
+      "id": "debug-popup-react",
+      "intent": "debug",
+      "framework": "react",
+      "mode": "popup",
+      "server_session": false,
+      "expect_refs": ["pattern-common-errors/index.md", "framework-react/index.md", "mode-popup/index.md"]
+    },
+    {
+      "id": "debug-unknown-mode",
+      "intent": "debug",
+      "framework": "angular",
+      "mode": null,
+      "server_session": false,
+      "expect_refs": ["pattern-common-errors/index.md", "framework-angular/index.md"]
+    },
+    {
+      "id": "upgrade-react",
+      "intent": "upgrade-sdk",
+      "framework": "react",
+      "mode": "redirect",
+      "server_session": false,
+      "expect_refs": ["upgrade-v3-to-v4/index.md", "framework-react/index.md"]
+    },
+    {
+      "id": "upgrade-no-framework",
+      "intent": "upgrade-sdk",
+      "framework": null,
+      "mode": null,
+      "server_session": false,
+      "expect_refs": ["upgrade-v3-to-v4/index.md"]
+    }
+  ]
+}

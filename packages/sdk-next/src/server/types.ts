@@ -102,7 +102,16 @@ export type NextServerSDKInitConfig<Storage extends NextServerStorage = NextServ
 	Partial<NextServerSDKOptions<Storage, StateStorage>>;
 
 export type NextServerSDK<TEvent extends NextRequest | Request | PagesRouterRequest | undefined = NextRequest | Request | PagesRouterRequest | undefined> =
-	BaseServerSDK<TEvent> & {
+	Omit<BaseServerSDK<TEvent>, 'handler'> & {
+		/**
+		 * Dispatches an incoming request to the matching auth route handler based on `authUrlPrefix`, or answers `404 Not Found`
+		 * if no auth route matched. Export it as `GET` and `POST` from the `app/auth/[...strivacity]/route.ts` catch-all route.
+		 *
+		 * @param {TEvent} req - The incoming request.
+		 * @returns {Promise<Response>} The handler's response.
+		 */
+		handler(req: TEvent): Promise<Response>;
+
 		/**
 		 * Wraps a React component with an authentication guard. If the user is not authenticated, they will be redirected to the login page.
 		 *

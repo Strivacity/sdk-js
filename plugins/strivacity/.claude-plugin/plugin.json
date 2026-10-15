@@ -1,0 +1,29 @@
+{
+  "name": "strivacity",
+  "version": "0.2.0",
+  "description": "Add Strivacity authentication to JavaScript and TypeScript web apps with the @strivacity/sdk-* packages: login, registration, logout, protected routes, access tokens, hosted / pop-up / embedded / fully custom (native) login, and server-managed sessions (BFF). Also covers access tokens for APIs (audiences), token storage and refresh, debugging, and upgrading from v3. Covers React, Next.js, Vue, Nuxt, Angular, Preact, SolidStart, SvelteKit and plain JavaScript / Node.js.",
+  "author": { "name": "Strivacity", "email": "opensource@strivacity.com" },
+  "homepage": "https://github.com/Strivacity/sdk-js",
+  "repository": "https://github.com/Strivacity/sdk-js",
+  "license": "MIT",
+  "keywords": [
+    "strivacity",
+    "authentication",
+    "oidc",
+    "oauth",
+    "pkce",
+    "login",
+    "sdk",
+    "bff",
+    "session",
+    "react",
+    "nextjs",
+    "vue",
+    "nuxt",
+    "angular",
+    "preact",
+    "solid",
+    "svelte",
+    "node"
+  ]
+}

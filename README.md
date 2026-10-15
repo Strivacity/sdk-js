@@ -15,6 +15,7 @@ This is a pnpm monorepo. It contains:
 - **`packages/`** - Publishable SDK packages
 - **`apps/`** - Example applications for each framework
 - **`tools/`** - Internal tools for building and testing the SDK and example apps
+- **`plugins/`** - Agent skill that teaches AI coding assistants how to use the SDK (see [AI coding assistants](#ai-coding-assistants))
 
 ### SDK packages
 
@@ -46,6 +47,27 @@ This is a pnpm monorepo. It contains:
 
 > **Note:** [`apps/backend`](./apps/backend) is a standalone Express server example implementing the [BFF](#bff) pattern - handling the OAuth 2.0 PKCE flow, managing server-side sessions, and exposing a REST API. It's a backend-only implementation that any of the SPA-only framework SDKs (React, Vue, Preact) can pair with instead of talking to the identity provider directly from the browser.
 > It is not a standalone example application on its own and isn't required by any other app.
+
+---
+
+## AI coding assistants
+
+The [`strivacity`](./plugins/strivacity) agent skill teaches AI coding assistants how to integrate the `@strivacity/sdk-*` packages: login, registration and logout, protected routes, all four authentication modes, server-managed sessions, API access tokens, debugging, and upgrading from v3.
+
+**Claude Code**
+
+```
+/plugin marketplace add Strivacity/sdk-js
+/plugin install strivacity@strivacity
+```
+
+**Cursor:** add this repository as a plugin marketplace.
+
+**Codex:** add this repository as a plugin marketplace (`.agents/plugins/marketplace.json`).
+
+**Other agents:** copy [`plugins/strivacity/skills/strivacity/`](./plugins/strivacity/skills/strivacity) into the agent's skills directory.
+
+See the [plugin README](./plugins/strivacity/README.md) for details.
 
 ---
 

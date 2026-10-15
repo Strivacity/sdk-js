@@ -71,6 +71,38 @@ describe('initFlow', () => {
 		expect(createEmbeddedFlow).not.toHaveBeenCalled();
 	});
 
+	test('factory: receives the options and its return value is returned', () => {
+		const flow = { type: 'custom' };
+		const factory = vi.fn().mockReturnValue(flow);
+		const options = { ...createOptions({ mode: 'popup' }), factory };
+
+		expect(index.initFlow(options as never)).toBe(flow);
+		expect(factory).toHaveBeenCalledWith(options);
+		expect(createRedirectFlow).not.toHaveBeenCalled();
+		expect(createPopupFlow).not.toHaveBeenCalled();
+	});
+
+	test('factory: mode is optional and defaults to "redirect"', () => {
+		const flow = { type: 'custom' as const };
+		const factory = vi.fn(() => flow);
+
+		const result: { type: 'custom' } = index.initFlow({
+			issuer: 'https://example.com',
+			clientId: 'client-id',
+			redirectUri: 'https://app.example.com/callback',
+			factory,
+		});
+
+		expect(result).toBe(flow);
+		expect(factory).toHaveBeenCalledWith({
+			issuer: 'https://example.com',
+			clientId: 'client-id',
+			redirectUri: 'https://app.example.com/callback',
+			factory,
+			mode: 'redirect',
+		});
+	});
+
 	test('should throw UnsupportedFlowError when called with an unsupported mode', () => {
 		// @ts-expect-error: Testing unsupported mode
 		expect(() => index.initFlow({ mode: 'unsupported' })).throw(UnsupportedFlowError);

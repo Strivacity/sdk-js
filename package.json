@@ -16,6 +16,7 @@
     "test:ci": "nx run-many --target=test --coverage",
     "lint": "nx run-many --target=eslint",
     "release": "nx release --skip-publish",
+    "skill:check": "node evals/skill/check-skill.mjs",
     "app:angular:serve": "nx run app-angular:serve",
     "app:backend:serve": "nx run app-backend:serve",
     "app:preact:serve": "nx run app-preact:serve",
