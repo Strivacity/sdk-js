@@ -103,7 +103,7 @@ export const sdkOptions: SDKInitConfig = {
 	redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
 	scopes: ['openid', 'profile', 'email'], // requested user permissions/data
 
-	// Omit this line entirely for client-managed sessions
+	// Omit these lines entirely for client-managed sessions
 	serverSessionUri: '/auth/login',
 };
 ```
@@ -115,14 +115,17 @@ Only needed for server-managed sessions - skip this step (and step 3's hook) if 
 ```ts
 // src/lib/server/strivacity.ts
 import { createServerSDK } from '@strivacity/sdk-svelte/server';
+import { env } from '$env/dynamic/private';
 import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
+
+> Read the secret from a server-only module such as `$env/dynamic/private` (or `$env/static/private`) - never from a `PUBLIC_`/`VITE_`-prefixed variable, which can end up in client bundles. The [example app](../../apps/sveltekit/src/lib/server/strivacity.ts) reads `import.meta.env.VITE_SECRET` for demo convenience only.
 
 ### 3. Wire up the server hook
 
@@ -142,16 +145,16 @@ export const handle: Handle = sdk.handle;
 | `GET`  | `/auth/register`             | Starts the registration flow and redirects to the IDP       | `302` redirect to IDP                        |
 | `GET`  | `/auth/callback`             | Completes authentication (handles the IDP callback)          | `302` redirect or popup close script         |
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
-| `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `204 No Content`                             |
-| `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page         | `302` redirect to IDP logout                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | JSON with session data |
-| `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `204 No Content`                             |
+| `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
+| `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `resolve(event)`, so `handle` is safe to compose with your own hooks via SvelteKit's [`sequence()`](https://svelte.dev/docs/kit/@sveltejs-kit-hooks#sequence).
 
 ### 4. Wrap your app with the client provider
 
-`createStyAuthProvider` is a plain function, not a wrapping component - call it once at the top of your root layout's `<script>` (Svelte's context APIs only work during a component's own initialization, so this can't be done from `onMount` or an event handler):
+`createStyAuthProvider` is a plain function, not a wrapping component - call it once at the top of your root layout's `<script>` (Svelte's context APIs only work during a component's own initialization, so this can't be done from `onMount` or an event handler). The client SDK only exists in the browser: during server-side rendering `ctx.sdk` is `undefined` and `ctx.loading` stays `true`, so read `ctx.sdk` and call the SDK methods from `onMount`, `$effect` or event handlers, never at the top level of a `<script>`:
 
 ```svelte
 <!-- src/routes/+layout.svelte -->
@@ -173,11 +176,12 @@ For server-managed sessions, resolve the session once in a `+layout.server.ts` `
 ```ts
 // src/routes/+layout.server.ts
 import type { LayoutServerLoad } from './$types';
+import { toClientSession } from '@strivacity/sdk-svelte/server';
 import { sdk } from '$lib/server/strivacity';
 
 export const load: LayoutServerLoad = async (event) => {
 	return {
-		session: await sdk.getSession(event),
+		session: toClientSession(await sdk.getSession(event)),
 	};
 };
 ```
@@ -200,13 +204,15 @@ export const load: LayoutServerLoad = async (event) => {
 {@render children()}
 ```
 
+> **Note:** The session passed to the provider is serialized into the rendered HTML, so `toClientSession()` (exported from both `@strivacity/sdk-svelte/server` and `@strivacity/sdk-svelte/client`) removes the long-lived credentials before handing it over: the refresh token (the Server SDK refreshes the session itself, see [Accessing the session server-side](#accessing-the-session-server-side)) and the ID token (only the server-side `/auth/logout` route needs it).
+
 ---
 
 ## Client SDK
 
 ### Authentication modes
 
-The `mode` set in `src/lib/options.ts` (see [Quick start](#quick-start)) controls which of the four flows below is active - the `createStyAuthProvider` bootstrap shown in the [core SDK docs](../sdk-core/README.md#choosing-a-mode) is already handled by `src/routes/+layout.svelte`, so the examples below start directly from the page level.
+The `mode` set in `src/lib/options.ts` (see [Quick start](#quick-start)) controls which of the four flows below is active. The examples below start directly from the page level, because the `createStyAuthProvider` bootstrap from [step 4 of the Quick start](#4-wrap-your-app-with-the-client-provider) already runs in `src/routes/+layout.svelte`.
 
 #### redirect mode
 
@@ -367,14 +373,14 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { useStrivacity } from '@strivacity/sdk-svelte/client';
 
 	const ctx = useStrivacity();
 
-	onMount(async () => {
-		if (ctx.isAuthenticated) {
-			await ctx.logout();
+	// Wait until the SDK has restored the session: on a direct page load `isAuthenticated` is still `false` while `loading` is `true`
+	$effect(() => {
+		if (!ctx.loading && ctx.isAuthenticated) {
+			void ctx.logout();
 		}
 	});
 </script>
@@ -386,7 +392,7 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
@@ -438,7 +444,7 @@ Call these methods to manage the session and access token client-side.
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back. `ctx.sdk.refresh({ returnTo: '/profile' })` performs the same refresh navigation for you:
 
 ```svelte
 <script lang="ts">
@@ -525,11 +531,31 @@ Popup mode always needs client-side JavaScript to open the window, so there's no
 
 **Client-managed sessions**:
 
-The popup resolves automatically - no callback page is needed. Token exchange happens inside the popup and the result is posted back to the opener window.
+The pop-up still navigates to your `redirectUri`, so you still need a callback page there - without it nothing posts the result back to the opener. Call `handleCallback()` on that page; in popup mode it never resolves (the opener closes the pop-up once it receives the result), so don't rely on code after it running:
+
+```svelte
+<!-- src/routes/callback/+page.svelte -->
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { useStrivacity } from '@strivacity/sdk-svelte/client';
+
+	const ctx = useStrivacity();
+
+	onMount(() => {
+		void ctx.handleCallback();
+	});
+</script>
+
+<section>
+	<h1>Logging in...</h1>
+</section>
+```
+
+`login()` resolves in the opener once the result has been received and, for client-managed sessions, the tokens have been exchanged.
 
 **Server-managed sessions**:
 
-Same as client managed - the popup's internal callback request is also transparently proxied through `/auth/callback`, and the result is posted back to the opener window exactly the same way.
+The callback page must not call `handleCallback()`: forward the query string to `/auth/callback` instead, as in the server-managed redirect callback. The Server SDK exchanges the code, sets the session cookie and responds with a page that posts the result to the opener and closes the pop-up.
 
 ##### Registration
 
@@ -592,14 +618,14 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { useStrivacity } from '@strivacity/sdk-svelte/client';
 
 	const ctx = useStrivacity();
 
-	onMount(async () => {
-		if (ctx.isAuthenticated) {
-			await ctx.logout();
+	// Wait until the SDK has restored the session: on a direct page load `isAuthenticated` is still `false` while `loading` is `true`
+	$effect(() => {
+		if (!ctx.loading && ctx.isAuthenticated) {
+			void ctx.logout();
 		}
 	});
 </script>
@@ -611,7 +637,7 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
@@ -662,7 +688,7 @@ Call these methods to manage the session and access token client-side.
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back. `ctx.sdk.refresh({ returnTo: '/profile' })` performs the same refresh navigation for you:
 
 ```svelte
 <script lang="ts">
@@ -701,13 +727,12 @@ The login UI renders inside your own page using Strivacity web components (`<sty
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { useStrivacity, injectScript } from '@strivacity/sdk-svelte/client';
-
-	const { sdk } = useStrivacity();
+	import { injectScript } from '@strivacity/sdk-svelte/client';
+	import { sdkOptions } from '$lib/options';
 
 	// injectScript loads the <sty-login>/<sty-notifications>/<sty-language-selector>
-	// custom element definitions from the auth server
-	injectScript('sty-components', `${sdk.options.issuer}/assets/components/bundle.js`);
+	// custom element definitions from the auth server (it does nothing during server-side rendering)
+	injectScript('sty-components', `${sdkOptions.issuer}/assets/components/bundle.js`);
 
 	// Optional: Resume a session started from an entry URL (e.g., password reset)
 	const sessionId = page.url.searchParams.get('session_id');
@@ -976,7 +1001,7 @@ Then on your login route, read the parameters and pass them to `<sty-login>`:
 
 **Option 2: Render login on the entry route**
 
-Pass the parameters directly to `<sty-login>` on the same route:
+Resolve the entry link with `entry()` inside `src/routes/entry/+page.svelte` and render the native login on the same route - no redirect needed. `useNativeLogin` reads its `params` and starts the flow when the calling component mounts, so call it from a child component that is only rendered once `entry()` has returned the `session_id`:
 
 ```svelte
 <!-- src/routes/entry/+page.svelte -->
@@ -985,43 +1010,60 @@ Pass the parameters directly to `<sty-login>` on the same route:
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { useStrivacity } from '@strivacity/sdk-svelte/client';
-	import type { EmbeddedFlow } from '@strivacity/sdk-svelte/client';
+	import type { NativeFlow } from '@strivacity/sdk-svelte/client';
+	import EntryNativeLogin from './EntryNativeLogin.svelte';
 
-	const ctx = useStrivacity<EmbeddedFlow>();
+	const sdkCtx = useStrivacity<NativeFlow>();
 
-	let sessionId = $state<string | null>(null);
-	let shortAppId = $state<string | null>(null);
-	let language = $state<string | null>(null);
+	let entryData = $state<{ sessionId: string | null; language: string | null } | null>(null);
 
 	onMount(async () => {
 		try {
-			const data = await ctx.entry();
-			// Set state for sty-login component
-			sessionId = data.session_id;
-			shortAppId = data.short_app_id;
-			language = data.language;
+			const data = await sdkCtx.entry();
+			entryData = { sessionId: data.session_id, language: data.language };
 		} catch (error) {
 			await goto(`${resolve('/error')}?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 		}
 	});
 </script>
 
-{#if !sessionId}
+{#if entryData}
+	<EntryNativeLogin sessionId={entryData.sessionId} language={entryData.language} />
+{:else}
+	<section>
+		<h1>Loading...</h1>
+	</section>
+{/if}
+```
+
+```svelte
+<!-- src/routes/entry/EntryNativeLogin.svelte -->
+<script lang="ts">
+	import { untrack } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { useNativeLogin } from '@strivacity/sdk-svelte/client';
+
+	let { sessionId, language }: { sessionId: string | null; language: string | null } = $props();
+
+	const ctx = useNativeLogin({
+		// The parameters are read once, when the flow starts - `untrack` makes the one-off read explicit
+		params: untrack(() => ({ sessionId, language })),
+		onLogin: async () => {
+			await goto(resolve('/profile'));
+		},
+		onError: async (error) => {
+			await goto(`${resolve('/error')}?message=${encodeURIComponent(error.message)}`);
+		},
+	});
+</script>
+
+{#if ctx.loading || !ctx.state.screen}
 	<section>
 		<h1>Loading...</h1>
 	</section>
 {:else}
-	<section>
-		<sty-notifications></sty-notifications>
-		<sty-login
-			{sessionId}
-			{shortAppId}
-			lang={language}
-			onlogin={() => goto(resolve('/profile'))}
-			onerror={(event: CustomEvent<string>) => goto(`${resolve('/error')}?message=${encodeURIComponent(event.detail)}`)}
-		></sty-login>
-		<sty-language-selector></sty-language-selector>
-	</section>
+	<!-- ...render based on `ctx.state.screen` as shown in the Login / Register example above -->
 {/if}
 ```
 
@@ -1034,14 +1076,14 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { useStrivacity } from '@strivacity/sdk-svelte/client';
 
 	const ctx = useStrivacity();
 
-	onMount(async () => {
-		if (ctx.isAuthenticated) {
-			await ctx.logout();
+	// Wait until the SDK has restored the session: on a direct page load `isAuthenticated` is still `false` while `loading` is `true`
+	$effect(() => {
+		if (!ctx.loading && ctx.isAuthenticated) {
+			void ctx.logout();
 		}
 	});
 </script>
@@ -1053,7 +1095,7 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
@@ -1100,7 +1142,7 @@ Call these methods to manage the session and access token client-side.
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back. `ctx.sdk.refresh({ returnTo: '/profile' })` performs the same refresh navigation for you:
 
 ```svelte
 <script lang="ts">
@@ -1147,7 +1189,6 @@ You build the entire login UI with your own components. `useNativeLogin()` drive
 		params: {
 			prompt: 'login', // use 'create' to open the registration flow instead
 			language: 'en-US', // set the UI language (BCP 47 language tag)
-			sdk: 'web-minimal', // rendering mode: 'web-minimal' for simplified rendering, 'web' (default) for full rendering hints and branding
 			sessionId: page.url.searchParams.get('session_id'), // pass a session ID to resume an existing flow
 		},
 		onLogin: async () => {
@@ -1352,14 +1393,14 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { useStrivacity } from '@strivacity/sdk-svelte/client';
 
 	const ctx = useStrivacity();
 
-	onMount(async () => {
-		if (ctx.isAuthenticated) {
-			await ctx.logout();
+	// Wait until the SDK has restored the session: on a direct page load `isAuthenticated` is still `false` while `loading` is `true`
+	$effect(() => {
+		if (!ctx.loading && ctx.isAuthenticated) {
+			void ctx.logout();
 		}
 	});
 </script>
@@ -1371,7 +1412,7 @@ Call this to clear the session and redirect to the Strivacity end-session endpoi
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```svelte
 <!-- src/routes/logout/+page.svelte -->
@@ -1422,7 +1463,7 @@ Call these methods to manage the session and access token client-side.
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the auth routes, then let the hook redirect back. `ctx.sdk.refresh({ returnTo: '/profile' })` performs the same refresh navigation for you:
 
 ```svelte
 <script lang="ts">
@@ -1475,14 +1516,19 @@ const ctx = useStrivacity<RedirectFlow>();
 	readonly accessTokenExpired: boolean; // True once the access token has expired
 	readonly accessTokenExpirationDate: number | null; // Access token expiration timestamp
 
-	// Methods (all are async)
-	login(params?: LoginParams): Promise<void>; // Start login flow
-	register(params?: LoginParams): Promise<void>; // Start registration flow
-	handleCallback(url?: string): Promise<void>; // Handle OAuth callback
+	// Methods (proxied to `sdk`; parameter/return types follow the flow type)
+	init(): Promise<void>; // Load metadata and restore any persisted session
+	checkAuthentication(params?: { autoRefresh: boolean }): Promise<boolean>; // Check the session, optionally refreshing tokens (never when serverSessionUri is set)
+	login(params?: RedirectParams | PopupParams): Promise<void>; // Start login flow (redirect: `returnTo` sets where handleCallback() sends the user) (embedded/native: deprecated, returns a login flow instance - use `sdk.startSession()`)
+	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
+	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(): Promise<void>; // Refresh access token
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
-	entry(): Promise<EntryData>; // Handle external entry (embedded/native only)
+	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
+	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
+	subscribeToEvent(eventName, callbackFn): { dispose: () => void }; // Subscribe to a single SDK event
+	subscribeToAllEvents(callbackFn): { dispose: () => void }; // Subscribe to all SDK events
 }
 ```
 
@@ -1508,10 +1554,10 @@ const ctx = useNativeLogin({
 {
 	params?: NativeParams; // Initial flow parameters
 	onLogin?: (session: SessionData) => void | Promise<void>; // Called on successful login
-	onClose?: () => void; // Called when user closes the flow
-	onError?: (error: unknown) => void; // Called on error
-	onFallback?: (error: FallbackError) => void; // Called when fallback needed
-	onGlobalMessage?: (message: NativeFlowMessage) => void; // Called for global messages
+	onClose?: () => void | Promise<void>; // Called when user closes the flow
+	onError?: (error: Error) => void | Promise<void>; // Called on error
+	onFallback?: (error: FallbackError) => void | Promise<void>; // Called when fallback needed
+	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>; // Called for global messages
 }
 ```
 
@@ -1538,18 +1584,19 @@ const ctx = useNativeLogin({
 
 ## Server SDK
 
-This is the same backend-for-frontend ([BFF](../../README.md#bff)) server implementation as the [core Server SDK](../sdk-core/README.md#server-sdk), pre-wired for SvelteKit: `createServerSDK` provides a SvelteKit `ServerAdapter` and a default encrypted-cookie storage built on `event.cookies`.
+This is the same backend-for-frontend ([BFF](../../README.md#bff)) server implementation as the [core Server SDK](../sdk-core/README.md#server-sdk), pre-wired for SvelteKit: `createServerSDK` provides a SvelteKit `ServerAdapter` and the default encrypted-cookie storage. The storage reads the session from the request's `cookie` header, and the `handle` hook writes the queued `Set-Cookie` headers to the response.
 
 ### Setup
 
 ```ts
 // src/lib/server/strivacity.ts
 import { createServerSDK } from '@strivacity/sdk-svelte/server';
+import { env } from '$env/dynamic/private';
 import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	secret: env.SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1572,16 +1619,19 @@ Call `getSession(event)` from any `load()` function, form action, or `+server.ts
 ```ts
 // src/routes/+layout.server.ts
 import type { LayoutServerLoad } from './$types';
+import { toClientSession } from '@strivacity/sdk-svelte/server';
 import { sdk } from '$lib/server/strivacity';
 
 export const load: LayoutServerLoad = async (event) => {
 	return {
-		session: await sdk.getSession(event),
+		session: toClientSession(await sdk.getSession(event)),
 	};
 };
 ```
 
-Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session, or throws SvelteKit's own `redirect()` to the login page (default `/login`, or `${authUrlPrefix}/login` for `redirect`/`popup` modes) when there's no active session:
+When the access token is within `refreshSkew` seconds of expiry and the session has a refresh token, `getSession(event)` refreshes it before returning. The refresh runs at most once per request, and every caller of the same request - the layout and page `load()` functions SvelteKit runs concurrently, form actions, `+server.ts` handlers, `requireSession` - gets the same rotated session. The rotated session cookie is written to the response by `sdk.handle`, so there is no need to send the browser through `/auth/refresh` first. If the refresh fails, `getSession(event)` returns `null`. Set `autoRefresh: false` in the Server SDK options to turn this off.
+
+Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session (refreshed through `getSession(event)` if it's about to expire), or throws SvelteKit's own `redirect()` to the login page (`loginUri`, default `/login`, in `embedded`/`native` modes; `${authUrlPrefix}/login` in `redirect`/`popup` modes) when there's no active session or its refresh failed:
 
 ```ts
 // src/routes/profile/+page.server.ts
@@ -1591,11 +1641,12 @@ import { sdk } from '$lib/server/strivacity';
 export const load: PageServerLoad = async (event) => {
 	const session = await sdk.requireSession(event, { returnTo: '/profile' });
 
-	return { session };
+	// Page data is serialized into the HTML, so return only what the page needs - never the raw tokens.
+	return { claims: session.claims };
 };
 ```
 
-> **Caveat**: `requireSession`'s `redirect()` only works as a genuine HTTP redirect when called from a `load()` whose page is actually rendered server-side. If your app disables SSR (`export const ssr = false`) and the login target isn't a real page route (the default `${authUrlPrefix}/login` for `redirect`/`popup` modes isn't - only `embedded`/`native` modes' `/login` page is), call `requireSession` from `hooks.server.ts`'s `handle` instead of a page's own `load()`, before/alongside `sdk.handle`. See the [example app](../../apps/sveltekit/src/routes/profile/+page.server.ts) for a working setup.
+> **Note**: call `requireSession` from a server `load()` (`+page.server.ts`/`+layout.server.ts`) - it needs the server `RequestEvent`, so a universal `+page.ts`/`+layout.ts` `load()` can't use it. This also works when SSR is disabled (`export const ssr = false`, as in the example app): SvelteKit still runs server `load()`s (via its `__data.json` request) and the client router follows the thrown `redirect()`. When the target isn't a page route (e.g. `${authUrlPrefix}/login` in `redirect`/`popup` modes), SvelteKit falls back to a full-page navigation, which `sdk.handle` in `hooks.server.ts` then serves. See the [example app](../../apps/sveltekit/src/routes/profile/+page.server.ts) for a working setup.
 
 <a id="server-storages"></a>
 ### Storages
@@ -1604,8 +1655,8 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **`createEncryptedCookieStorage(secret, options?)`** - default storage that keeps the session encrypted in an http-only cookie.
-- **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. This supports back-channel logout out of the box.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
 // src/lib/server/storage.ts
@@ -1634,37 +1685,40 @@ export const sdk = createServerSDK({
 
 #### Custom storage
 
-For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage):
+For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
+
+The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // src/lib/server/storage.ts
 import { createStorage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
-import type { SvelteKitServerStorage, SDKStorage } from '@strivacity/sdk-svelte/server';
+import type { ServerStorage, SDKStorage } from '@strivacity/sdk-svelte/server';
 
 const unstorageInstance = createStorage({ driver: redisDriver({ url: process.env.REDIS_URL }) });
 
-// Custom session storage for tokens
-export const sessionStorage: SvelteKitServerStorage = {
+// Session payload store - `key` is the per-browser session id provided by `createSessionIdCookieStorage`
+// (raw get/set keep the serialized session string as-is)
+export const sessionStore: ServerStorage = {
 	async get(key) {
-		return unstorageInstance.getItem<string>(key);
+		return unstorageInstance.getItemRaw<string>(`session:${key}`);
 	},
 	async set(key, value) {
-		await unstorageInstance.setItem(key, value);
+		await unstorageInstance.setItemRaw(`session:${key}`, value);
 	},
 	async delete(key) {
-		await unstorageInstance.removeItem(key);
+		await unstorageInstance.removeItem(`session:${key}`);
 	},
 	// Required for back-channel logout support - see below.
-	// Scans all stored sessions and removes those matching the logout token's sid or sub claim.
+	// Scans all stored sessions and removes those whose ID token claims match the logout token's sid or sub claim.
 	async deleteByLogoutToken(logoutToken) {
-		const keys = await unstorageInstance.getKeys();
+		const keys = await unstorageInstance.getKeys('session');
 		await Promise.all(
 			keys.map(async (key) => {
-				const raw = await unstorageInstance.getItem<string>(key);
+				const raw = await unstorageInstance.getItemRaw<string>(key);
 				if (!raw) return;
 				const session = JSON.parse(raw);
-				if ((logoutToken.sid && session.sid === logoutToken.sid) || (logoutToken.sub && session.sub === logoutToken.sub)) {
+				if ((logoutToken.sid && session.claims?.sid === logoutToken.sid) || (logoutToken.sub && session.claims?.sub === logoutToken.sub)) {
 					await unstorageInstance.removeItem(key);
 				}
 			}),
@@ -1689,12 +1743,13 @@ export const stateStorage: SDKStorage = {
 ```ts
 // src/lib/server/strivacity.ts
 import { createServerSDK } from '@strivacity/sdk-svelte/server';
+import { createSessionIdCookieStorage } from '@strivacity/sdk-svelte/server/storages';
 import { sdkOptions } from '../options';
-import { sessionStorage, stateStorage } from './storage';
+import { sessionStore, stateStorage } from './storage';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	storage: sessionStorage, // Custom Redis-backed session storage
+	storage: createSessionIdCookieStorage(sessionStore), // Custom Redis-backed session storage, keyed by a session-id cookie
 	stateStorage, // Custom Redis-backed state storage
 });
 ```
@@ -1705,9 +1760,9 @@ export const sdk = createServerSDK({
 
 OIDC back-channel logout lets the authorization server terminate sessions server-to-server, without involving the browser. When the IDP sends a logout event (e.g. an admin terminates a session, or the user logs out from a different device), it POSTs a signed `logout_token` JWT to `/auth/backchannel-logout` - already wired up by the `handle` hook from [Setup](#setup) - which routes it to `sdk.handleBackChannelLogout(event)`.
 
-The handler verifies the token's signature against the IDP's JWKS, validates the `iss`, `aud`, `iat` (freshness), and `jti` (replay protection) claims, requires the `http://schemas.openid.net/event/backchannel-logout` event and a `sid` or `sub` claim, then calls `storage.deleteByLogoutToken({ sid?, sub? })` to remove the matching session(s). It responds `200` on success, `400` for an invalid or malformed `logout_token`, and `501` if the configured storage doesn't implement `deleteByLogoutToken`.
+The handler verifies the token's signature against the IDP's JWKS, validates the `iss`, `aud`, `iat` (freshness), and `jti` (replay protection) claims, requires the `http://schemas.openid.net/event/backchannel-logout` event and a `sid` or `sub` claim, then calls `storage.deleteByLogoutToken({ sid?, sub? })` to remove the matching session(s). It responds `200` on success, `400` for an invalid or malformed `logout_token`, `501` if the configured storage doesn't implement `deleteByLogoutToken`, and `500` if deleting the session fails.
 
-> **The default encrypted-cookie storage does not support back-channel logout** because each cookie is bound to a single browser session - there is no server-side index to look up by `sid` or `sub`. To support back-channel logout, use [`createSessionIdCookieStorage`](#server-storages) with a `storage` that implements `deleteByLogoutToken` (e.g. `createServerMemoryStorage()` for local testing), or a fully custom server storage as shown in the [Custom storage](#server-storages) example above.
+> **The default encrypted-cookie storage does not support back-channel logout** because each cookie is bound to a single browser session - there is no server-side index to look up by `sid` or `sub`. To support back-channel logout, use [`createSessionIdCookieStorage`](#server-storages) with a `storage` that implements `deleteByLogoutToken`, e.g. `createServerMemoryStorage()` for local testing or the Redis-backed store from the [Custom storage](#server-storages) example above.
 
 Configure the **Back-channel logout URI** in your Strivacity application settings to:
 
@@ -1724,9 +1779,9 @@ For a complete explanation of the handshake and validation performed, see the co
 	options: ServerSDKOptions; // resolved server SDK configuration
 
 	// Session management
-	getSession(event?): Promise<SessionData | null>; // read the current session
+	getSession(event?): Promise<SessionData | null>; // read the current session; with `autoRefresh` (default) it refreshes a near-expiry session once per request; null if the refresh fails
 	updateSession(session, event?): Promise<void>; // persist new session data
-	refreshSession(event?): Promise<SessionData>; // refresh tokens using the refresh token
+	refreshSession(event?): Promise<SessionData>; // force a token refresh using the refresh token (getSession already refreshes near-expiry sessions)
 	revokeSession(event?): Promise<void>; // revoke tokens and clear the session
 	getEntrySession(entryUrl): Promise<Record<string, string>>; // resolve an externally-initiated (embedded/native) entry URL
 	completeLogin(params, event?): Promise<SessionData>; // exchange an authorization code for tokens
@@ -1759,16 +1814,16 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handle` |
 | `loginUri` | `string` | No | `'/login'` | Route `requireSession` redirects to when there's no session (`embedded`/`native` modes only - `redirect`/`popup` modes always use `${authUrlPrefix}/login`) |
-| `postLoginRedirectUri` | `string` | No | - | Default redirect after login when no `?returnTo=` is given |
-| `postLogoutRedirectUri` | `string` | No | - | Default redirect after logout |
+| `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
+| `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
 
 ---
 
 ## Route guards
 
-- **Client-side**: there's no dedicated guard helper - check `ctx.isAuthenticated` (after `ctx.loading` becomes `false`) in `onMount` and redirect with `goto()`/`location.href` if it's `false`.
-- **Server-side**: call [`requireSession(event, options?)`](#accessing-the-session-server-side) from a `+page.server.ts`/`+layout.server.ts` `load()` - see the caveat about non-page login targets under SSR-disabled apps documented there.
+- **Client-side**: there's no dedicated guard helper - check `ctx.isAuthenticated` in an `$effect` once `ctx.loading` is `false`, and redirect with `goto()`/`location.href` if it's `false`. `onMount` is too early on a direct page load, because the session is still being restored then.
+- **Server-side**: call [`requireSession(event, options?)`](#accessing-the-session-server-side) from a `+page.server.ts`/`+layout.server.ts` `load()` - this works with SSR disabled too (see the note there).
 
 ---
 
@@ -1823,7 +1878,7 @@ import type { SDKInitConfig, SDKOptions } from '@strivacity/sdk-core/types';
 
 export function createCustomFlow(initConfig: SDKInitConfig) {
 	const state = getDefaultFlowState();
-	const options = getSDKOptions<SDKOptions>(state, initConfig);
+	const options = getSDKOptions<SDKOptions>(initConfig);
 	const base = createBaseFlow(state, options);
 
 	async function refresh(): Promise<void> {
@@ -1845,11 +1900,12 @@ v4 replaces that with the Server SDK shown in [Quick start](#quick-start) above:
 ```ts
 // src/lib/server/strivacity.ts
 import { createServerSDK } from '@strivacity/sdk-svelte/server';
+import { env } from '$env/dynamic/private';
 import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 

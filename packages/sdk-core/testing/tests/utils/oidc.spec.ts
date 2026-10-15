@@ -19,6 +19,7 @@ import {
 } from '../../../src/utils/oidc';
 import { NetworkError, ServerError, ProtocolError, OidcError } from '../../../src/utils/errors';
 import { encodeBase64URL, decodeBase64URL } from '../../../src/utils/base64url';
+import { parseState } from '../../../src/utils/state';
 import { buildIdToken, buildIdTokenClaims, exportSigningKey, generateRSAKeyPair, signRS256 } from '@strivacity/testing/mocks/oidc';
 import type { IdTokenClaims } from '../../../src/types/oidc';
 
@@ -50,6 +51,7 @@ describe('defaultOptions', () => {
 			refreshSkew: 60,
 			clockSkew: 60,
 			serverSessionUri: null,
+			authUrlPrefix: '/auth',
 			scopes: ['openid'],
 			responseType: 'code',
 			responseMode: 'query',
@@ -99,6 +101,33 @@ describe('generateRandomHex', () => {
 });
 
 describe('buildAuthorizationUrl', () => {
+	test('keeps a same-origin returnTo with the login state as a path', async () => {
+		const options = createOptions();
+		const url = await buildAuthorizationUrl({ params: { returnTo: `${globalThis.location.origin}/orders?page=2#top` }, options });
+		const state = parseState((await options.stateStorage.get(`sty.${url.searchParams.get('state')}`))!);
+
+		expect(state.metadata?.returnTo).toBe('/orders?page=2#top');
+		expect(url.searchParams.has('returnTo')).toBe(false);
+	});
+
+	test('forwards returnTo to the Server SDK login route with server-managed sessions', async () => {
+		const options = createOptions({ serverSessionUri: '/auth/login' });
+		const url = await buildAuthorizationUrl({
+			url: '/auth/login',
+			includeOAuthParams: false,
+			persistState: false,
+			params: { returnTo: '/orders' },
+			options,
+		});
+
+		expect(url.pathname).toBe('/auth/login');
+		expect(url.searchParams.get('returnTo')).toBe('/orders');
+	});
+
+	test('rejects a returnTo on another origin', async () => {
+		await expect(buildAuthorizationUrl({ params: { returnTo: 'https://evil.example/steal' }, options: createOptions() })).rejects.toThrow('Invalid returnTo');
+	});
+
 	test('sets response_type=code exactly once', async () => {
 		const url = await buildAuthorizationUrl({ params: {}, options: createOptions() });
 

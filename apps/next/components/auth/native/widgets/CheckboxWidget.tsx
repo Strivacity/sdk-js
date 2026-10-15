@@ -1,12 +1,18 @@
 import type { ChangeEvent } from 'react';
 import type { CheckboxWidget } from '@strivacity/sdk-next/client';
+import { useEffect } from 'react';
 import { useNativeLoginContext } from '@strivacity/sdk-next/client';
 
 export default function Checkbox({ formId, config }: { formId: string; config: CheckboxWidget }) {
 	const { loading, forms, messages, setFormValue } = useNativeLoginContext();
-	const disabled = !!loading;
-	const checked = (forms[formId]?.[config.id] as boolean) || config.value || false;
+	const disabled = !!loading || !!config.readonly;
+	const checked = (forms[formId]?.[config.id] as boolean | undefined) ?? config.value ?? false;
 	const errorMessage = messages[formId]?.[config.id]?.text;
+
+	useEffect(() => {
+		setFormValue(formId, config.id, checked);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const onChange = (event: ChangeEvent<HTMLInputElement>) => {
 		if (disabled) {

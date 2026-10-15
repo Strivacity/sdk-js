@@ -11,7 +11,7 @@ export default function LogoutClient() {
 			return;
 		}
 
-		void logout();
+		void logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 	}, [loading]);
 
 	return null;

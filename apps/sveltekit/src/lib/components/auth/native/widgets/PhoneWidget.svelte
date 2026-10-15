@@ -9,7 +9,7 @@
 	const disabled = $derived(context.loading || !!config.readonly);
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
-	const value = $derived((context.forms[formId]?.[config.id] as string) ?? config.value ?? '');
+	const value = $derived((context.forms[formId]?.[config.id] as string | undefined) ?? config.value ?? '');
 
 	onMount(() => {
 		// Default value handling
@@ -47,7 +47,7 @@
 	<input
 		id={config.id}
 		name={config.id}
-		type={config.type}
+		type="tel"
 		autocomplete="tel"
 		inputmode="tel"
 		readonly={disabled}

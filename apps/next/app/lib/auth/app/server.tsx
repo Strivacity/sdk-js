@@ -5,12 +5,12 @@ import { sdk } from '../server';
 export async function AppServer({ children }: { children: React.ReactNode }) {
 	const session = await sdk.getSession();
 	const isAuthenticated = !!session?.access_token;
-	const name = isAuthenticated ? `${session.claims?.given_name} ${session?.claims?.family_name}` : null;
+	const name = isAuthenticated ? `${session.claims?.given_name ?? ''} ${session.claims?.family_name ?? ''}`.trim() : null;
 
 	return (
 		<div id="app">
 			<header>
-				<div>{isAuthenticated ? <strong>Welcome, {name}!</strong> : null}</div>
+				<div>{isAuthenticated ? <strong>Welcome {name}!</strong> : null}</div>
 				<div>
 					<a href="/" data-button="home">
 						Home

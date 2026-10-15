@@ -82,3 +82,23 @@ export function isSessionExpired(session?: Partial<SessionData> | null, skew = 0
 
 	return !session?.access_token || !session.expires_at || session.expires_at <= timestamp() + effectiveSkew;
 }
+
+/**
+ * Returns a copy of a server-managed session that is safe to hand to the browser (e.g. serialized into SSR page data):
+ * without the refresh token and the ID token, which stay server-side in the session cookie.
+ *
+ * @param {SessionData | null | undefined} session - The full server-side session.
+ * @returns {SessionData | null} The session without `refresh_token` and `id_token`, or `null`.
+ */
+export function toClientSession(session?: SessionData | null): SessionData | null {
+	if (!session) {
+		return null;
+	}
+
+	const clientSession = { ...session };
+
+	delete clientSession.refresh_token;
+	delete clientSession.id_token;
+
+	return clientSession;
+}

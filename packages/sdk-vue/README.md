@@ -377,7 +377,29 @@ onMounted(async () => {
 
 #### Handle the callback
 
-The popup resolves automatically - no callback page is needed. Token exchange happens inside the popup and the result is posted back to the opener window.
+The pop-up still navigates to your `redirectUri`, so you still need a callback page there - without it nothing posts the result back to the opener. Call `handleCallback()` on that page; in popup mode it never resolves (the opener closes the pop-up once it receives the result), so don't rely on code after it running:
+
+```vue
+<!-- pages/Callback.vue -->
+<script setup lang="ts">
+import { useStrivacity } from '@strivacity/sdk-vue';
+import { onMounted } from 'vue';
+
+const { handleCallback } = useStrivacity();
+
+onMounted(() => {
+	void handleCallback();
+});
+</script>
+
+<template>
+	<section>
+		<h1>Logging in...</h1>
+	</section>
+</template>
+```
+
+`login()` resolves in the opener once the result has been received and, for client-managed sessions, the tokens have been exchanged.
 
 #### Registration
 
@@ -975,7 +997,6 @@ const { state, forms, messages, loading, submitForm } = useNativeLogin({
 	params: {
 		prompt: 'login', // use 'create' to open the registration flow instead
 		language: 'en-US', // set the UI language (BCP 47 language tag)
-		sdk: 'web-minimal', // rendering mode: 'web-minimal' for simplified rendering (see below), 'web' (default) for full rendering hints and branding
 		sessionId: null, // pass a session ID to resume an existing flow
 	},
 	onLogin: async () => {
@@ -1260,23 +1281,31 @@ const ctx = useStrivacity<RedirectFlow>();
 ```ts
 {
 	// SDK instance (access any SDK method)
-	sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
+	readonly sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
 
 	// Reactive state
-	loading: Ref<boolean>; // True during initialization
-	isAuthenticated: Ref<boolean>; // True if user has valid session
-	idTokenClaims: Ref<IdTokenClaims | null>; // Decoded ID token claims
-	accessToken: Ref<string | null>; // Current access token
-	refreshToken: Ref<string | null>; // Current refresh token
+	readonly loading: Ref<boolean>; // True during initialization
+	readonly language: Ref<string>; // Current BCP 47 language code
+	readonly isAuthenticated: Ref<boolean>; // True if user has valid session
+	readonly idTokenClaims: Ref<IdTokenClaims | null>; // Decoded ID token claims
+	readonly accessToken: Ref<string | null>; // Current access token
+	readonly refreshToken: Ref<string | null>; // Current refresh token
+	readonly accessTokenExpired: Ref<boolean>; // True once the access token has expired
+	readonly accessTokenExpirationDate: Ref<number | null>; // Access token expiration timestamp
 
-	// Methods (all are async)
-	login(params?: LoginParams): Promise<void>; // Start login flow
-	register(params?: LoginParams): Promise<void>; // Start registration flow
-	handleCallback(url?: string): Promise<void>; // Handle OAuth callback
+	// Methods (same signatures as the underlying flow's methods)
+	init(): Promise<void>; // Initialize the SDK (load metadata, restore a persisted session)
+	checkAuthentication(params?: { autoRefresh: boolean }): Promise<boolean>; // Check the session, optionally refreshing the token (never when serverSessionUri is set)
+	login(params?: RedirectParams | PopupParams): Promise<void>; // Start login flow (redirect: `returnTo` sets where handleCallback() sends the user) (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(): Promise<void>; // Refresh access token
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
-	entry(): Promise<EntryData>; // Handle external entry (embedded/native only)
+	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
+	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
+	subscribeToEvent<T extends keyof EventFunctions>(eventName: T, callbackFn: (...params: Parameters<EventFunctions[T]>) => Promise<void> | void): { dispose: () => void }; // Subscribe to a single SDK event
+	subscribeToAllEvents(callbackFn: (...params: Array<unknown>) => Promise<void> | void): { dispose: () => void }; // Subscribe to all SDK events
 }
 ```
 
@@ -1301,11 +1330,11 @@ const ctx = useNativeLogin({
 ```ts
 {
 	params?: NativeParams; // Initial flow parameters
-	onLogin?: (session: Session) => void; // Called on successful login
-	onClose?: () => void; // Called when user closes the flow
-	onError?: (error: unknown) => void; // Called on error
-	onFallback?: (error: FallbackError) => void; // Called when fallback needed
-	onGlobalMessage?: (message: NativeFlowMessage) => void; // Called for global messages
+	onLogin?: (session: SessionData) => void | Promise<void>; // Called on successful login
+	onClose?: () => void | Promise<void>; // Called when user closes the flow
+	onError?: (error: Error) => void | Promise<void>; // Called on error
+	onFallback?: (error: FallbackError) => void | Promise<void>; // Called when fallback needed
+	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>; // Called for global messages
 }
 ```
 
@@ -1315,14 +1344,27 @@ const ctx = useNativeLogin({
 {
 	// Reactive state
 	loading: Ref<boolean>; // True while fetching next screen
-	state: Ref<NativeFlowState>; // Current flow state (screen, forms, layout, etc.)
+	state: Ref<Partial<NativeFlowState>>; // Current flow state (screen, forms, layout, etc.)
 	forms: Ref<Record<string, Record<string, unknown>>>; // Form data by form ID
 	messages: Ref<Record<string, Record<string, NativeFlowMessage>>>; // Validation messages
 
 	// Methods
-	submitForm(formId: string): Promise<void>; // Submit a form and advance to next screen
+	submitForm(formId: string, customBody?: Record<string, unknown>): Promise<void>; // Submit a form and advance to next screen
+	setFormValue(formId: string, widgetId: string, value: unknown): void; // Update a single field value before submission
+	setMessage(formId: string, widgetId: string, value: NativeFlowMessage): void; // Set a validation/info message on a widget
 	triggerFallback(message?: string): void; // Manually trigger fallback to hosted journey
+	triggerClose(): void; // Signal that the login flow was closed by the user
 }
+```
+
+### useNativeLoginContext
+
+Returns the same login context as `useNativeLogin()` from inside descendant components (e.g. your own widget components). `useNativeLogin()` provides the context to its component's subtree; calling `useNativeLoginContext()` outside that subtree throws `Missing SDK native login context`.
+
+```ts
+import { useNativeLoginContext } from '@strivacity/sdk-vue';
+
+const { forms, messages, setFormValue, submitForm } = useNativeLoginContext();
 ```
 
 ---
@@ -1549,9 +1591,14 @@ app.use(
 		redirectUri: 'https://your-app.example.com/callback',
 		scopes: ['openid', 'profile', 'email'],
 		serverSessionUri: '/api/auth/login', // Requests are routed through your server; tokens are NOT written to client storage
+		authUrlPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUrlPrefix}/refresh`
 	}),
 );
 ```
+
+In this mode `logout()` doesn't clear the server session cookie. Navigate the browser to your server's logout route instead (e.g. `/api/auth/logout`, optionally with a same-origin `?returnTo=`), which clears the server session and redirects to the IDP end-session endpoint. See [Logging out](../sdk-core/README.md#logging-out) in the core SDK README for the `returnTo` rules.
+
+The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. In a [route guard](#route-guards), you can do this for an expired session (`sdk.session` set but `isAuthenticated` false) with `await sdk.refresh({ returnTo: to.fullPath })` and cancel the navigation (`return false`) instead of redirecting to the login page. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
 
 See [`apps/vue`](../../apps/vue) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 
@@ -1561,7 +1608,7 @@ See [`apps/vue`](../../apps/vue) paired with [`apps/backend`](../../apps/backend
 
 ### Migrating to v4.0
 
-v4 replaces the SDK's class-based flow architecture with function-based architecture, and adds first-class support for server-managed (BFF) sessions. `createStrivacitySDK()`, `useStrivacity()`, `useNativeLogin()`, and the built-in `redirect`/`popup`/`embedded`/`native` modes are unchanged - only apps that used `mode: 'custom'` or drove `native` mode through the old `NativeFlowHandler` need to update their code.
+v4 replaces the SDK's class-based flow architecture with function-based architecture, and adds first-class support for server-managed (BFF) sessions. `createStrivacitySDK()`, `useStrivacity()`, and the built-in `redirect`/`popup`/`embedded`/`native` modes are unchanged (`useStrivacity()` no longer exposes `options` - use `sdk.options`). `useNativeLogin()` is new in v4: it replaces v3's `<StyLoginRenderer>` component, so `native` mode now renders your own widget components driven by [`useNativeLogin()`](#usenativelogin) and [`useNativeLoginContext()`](#usenativelogincontext). Apps that rendered `<StyLoginRenderer>`, used `mode: 'custom'`, or drove `native` mode through the old `NativeFlowHandler` need to update their code.
 
 #### Class-based flows replaced by functions
 
@@ -1588,7 +1635,7 @@ import type { SDKInitConfig, SDKOptions } from '@strivacity/sdk-core/types';
 
 export function createCustomFlow(initConfig: SDKInitConfig) {
 	const state = getDefaultFlowState();
-	const options = getSDKOptions<SDKOptions>(state, initConfig);
+	const options = getSDKOptions<SDKOptions>(initConfig);
 	const base = createBaseFlow(state, options);
 
 	async function refresh(): Promise<void> {

@@ -34,15 +34,20 @@ export default withAuthGuard(function Profile() {
 		}
 
 		const handler = () => {
-			refresh()
-				.then(() => globalThis.location.reload())
+			// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUrlPrefix}/refresh`), which comes back to /profile
+			refresh({ returnTo: '/profile' })
+				.then(() => {
+					if (!sdk?.options.serverSessionUri) {
+						globalThis.location.reload();
+					}
+				})
 				.catch((error) => route(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`));
 		};
 
 		el.addEventListener('refreshToken', handler);
 
 		return () => el.removeEventListener('refreshToken', handler);
-	}, [refresh]);
+	}, [refresh, sdk]);
 
 	return (
 		<section>

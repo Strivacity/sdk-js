@@ -4,6 +4,7 @@ import type { SvelteKitServerSDK, SvelteKitServerSDKInitConfig } from '../../../
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { isRedirect } from '@sveltejs/kit';
 import { createBaseServerSDK } from '@strivacity/sdk-core/server';
+import { pushSetCookie } from '@strivacity/sdk-core/utils';
 import { createMockBaseServerSDK } from '@strivacity/testing/mocks/sdk';
 import { createServerSDK } from '../../../src/server/sdk';
 
@@ -63,7 +64,7 @@ describe('createServerSDK', () => {
 		const event = createEvent();
 
 		test.each([
-			['getSession', [event]],
+			['getSession', [event, { autoRefresh: false }]],
 			['updateSession', [{ access_token: 'a' }, event]],
 			['refreshSession', [event]],
 			['revokeSession', [event]],
@@ -121,6 +122,58 @@ describe('createServerSDK', () => {
 			expect(resolve).toHaveBeenCalledWith(event);
 			expect(result).toBe(resolveResult);
 		});
+
+		test('flushes a cookie queued while resolving the route (e.g. a rotated session from requireSession) onto the resolved response', async () => {
+			installBase({ handler: vi.fn().mockResolvedValue(null) });
+			const sdk = createServerSDK(validInitConfig);
+			const event = createEvent();
+			const resolve = vi.fn().mockImplementation(() => {
+				pushSetCookie(event, 'sty.session=rotated; Path=/');
+				return Promise.resolve(new Response('ok'));
+			});
+
+			const result = await sdk.handle({ event, resolve });
+
+			expect(result.headers.getSetCookie()).toEqual(['sty.session=rotated; Path=/']);
+		});
+
+		test('flushes a rotated session cookie queued from a `load` that receives a copy of the event (as SvelteKit does)', async () => {
+			const rotated = { access_token: 'rotated', expires_at: Math.floor(Date.now() / 1000) + 3600 };
+			const base = installBase({
+				handler: vi.fn().mockResolvedValue(null),
+				getSession: vi.fn(),
+			});
+			vi.mocked(base.getSession).mockImplementation((event) => {
+				pushSetCookie(event, 'sty.session=rotated; Path=/');
+				return Promise.resolve(rotated);
+			});
+			const sdk = createServerSDK(validInitConfig);
+			const event = createEvent({ locals: {} });
+			const resolve = vi.fn().mockImplementation(async () => {
+				// SvelteKit calls `load` with `{ ...event, ... }` - a different object that shares `locals`, `request` and `url`
+				await sdk.requireSession({ ...event });
+				return new Response('ok');
+			});
+
+			const result = await sdk.handle({ event, resolve });
+
+			expect(base.getSession).toHaveBeenCalledWith(event);
+			expect(result.headers.getSetCookie()).toEqual(['sty.session=rotated; Path=/']);
+		});
+	});
+
+	describe('getSession (per-request refresh)', () => {
+		test('maps every event copy of a request (concurrent layout/page loads) to the same event for the core refresh', async () => {
+			const base = installBase();
+			const sdk = createServerSDK(validInitConfig);
+			const event = createEvent({ locals: {} });
+
+			await Promise.all([sdk.getSession({ ...event }), sdk.requireSession({ ...event }).catch(() => undefined)]);
+
+			const calls = vi.mocked(base.getSession).mock.calls.map(([e]) => e);
+			expect(calls).toHaveLength(2);
+			expect(calls[0]).toBe(calls[1]);
+		});
 	});
 
 	describe('requireSession', () => {
@@ -133,27 +186,18 @@ describe('createServerSDK', () => {
 			expect(base.refreshSession).not.toHaveBeenCalled();
 		});
 
-		test('refreshes an expired session that still has a refresh token', async () => {
-			const expiredSession = { access_token: 'a', expires_at: 0, refresh_token: 'r' };
+		test('returns the (refreshed) session from the core getSession', async () => {
 			const refreshedSession = { access_token: 'b', expires_at: Math.floor(Date.now() / 1000) + 3600 };
-			const base = installBase({
-				getSession: vi.fn().mockResolvedValue(expiredSession),
-				refreshSession: vi.fn().mockResolvedValue(refreshedSession),
-			});
+			const base = installBase({ getSession: vi.fn().mockResolvedValue(refreshedSession) });
 			const sdk = createServerSDK(validInitConfig);
 			const event = createEvent();
 
 			await expect(sdk.requireSession(event)).resolves.toBe(refreshedSession);
-			expect(base.refreshSession).toHaveBeenCalledWith(event);
+			expect(base.getSession).toHaveBeenCalledWith(event);
 		});
 
-		test('redirects when refreshing an expired session throws instead of propagating the refresh error', async () => {
-			const expiredSession = { access_token: 'a', expires_at: 0, refresh_token: 'r' };
-			installBase({
-				options: { mode: 'redirect', authUrlPrefix: '/auth' },
-				getSession: vi.fn().mockResolvedValue(expiredSession),
-				refreshSession: vi.fn().mockRejectedValue(new Error('refresh failed')),
-			});
+		test('redirects when the refresh failed (getSession resolves to null)', async () => {
+			installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 
 			const error = await sdk.requireSession(createEvent()).catch((error: unknown) => error);

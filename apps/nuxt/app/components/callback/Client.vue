@@ -9,8 +9,8 @@ onMounted(async () => {
 	}
 
 	try {
-		await handleCallback();
-		await router.push('/profile');
+		const { returnTo } = await handleCallback();
+		await router.push(returnTo ?? '/profile');
 	} catch (error) {
 		await router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 	}

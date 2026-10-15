@@ -7,21 +7,15 @@ import { useStrivacity } from '@strivacity/sdk-next/client';
 export default function CallbackClient() {
 	const { loading, handleCallback } = useStrivacity();
 	const router = useRouter();
-	const searchParams = new URLSearchParams(globalThis.window?.location.search);
 
 	useEffect(() => {
 		if (loading) {
 			return;
 		}
 
-		if (searchParams.get('error') || searchParams.get('error_description')) {
-			router.replace(`/error?${searchParams.toString()}`);
-			return;
-		}
-
 		handleCallback()
-			.then(() => {
-				router.push('/profile');
+			.then(({ returnTo }) => {
+				router.push(returnTo ?? '/profile');
 			})
 			.catch((error) => {
 				router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);

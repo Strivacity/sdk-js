@@ -4,7 +4,7 @@ import { useNativeLoginContext } from '@strivacity/sdk-solid/client';
 
 export default function Input(props: { formId: string; config: InputWidget }) {
 	const ctx = useNativeLoginContext();
-	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string) || props.config.value);
+	const value = createMemo(() => (ctx.forms()[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value);
 	const disabled = createMemo(() => ctx.loading() || !!props.config.readonly);
 	const errorMessage = createMemo(() => ctx.messages()[props.formId]?.[props.config.id]?.text);
 	const autocomplete = createMemo(() =>

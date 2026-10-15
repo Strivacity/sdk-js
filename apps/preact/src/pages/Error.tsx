@@ -1,6 +1,6 @@
 export default function Error() {
 	const searchParams = new URLSearchParams(window.location.search);
-	const message = searchParams.get('error_description') || searchParams.get('error');
+	const message = searchParams.get('error_description') || searchParams.get('error') || searchParams.get('message');
 
 	return (
 		<section>

@@ -1,11 +1,25 @@
 import type { Request as ExpressRequest } from 'express';
 import { Router } from 'express';
 import { createBaseServerSDK } from '@strivacity/sdk-core/server';
+import { flushSetCookies } from '@strivacity/sdk-core/utils';
 import { toWebRequest, applyResponse } from './utils';
+
+// NOTE: `base.handler` and the matched `handleXxx` method both convert the request, so convert each one only once: the body
+// stream of an Express request can only be read once.
+const webRequests = new WeakMap<ExpressRequest, Request>();
 
 const base = createBaseServerSDK<ExpressRequest>(
 	{
-		toRequest: (req) => toWebRequest(req),
+		toRequest: (req) => {
+			let request = webRequests.get(req);
+
+			if (!request) {
+				request = toWebRequest(req);
+				webRequests.set(req, request);
+			}
+
+			return request;
+		},
 	},
 	{
 		mode: import.meta.env.VITE_MODE,
@@ -20,37 +34,30 @@ const base = createBaseServerSDK<ExpressRequest>(
 
 export const handlers = Router();
 
-/**
- * Mounts one of the shared server SDK's `handleXxx` methods as an Express route, converting its `Response` back to Express.
- *
- * @param {'get' | 'post'} method - The HTTP method to mount the route on.
- * @param {string} path - The route path.
- * @param {(req: ExpressRequest) => Promise<Response>} handler - The shared server SDK handler to invoke.
- */
-function mount(method: 'get' | 'post', path: string, handler: (req: ExpressRequest) => Promise<Response>): void {
-	handlers[method](path, async (req, res, next) => {
-		try {
-			await applyResponse(await handler(req), res);
-		} catch (error) {
-			next(error);
+// NOTE: `base.handler` serves every auth route (`/login`, `/callback`, `/refresh`, `/logout`, ...) under `authUrlPrefix`, and
+// returns null for anything else.
+handlers.use(async (req, res, next) => {
+	try {
+		const response = await base.handler(req);
+
+		if (response) {
+			await applyResponse(response, res);
+		} else {
+			next();
 		}
-	});
-}
+	} catch (error) {
+		next(error);
+	}
+});
 
-mount('get', '/login', (req) => base.handleLogin(req));
-mount('get', '/register', (req) => base.handleRegister(req));
-mount('get', '/callback', (req) => base.handleCallback(req));
-mount('get', '/refresh', (req) => base.handleRefresh(req));
-mount('get', '/revoke', (req) => base.handleRevoke(req));
-mount('get', '/entry', (req) => base.handleEntry(req));
-mount('get', '/logout', (req) => base.handleLogout(req));
-mount('post', '/backchannel-logout', (req) => base.handleBackChannelLogout(req));
-
+// NOTE: Demo only: returns the full server-managed session, including the ID and refresh tokens, so the profile page can
+// display them. In your own app, return only what the UI needs (`toClientSession` drops the refresh and ID tokens) - never
+// the refresh token.
 handlers.get('/session', async (req, res) => {
 	try {
-		let session = await base.getSession(req);
+		const session = await base.getSession(req);
 
-		res.json(session ?? {});
+		await applyResponse(flushSetCookies(req, Response.json(session ?? {})), res);
 	} catch (error) {
 		res.status(500).json({
 			error: 'session_error',

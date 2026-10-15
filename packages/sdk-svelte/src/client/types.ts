@@ -5,19 +5,19 @@ import type {
 	NativeFlow,
 	EmbeddedFlow,
 	initFlow,
-	NativeParams,
 	NativeFlowState,
 	SessionData,
 	NativeFlowMessage,
 	SDKInitConfig,
+	NativeLoginControllerOptions,
 } from '@strivacity/sdk-core';
-import type { FallbackError } from '@strivacity/sdk-core/utils';
 
 export * from '@strivacity/sdk-core/types';
 
 export type SDKContext<Flow extends RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow> = {
 	/**
 	 * The underlying Strivacity SDK flow instance.
+	 * It is created in the browser only, so during SSR it is `undefined` and the SDK methods of this context must not be called.
 	 */
 	readonly sdk: Flow;
 
@@ -32,7 +32,7 @@ export type SDKContext<Flow extends RedirectFlow | PopupFlow | NativeFlow | Embe
 	readonly language: string;
 
 	/**
-	 * A boolean ref indicating whether the user is authenticated.
+	 * Whether the user is authenticated.
 	 */
 	readonly isAuthenticated: boolean;
 
@@ -52,7 +52,7 @@ export type SDKContext<Flow extends RedirectFlow | PopupFlow | NativeFlow | Embe
 	readonly refreshToken: string | null;
 
 	/**
-	 * A boolean ref indicating whether the access token has expired.
+	 * Whether the access token has expired.
 	 */
 	readonly accessTokenExpired: boolean;
 
@@ -155,10 +155,10 @@ export type LoginContext = {
 	submitForm: (formId: string, customBody?: Record<string, unknown>) => Promise<void>;
 
 	/**
-	 * Redirects to the hosted login UI.
+	 * Hands the flow over to the hosted login UI: calls `onFallback` with a `FallbackError` carrying the hosted URL, so the app can redirect there.
 	 *
-	 * @param message - Optional message to log before redirecting.
-	 * @returns A promise that resolves when the redirect is initiated.
+	 * @param message - Optional message to log as the fallback reason.
+	 * @throws {Error} When the IdP has not provided a hosted URL yet.
 	 */
 	triggerFallback: (message?: string) => void;
 
@@ -181,19 +181,19 @@ export type LoginContext = {
 	 *
 	 * @param formId - The ID of the form containing the widget.
 	 * @param widgetId - The ID of the widget to set the message for.
-	 * @param value - The message to set, which can be a string or a structured NativeFlowMessage.
+	 * @param value - The message to set, e.g. `{ type: 'error', text: 'Required' }`.
 	 */
 	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
 };
 
 export type StyAuthProviderProps = {
 	/**
-	 * The options to be used by the AuthProvider. These options are passed to the SDK during initialization.
+	 * The options passed to `initFlow` when `createStyAuthProvider` creates the SDK.
 	 */
 	options: SDKInitConfig;
 
 	/**
-	 * A getter returning the session data to be used by the AuthProvider.
+	 * A getter returning the session data the SDK is initialized with, typically loaded on the server for server-managed sessions.
 	 *
 	 * Called reactively (inside a Svelte effect) whenever the returned value changes, so it should read from a
 	 * reactive source (e.g. a `$props()` field) rather than a plain snapshot. If not provided, the AuthProvider
@@ -203,97 +203,11 @@ export type StyAuthProviderProps = {
 };
 
 /**
- * The reactive context value exposed to native login flow widgets via `useNativeLoginContext()` (key: `nativeFlowContext`).
+ * The reactive context value exposed to native login flow widgets via `useNativeLoginContext()`.
  */
-export type NativeFlowContextValue = {
-	/**
-	 * Whether a form submission or session initialization is in progress.
-	 */
-	loading: boolean;
+export type NativeFlowContextValue = LoginContext;
 
-	/**
-	 * Current form field values, keyed by form ID then widget ID.
-	 */
-	forms: Record<string, Record<string, unknown>>;
-
-	/**
-	 * Current validation and info messages, keyed by form ID then widget ID.
-	 */
-	messages: Record<string, Record<string, NativeFlowMessage>>;
-
-	/**
-	 * The current login flow state returned by the backend.
-	 */
-	state: Partial<NativeFlowState>;
-
-	/**
-	 * Submits the form with the given ID and advances the login flow.
-	 *
-	 * @param formId - The ID of the form to submit.
-	 * @param customBody - Optional custom body to send with the form submission. If not provided, the current form values will be used.
-	 * @returns A promise that resolves when the form submission is complete.
-	 */
-	submitForm: (formId: string, customBody?: Record<string, unknown>) => Promise<void>;
-
-	/**
-	 * Redirects to the hosted login UI.
-	 *
-	 * @param message - Optional message to log before redirecting.
-	 */
-	triggerFallback: (message?: string) => void;
-
-	/**
-	 * Signals that the login flow was closed by the user.
-	 */
-	triggerClose: () => void;
-
-	/**
-	 * Updates a single field value within a form before submission.
-	 *
-	 * @param formId - The ID of the form containing the field.
-	 * @param widgetId - The ID of the widget (field) to update.
-	 * @param value - The new value to set for the field.
-	 */
-	setFormValue: (formId: string, widgetId: string, value: unknown) => void;
-
-	/**
-	 * Sets a validation or info message on a specific widget.
-	 *
-	 * @param formId - The ID of the form containing the widget.
-	 * @param widgetId - The ID of the widget to set the message for.
-	 * @param value - The message to set.
-	 */
-	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
-};
-
-export type UseNativeLoginOptions = {
-	/**
-	 * Optional parameters to be passed to the login session request. These parameters will be sent to the `authorizationUri` endpoint.
-	 */
-	params?: NativeParams;
-
-	/**
-	 * Called when the user successfully completes the login flow.
-	 */
-	onLogin?: (session: SessionData) => void | Promise<void>;
-
-	/**
-	 * Called when the fallback flow is triggered, typically due to an error or unsupported environment. Receives a `FallbackError` object containing the hosted URL to redirect to.
-	 */
-	onFallback?: (error: FallbackError) => void | Promise<void>;
-
-	/**
-	 * Called when the login flow is closed by the user.
-	 */
-	onClose?: () => void | Promise<void>;
-
-	/**
-	 * Called when an error occurs during the login session initialization or flow.
-	 */
-	onError?: (error: Error) => void | Promise<void>;
-
-	/**
-	 * Called when a global message is received during the login flow.
-	 */
-	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>;
-};
+/**
+ * Callbacks and parameters of the native login flow. See `NativeLoginControllerOptions` in `@strivacity/sdk-core`.
+ */
+export type UseNativeLoginOptions = NativeLoginControllerOptions;

@@ -20,13 +20,21 @@ export class SelectWidgetComponent implements OnInit {
 	readonly config = input.required<SelectWidget>();
 
 	readonly formValues = computed(() => this.nativeLoginService.forms()[this.formId()] ?? {});
-	readonly value = computed(() => (this.nativeLoginService.forms()[this.formId()]?.[this.config().id] as string) || this.config().value);
 	readonly disabled = computed(() => this.nativeLoginService.loading() || !!this.config().readonly);
 	readonly errorMessage = computed(() => this.nativeLoginService.messages()[this.formId()]?.[this.config().id]?.text);
 
 	ngOnInit(): void {
-		if (this.value()) {
-			this.nativeLoginService.setFormValue(this.formId(), this.config().id, this.value());
+		const config = this.config();
+		let value = (this.nativeLoginService.forms()[this.formId()]?.[config.id] as string | undefined) ?? config.value;
+
+		// A dropdown always shows an option as selected, so store it to keep the submitted value in sync with the UI
+		if (!value && config.render?.type !== 'radio') {
+			const [firstOption] = config.options.flatMap((option) => (option.type === 'group' ? option.options : [option]));
+			value = firstOption?.value;
+		}
+
+		if (value) {
+			this.nativeLoginService.setFormValue(this.formId(), config.id, value);
 		}
 	}
 

@@ -82,7 +82,7 @@ export function createWorkerStorage(worker: Worker): SDKStorage {
  *
  * @example
  * ```ts
- * import { handleWorkerStorageRequests, createIndexedDBStorage } from '@strivacity/sdk-core/types';
+ * import { handleWorkerStorageRequests, createIndexedDBStorage } from '@strivacity/sdk-core/storages';
  *
  * handleWorkerStorageRequests(createIndexedDBStorage());
  * ```

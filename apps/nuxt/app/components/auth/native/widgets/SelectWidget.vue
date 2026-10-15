@@ -1,17 +1,24 @@
 <script lang="ts" setup>
 import type { SelectWidget } from '@strivacity/sdk-nuxt';
-import { computed, useNativeLoginContext } from '#imports';
+import { computed, onMounted, useNativeLoginContext } from '#imports';
 
 const props = defineProps<{ formId: string; config: SelectWidget }>();
 
 const { loading, forms, messages, setFormValue } = useNativeLoginContext();
 const formValues = computed<Record<string, unknown>>(() => forms.value[props.formId] ?? {});
-const value = (forms.value[props.formId]?.[props.config.id] as string) || props.config.value;
 const disabled = computed(() => !!loading.value || !!props.config.readonly);
 const errorMessage = computed(() => messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
 
 onMounted(() => {
+	let value = (forms.value[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value;
+
+	// A dropdown always shows an option as selected, so store it to keep the submitted value in sync with the UI
+	if (!value && props.config.render?.type !== 'radio') {
+		const [firstOption] = props.config.options.flatMap((option) => (option.type === 'group' ? option.options : [option]));
+		value = firstOption?.value;
+	}
+
 	if (value) {
 		setFormValue(props.formId, props.config.id, value);
 	}
@@ -34,27 +41,30 @@ function onChange(event: Event) {
 					<p>{{ option.label }}</p>
 					<div v-for="subOption in option.options" :key="subOption.value" class="item">
 						<input
-							:id="subOption.value"
+							:id="`${config.id}-${subOption.value}`"
 							type="radio"
 							:name="config.id"
-							:readonly="disabled"
+							:disabled="disabled"
+							:required="validator?.required"
 							:value="subOption.value"
 							:checked="subOption.value === formValues[config.id]"
 							@change="onChange($event)"
 						/>
-						<label :for="subOption.value">{{ subOption.label }}</label>
+						<label :for="`${config.id}-${subOption.value}`">{{ subOption.label }}</label>
 					</div>
 				</template>
 				<template v-else>
 					<input
-						:id="option.value"
+						:id="`${config.id}-${option.value}`"
 						type="radio"
 						:name="config.id"
+						:disabled="disabled"
+						:required="validator?.required"
 						:value="option.value"
 						:checked="option.value === formValues[config.id]"
 						@change="onChange($event)"
 					/>
-					<label :for="option.value">{{ option.label }}</label>
+					<label :for="`${config.id}-${option.value}`">{{ option.label }}</label>
 				</template>
 			</div>
 			<small v-if="errorMessage" class="error">{{ errorMessage }}</small>

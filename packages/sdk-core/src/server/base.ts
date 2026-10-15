@@ -11,7 +11,7 @@ import {
 	fetchFlowEntry,
 	getDiscoveryDocument,
 } from '../utils/oidc';
-import { loadSession, serializeSession } from '../utils/session';
+import { isSessionExpired, loadSession, serializeSession } from '../utils/session';
 import { parseState } from '../utils/state';
 import { timestamp } from '../utils/common';
 import { ConfigurationError, OidcError, ProtocolError, type FailureCategory } from '../utils/errors';
@@ -46,6 +46,7 @@ export function createBaseServerSDK<
 >(adapter: ServerAdapter<TEvent>, initConfig: ServerSDKInitConfig<TEvent, Storage, StateStorage>): BaseServerSDK<TEvent> {
 	const options = getServerSDKOptions(adapter, initConfig);
 	const seenLogoutTokenIds = new Map<string, number>();
+	const freshSessions = new WeakMap<object, Promise<SessionData | null>>();
 
 	function init() {
 		if (!options.issuer) {
@@ -100,8 +101,39 @@ export function createBaseServerSDK<
 		return redirect(url, 302, event);
 	}
 
-	async function getSession(event?: TEvent): Promise<SessionData | null> {
+	async function loadStoredSession(event?: TEvent): Promise<SessionData | null> {
 		return loadSession(await options.storage.get(options.storageTokenName, event));
+	}
+
+	async function getSession(event?: TEvent, params: { autoRefresh?: boolean } = {}): Promise<SessionData | null> {
+		if (!(params.autoRefresh ?? options.autoRefresh)) {
+			return loadStoredSession(event);
+		}
+
+		const key = typeof event === 'object' && event !== null ? event : null;
+		const pending = key ? freshSessions.get(key) : undefined;
+
+		if (pending) {
+			return pending;
+		}
+
+		const session = await loadStoredSession(event);
+
+		if (!session?.refresh_token || !isSessionExpired(session, options.refreshSkew)) {
+			return session;
+		}
+
+		let refresh = key ? freshSessions.get(key) : undefined;
+
+		if (!refresh) {
+			refresh = refreshSession(event).catch(() => null);
+
+			if (key) {
+				freshSessions.set(key, refresh);
+			}
+		}
+
+		return refresh;
 	}
 
 	async function updateSession(session: SessionData, event?: TEvent): Promise<void> {
@@ -115,7 +147,7 @@ export function createBaseServerSDK<
 	async function refreshSession(event?: TEvent): Promise<SessionData> {
 		options.logging?.debug('Attempting to refresh session');
 
-		const currentSession = await getSession(event);
+		const currentSession = await loadStoredSession(event);
 
 		if (!currentSession) {
 			throw new ProtocolError('No session available to refresh');
@@ -141,7 +173,7 @@ export function createBaseServerSDK<
 	}
 
 	async function revokeSession(event?: TEvent): Promise<void> {
-		const currentSession = await getSession(event);
+		const currentSession = await loadStoredSession(event);
 
 		if (currentSession?.refresh_token) {
 			options.logging?.debug('Attempting to revoke refresh token');
@@ -227,7 +259,7 @@ export function createBaseServerSDK<
 		options.logging?.debug('Attempting to logout');
 
 		// NOTE: Cleanup session before logout
-		const currentSession = await getSession(event);
+		const currentSession = await loadStoredSession(event);
 		await cleanupSession(event);
 
 		options.logging?.debug('Logout initiated');
@@ -308,7 +340,7 @@ export function createBaseServerSDK<
 			const state = parseState(serializedState);
 			const returnTo = parseCookieHeader(request.headers.get('cookie'))[RETURN_TO_COOKIE] ?? options.postLoginRedirectUri;
 
-			pushSetCookie(event, serializeCookie(RETURN_TO_COOKIE, '', { expires: new Date(0) }));
+			pushSetCookie(event, serializeCookie(RETURN_TO_COOKIE, '', { maxAge: 0 }));
 
 			if (state.metadata?.display === 'popup') {
 				// NOTE: If the login was initiated from a popup, we return a HTML page that will close the popup and notify the opener window.

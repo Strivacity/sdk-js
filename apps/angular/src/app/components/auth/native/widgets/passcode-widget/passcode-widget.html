@@ -5,12 +5,12 @@
 	<input
 		[id]="config().id"
 		[name]="config().id"
-		[type]="config().type"
 		[readOnly]="disabled()"
 		[attr.minlength]="config().validator?.length"
 		[attr.maxlength]="config().validator?.length"
 		autocomplete="off"
 		inputmode="numeric"
+		type="text"
 		size="1"
 		(input)="onInput($any($event))"
 		(change)="onChange($event)"

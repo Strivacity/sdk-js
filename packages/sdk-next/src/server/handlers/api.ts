@@ -30,7 +30,8 @@ export const apiPageRouteHandlerFactory =
 	(sdk: BaseServerSDK<NextRequest | Request | PagesRouterRequest | undefined>): WithApiAuthRequiredPageRoute =>
 	(apiRoute) =>
 	async (req, res) => {
-		const session = await sdk.getSession(req);
+		// NOTE: Pages Router: no cookies() store to save a refreshed session in, so read it as stored
+		const session = await sdk.getSession(req, { autoRefresh: false });
 
 		if (!session) {
 			return res.status(401).json({

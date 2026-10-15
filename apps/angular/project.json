@@ -42,7 +42,10 @@
       "dependsOn": ["sdk-angular:build"],
       "options": {
         "host": "0.0.0.0",
-        "allowedHosts": true
+        "allowedHosts": true,
+        "prebundle": {
+          "exclude": ["@strivacity/sdk-angular", "@strivacity/sdk-core"]
+        }
       },
       "configurations": {
         "production": {

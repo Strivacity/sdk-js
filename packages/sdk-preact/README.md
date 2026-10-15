@@ -414,7 +414,33 @@ export default function Login() {
 
 #### Handle the callback
 
-The popup resolves automatically - no callback page is needed. Token exchange happens inside the popup and the result is posted back to the opener window.
+The pop-up still navigates to your `redirectUri`, so you still need a callback page there - without it nothing posts the result back to the opener. Call `handleCallback()` on that page; in popup mode it never resolves (the opener closes the pop-up once it receives the result), so don't rely on code after it running:
+
+```tsx
+// pages/Callback.tsx
+import { useStrivacity } from '@strivacity/sdk-preact';
+import { useEffect } from 'preact/hooks';
+
+export default function Callback() {
+	const { loading, handleCallback } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void handleCallback();
+	}, [loading]);
+
+	return (
+		<section>
+			<h1>Logging in...</h1>
+		</section>
+	);
+}
+```
+
+`login()` resolves in the opener once the result has been received and, for client-managed sessions, the tokens have been exchanged.
 
 #### Registration
 
@@ -1076,7 +1102,6 @@ export default function Login() {
 		params: {
 			prompt: 'login', // use 'create' to open the registration flow instead
 			language: 'en-US', // set the UI language (BCP 47 language tag)
-			sdk: 'web-minimal', // rendering mode: 'web-minimal' for simplified rendering (see below), 'web' (default) for full rendering hints and branding
 			sessionId: searchParams.get('session_id'), // pass a session ID to resume an existing flow
 		},
 		onLogin: async () => {
@@ -1361,23 +1386,31 @@ const ctx = useStrivacity<RedirectFlow>();
 ```ts
 {
 	// SDK instance (access any SDK method)
-	sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
+	readonly sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
 
 	// Reactive state (plain values - the component re-renders when they change)
-	loading: boolean; // True during initialization
-	isAuthenticated: boolean; // True if user has valid session
-	idTokenClaims: IdTokenClaims | null; // Decoded ID token claims
-	accessToken: string | null; // Current access token
-	refreshToken: string | null; // Current refresh token
+	readonly loading: boolean; // True during initialization
+	readonly language: string; // Current BCP 47 language code
+	readonly isAuthenticated: boolean; // True if user has valid session
+	readonly idTokenClaims: IdTokenClaims | null; // Decoded ID token claims
+	readonly accessToken: string | null; // Current access token
+	readonly refreshToken: string | null; // Current refresh token
+	readonly accessTokenExpired: boolean; // True once the access token has expired
+	readonly accessTokenExpirationDate: number | null; // Access token expiration timestamp
 
-	// Methods (all are async)
-	login(params?: LoginParams): Promise<void>; // Start login flow
-	register(params?: LoginParams): Promise<void>; // Start registration flow
-	handleCallback(url?: string): Promise<void>; // Handle OAuth callback
+	// Methods (same signatures as the underlying flow's methods)
+	init(): Promise<void>; // Initialize the SDK (load metadata, restore a persisted session)
+	checkAuthentication(params?: { autoRefresh: boolean }): Promise<boolean>; // Check the session, optionally refreshing the token (never when serverSessionUri is set)
+	login(params?: RedirectParams | PopupParams): Promise<void>; // Start login flow (redirect: `returnTo` sets where handleCallback() sends the user) (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(): Promise<void>; // Refresh access token
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
-	entry(): Promise<EntryData>; // Handle external entry (embedded/native only)
+	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
+	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
+	subscribeToEvent<T extends keyof EventFunctions>(eventName: T, callbackFn: (...params: Parameters<EventFunctions[T]>) => Promise<void> | void): { dispose: () => void }; // Subscribe to a single SDK event
+	subscribeToAllEvents(callbackFn: (...params: Array<unknown>) => Promise<void> | void): { dispose: () => void }; // Subscribe to all SDK events
 }
 ```
 
@@ -1403,10 +1436,10 @@ const ctx = useNativeLogin({
 {
 	params?: NativeParams; // Initial flow parameters
 	onLogin?: (session: SessionData) => void | Promise<void>; // Called on successful login
-	onClose?: () => void; // Called when user closes the flow
-	onError?: (error: unknown) => void; // Called on error
-	onFallback?: (error: FallbackError) => void; // Called when fallback needed
-	onGlobalMessage?: (message: NativeFlowMessage) => void; // Called for global messages
+	onClose?: () => void | Promise<void>; // Called when user closes the flow
+	onError?: (error: Error) => void | Promise<void>; // Called on error
+	onFallback?: (error: FallbackError) => void | Promise<void>; // Called when fallback needed
+	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>; // Called for global messages
 }
 ```
 
@@ -1429,9 +1462,19 @@ const ctx = useNativeLogin({
 }
 ```
 
+### useNativeLoginContext
+
+Returns the context of the currently mounted `useNativeLogin()` from any component (e.g. your own widget components), without passing it down as props. Before `useNativeLogin()` has mounted it returns an empty default context (`loading: true`, no-op methods).
+
+```ts
+import { useNativeLoginContext } from '@strivacity/sdk-preact';
+
+const { forms, messages, setFormValue, submitForm } = useNativeLoginContext();
+```
+
 ### withAuthGuard
 
-Higher-order component that guards a component with authentication. Waits for the SDK to finish loading, checks the session, and redirects to the login page if the user is not authenticated.
+Higher-order component that guards a component with authentication. Waits for the SDK to finish loading, checks the session, and redirects to the login page if the user is not authenticated (with the current path as `returnTo`, e.g. `/login?returnTo=%2Forders` - pass it on with `login({ returnTo })`). With server-managed sessions (`serverSessionUri`), an expired session is sent through the server's refresh route instead (`sdk.refresh()`, returning to the current URL) - see [Server-side session (BFF) mode](#server-side-session-bff-mode).
 
 ```tsx
 import { withAuthGuard } from '@strivacity/sdk-preact';
@@ -1457,7 +1500,7 @@ export default withAuthGuard(
 
 ## Route guards
 
-Protect routes that require authentication with the `withAuthGuard` higher-order component. It waits for the SDK to finish loading, verifies the session, and redirects to the login page if the user is not authenticated:
+Protect routes that require authentication with the `withAuthGuard` higher-order component. It waits for the SDK to finish loading, verifies the session, and redirects to the login page if the user is not authenticated (with the current path as `returnTo`, e.g. `/login?returnTo=%2Forders` - pass it on with `login({ returnTo })`). With server-managed sessions, an expired session is refreshed through the server (`${authUrlPrefix}/refresh`) instead of starting a new login (see [Server-side session (BFF) mode](#server-side-session-bff-mode)):
 
 ```tsx
 // pages/Profile.tsx
@@ -1681,6 +1724,7 @@ render(
 			redirectUri: 'https://your-app.example.com/callback',
 			scopes: ['openid', 'profile', 'email'],
 			serverSessionUri: '/api/auth/login', // Requests are routed through your server; tokens are NOT written to client storage
+			authUrlPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUrlPrefix}/refresh`
 		}}
 	>
 		<App />
@@ -1688,6 +1732,10 @@ render(
 	document.getElementById('app')!,
 );
 ```
+
+In this mode `logout()` doesn't clear the server session cookie. Navigate the browser to your server's logout route instead (e.g. `/api/auth/logout`, optionally with a same-origin `?returnTo=`), which clears the server session and redirects to the IDP end-session endpoint. See [Logging out](../sdk-core/README.md#logging-out) in the core SDK README for the `returnTo` rules.
+
+The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. `withAuthGuard` does the same for an expired session instead of redirecting to `loginUri`. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
 
 See [`apps/preact`](../../apps/preact) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 

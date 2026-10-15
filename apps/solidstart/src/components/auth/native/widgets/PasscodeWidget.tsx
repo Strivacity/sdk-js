@@ -53,12 +53,12 @@ export default function Passcode(props: { formId: string; config: PasscodeWidget
 			<input
 				id={props.config.id}
 				name={props.config.id}
-				type={props.config.type}
 				readonly={disabled()}
 				minlength={validator()?.length}
 				maxlength={validator()?.length}
 				autocomplete="off"
 				inputmode="numeric"
+				type="text"
 				size={1}
 				onInput={onInput}
 				onChange={onChange}

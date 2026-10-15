@@ -1,6 +1,6 @@
 export default async function ErrorPage({ searchParams }) {
 	const params = Object.fromEntries(new URLSearchParams(await searchParams));
-	const message = params.error_description || params.error;
+	const message = params.error_description || params.error || params.message;
 
 	return (
 		<section>

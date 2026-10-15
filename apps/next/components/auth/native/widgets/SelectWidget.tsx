@@ -6,14 +6,22 @@ import { useNativeLoginContext } from '@strivacity/sdk-next/client';
 export default function Select({ formId, config }: { formId: string; config: SelectWidget }) {
 	const { loading, forms, messages, setFormValue } = useNativeLoginContext();
 	const formValues = forms[formId] ?? {};
-	const value = (forms[formId]?.[config.id] as string) || config.value;
+	const value = (forms[formId]?.[config.id] as string | undefined) ?? config.value;
 	const disabled = !!loading || !!config.readonly;
 	const errorMessage = messages[formId]?.[config.id]?.text;
 	const validator = config.validator;
 
 	useEffect(() => {
-		if (value) {
-			setFormValue(formId, config.id, value);
+		let initialValue = value;
+
+		// A dropdown always shows an option as selected, so store it to keep the submitted value in sync with the UI
+		if (!initialValue && config.render?.type !== 'radio') {
+			const [firstOption] = config.options.flatMap((option) => (option.type === 'group' ? option.options : [option]));
+			initialValue = firstOption?.value;
+		}
+
+		if (initialValue) {
+			setFormValue(formId, config.id, initialValue);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -37,29 +45,32 @@ export default function Select({ formId, config }: { formId: string; config: Sel
 								{option.options.map((subOption) => (
 									<div key={subOption.value} className="item">
 										<input
-											id={subOption.value}
+											id={`${config.id}-${subOption.value}`}
 											type="radio"
 											name={config.id}
-											readOnly={disabled}
+											disabled={disabled}
+											required={validator?.required}
 											value={subOption.value}
 											checked={subOption.value === formValues[config.id]}
 											onChange={onChange}
 										/>
-										<label htmlFor={subOption.value}>{subOption.label}</label>
+										<label htmlFor={`${config.id}-${subOption.value}`}>{subOption.label}</label>
 									</div>
 								))}
 							</>
 						) : (
 							<div className="item">
 								<input
-									id={option.value}
+									id={`${config.id}-${option.value}`}
 									type="radio"
 									name={config.id}
+									disabled={disabled}
+									required={validator?.required}
 									value={option.value}
 									checked={option.value === formValues[config.id]}
 									onChange={onChange}
 								/>
-								<label htmlFor={option.value}>{option.label}</label>
+								<label htmlFor={`${config.id}-${option.value}`}>{option.label}</label>
 							</div>
 						)}
 					</div>

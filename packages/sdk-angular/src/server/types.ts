@@ -26,7 +26,7 @@ export type AngularServerSDKInitConfig<
 export type AngularServerSDK<TEvent extends AngularServerRequest | undefined = AngularServerRequest | undefined> = BaseServerSDK<TEvent> & {
 	/**
 	 * The Express router exposing the authentication endpoints.
-	 * Mount it under `authUrlPrefix`, e.g. `app.use('/auth', sdk.router)`.
+	 * Mount it under `authUrlPrefix`, e.g. `app.use('/auth', sdk.handlers)`.
 	 */
 	readonly handlers: Router;
 };

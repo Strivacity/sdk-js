@@ -1,13 +1,19 @@
 <script lang="ts">
 	import type { CheckboxWidget } from '@strivacity/sdk-svelte/client';
+	import { onMount } from 'svelte';
 	import { useNativeLoginContext } from '@strivacity/sdk-svelte/client';
 
 	let { formId, config }: { formId: string; config: CheckboxWidget } = $props();
 
 	const context = useNativeLoginContext();
-	const disabled = $derived(context.loading);
+	const disabled = $derived(context.loading || !!config.readonly);
 	const errorMessage = $derived(context.messages[formId]?.[config.id]?.text);
 	const validator = $derived(config.validator);
+	const checked = $derived((context.forms[formId]?.[config.id] as boolean | undefined) ?? config.value ?? false);
+
+	onMount(() => {
+		context.setFormValue(formId, config.id, checked);
+	});
 
 	function onChange(event: Event) {
 		if (disabled) {
@@ -25,7 +31,7 @@
 			name={config.id}
 			disabled={disabled}
 			required={validator?.required}
-			checked={(context.forms[formId]?.[config.id] as boolean) || config.value || false}
+			checked={checked}
 			type="checkbox"
 			size="1"
 			onchange={onChange}

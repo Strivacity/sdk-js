@@ -49,12 +49,12 @@ async function onKeyDown(event: KeyboardEvent) {
 		<input
 			:id="config.id"
 			:name="config.id"
-			:type="config.type"
 			:readonly="disabled"
 			:minlength="validator?.length"
 			:maxlength="validator?.length"
 			autocomplete="off"
 			inputmode="numeric"
+			type="text"
 			size="1"
 			@input="onInput($event as InputEvent)"
 			@change="onChange($event)"

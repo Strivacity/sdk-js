@@ -33,16 +33,9 @@ export class CallbackPage implements OnInit {
 	}
 
 	async handleCallback(): Promise<void> {
-		const params = this.route.snapshot.queryParams;
-
-		if (params.error || params.error_description) {
-			await this.router.navigate(['/error'], { queryParams: params });
-			return;
-		}
-
 		try {
-			await this.authService.handleCallback();
-			await this.router.navigateByUrl('/profile');
+			const { returnTo } = await this.authService.handleCallback();
+			await this.router.navigateByUrl(returnTo ?? '/profile');
 		} catch (error) {
 			await this.router.navigate(['/error'], { queryParams: { message: error instanceof Error ? error.message : 'Unknown error' } });
 		}

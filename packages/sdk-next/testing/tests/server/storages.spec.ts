@@ -149,7 +149,7 @@ describe('createSessionIdCookieStorage', () => {
 
 		expect(inner.delete).toHaveBeenCalledWith('session-id-5');
 		const setCookies = flushSetCookies(req, new Response()).headers.getSetCookie();
-		expect(setCookies.some((cookie) => cookie.startsWith('sty.session=') && cookie.includes('Expires=Thu, 01 Jan 1970'))).toBe(true);
+		expect(setCookies.some((cookie) => cookie.startsWith('sty.session=') && cookie.includes('Max-Age=0'))).toBe(true);
 	});
 
 	test('delete always throws when no request is given, since expiring the cookie requires a request-scoped event', async () => {

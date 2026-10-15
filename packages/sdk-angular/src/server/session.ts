@@ -1,6 +1,7 @@
 import type { EnvironmentProviders } from '@angular/core';
 import type { AngularServerSDK, SessionData } from './types';
-import { REQUEST, TransferState, inject, makeStateKey, provideAppInitializer } from '@angular/core';
+import { REQUEST, RESPONSE_INIT, TransferState, inject, makeStateKey, provideAppInitializer } from '@angular/core';
+import { flushSetCookies, toClientSession } from '@strivacity/sdk-core/utils';
 
 export const SESSION_TRANSFER_KEY = makeStateKey<SessionData | null>('sty.session');
 
@@ -23,13 +24,21 @@ export function provideStrivacityServerSession(serverSdk: AngularServerSDK | und
 		}
 
 		const transferState = inject(TransferState);
-		const session = await serverSdk.getSession(request);
+		const responseInit = inject(RESPONSE_INIT, { optional: true });
 
-		if (session) {
-			delete session.refresh_token;
-			delete session.id_token;
+		const session = await serverSdk.getSession(request);
+		const cookies = flushSetCookies(request, new Response(null)).headers.getSetCookie();
+
+		if (responseInit && cookies.length) {
+			const headers = new Headers(responseInit.headers);
+
+			for (const cookie of cookies) {
+				headers.append('set-cookie', cookie);
+			}
+
+			responseInit.headers = headers;
 		}
 
-		transferState.set(SESSION_TRANSFER_KEY, session);
+		transferState.set(SESSION_TRANSFER_KEY, toClientSession(session));
 	});
 }

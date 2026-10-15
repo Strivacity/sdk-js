@@ -101,7 +101,7 @@ describe('createServerSDK', () => {
 	});
 
 	test.each([
-		['getSession', [{} as never], null],
+		['getSession', [{} as never, { autoRefresh: false }], null],
 		['updateSession', [{ access_token: 'a' } as never, {} as never], undefined],
 		['refreshSession', [{} as never], { access_token: 'refreshed' }],
 		['revokeSession', [{} as never], undefined],

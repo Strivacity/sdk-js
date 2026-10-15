@@ -20,7 +20,8 @@ export default function Revoke() {
 				return;
 			}
 
-			(ctx.isAuthenticated() ? ctx.revoke() : Promise.resolve())
+			ctx
+				.revoke()
 				.then(() => {
 					navigate('/');
 				})

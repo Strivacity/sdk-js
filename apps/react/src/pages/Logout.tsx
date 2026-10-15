@@ -14,7 +14,7 @@ export default function Logout() {
 		if (sdk.options.serverSessionUri) {
 			globalThis.location.href = '/auth/logout';
 		} else {
-			void logout();
+			void logout({ postLogoutRedirectUri: new URL('/', globalThis.location.origin).toString() });
 		}
 	}, [loading, logout]);
 

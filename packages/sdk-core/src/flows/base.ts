@@ -1,7 +1,10 @@
 import type { EventFunctions, ExtraRequestArgs, FlowState, SDK, SDKOptions, SessionData } from '../types/oidc';
 import { buildEndSessionUrl, exchangeCode, getDiscoveryDocument, refreshToken, revokeToken, verifyIdToken } from '../utils/oidc';
 import { loadSession, serializeSession, isSessionExpired } from '../utils/session';
+import { parseState } from '../utils/state';
+import { appendReturnTo } from '../utils/path';
 import { ConfigurationError, NetworkError, ProtocolError, ServerError } from '../utils/errors';
+import { redirectUrlHandler } from '../handlers/redirect';
 
 /**
  * Creates a base flow for the Strivacity SDK, providing common functionality for managing authentication sessions.
@@ -138,7 +141,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return true;
 		}
 
-		if (params?.autoRefresh && flowState.session?.refresh_token) {
+		if (params?.autoRefresh && flowState.session?.refresh_token && !options.serverSessionUri) {
 			try {
 				await refresh();
 			} catch {
@@ -268,11 +271,22 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 
 		const callbackUrl = url ?? globalThis.window?.location.href;
 		const params = (await options.callbackHandler(callbackUrl, options.responseMode)) as Record<string, string>;
+		// NOTE: read before the exchange, which deletes the state
+		const serializedState = params.state ? await options.stateStorage.get(`sty.${params.state}`) : null;
+		let returnTo: unknown;
+
+		try {
+			returnTo = serializedState ? parseState(serializedState).metadata?.returnTo : undefined;
+		} catch {
+			// NOTE: an unparsable state has no returnTo
+		}
 
 		await tokenExchange(params);
+
+		return typeof returnTo === 'string' && returnTo ? { returnTo } : {};
 	}
 
-	async function refresh(): ReturnType<SDK<URLHandlerParams>['refresh']> {
+	async function refresh(params?: { returnTo?: string }): ReturnType<SDK<URLHandlerParams>['refresh']> {
 		await init();
 
 		if (promises.refresh) {
@@ -280,6 +294,12 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		}
 
 		options.logging?.debug('Attempting to refresh session');
+
+		// NOTE: with server-managed sessions the server owns the refresh token: let its refresh route rotate the cookie and come back
+		if (options.serverSessionUri) {
+			await redirectUrlHandler(appendReturnTo(`${options.authUrlPrefix}/refresh`, params?.returnTo));
+			return;
+		}
 
 		if (typeof flowState.session?.refresh_token !== 'string') {
 			options.logging?.debug('Refresh called without refresh token');

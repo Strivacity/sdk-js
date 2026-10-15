@@ -5,7 +5,7 @@ import { type PhoneWidget, useNativeLoginContext } from '@strivacity/sdk-vue';
 const props = defineProps<{ formId: string; config: PhoneWidget }>();
 
 const { loading, forms, messages, setFormValue, submitForm } = useNativeLoginContext();
-const value = (forms.value[props.formId]?.[props.config.id] as string) || props.config.value;
+const value = (forms.value[props.formId]?.[props.config.id] as string | undefined) ?? props.config.value;
 const disabled = computed(() => !!loading.value || !!props.config.readonly);
 const errorMessage = computed(() => messages.value[props.formId]?.[props.config.id]?.text);
 const validator = computed(() => props.config.validator);
@@ -44,7 +44,7 @@ async function onKeyDown(event: KeyboardEvent) {
 		<input
 			:id="config.id"
 			:name="config.id"
-			:type="config.type"
+			type="tel"
 			autocomplete="tel"
 			inputmode="tel"
 			:readonly="disabled"

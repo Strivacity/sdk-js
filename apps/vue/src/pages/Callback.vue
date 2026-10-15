@@ -8,10 +8,6 @@ const router = useRouter();
 const searchParams = new URLSearchParams(globalThis.window?.location.search);
 
 onMounted(async () => {
-	if (searchParams.get('error') || searchParams.get('error_description')) {
-		return await router.replace(`/error?${searchParams.toString()}`);
-	}
-
 	// This demo shows both session modes side by side.
 	// in your own app, keep only the branch matching your `serverSessionUri` setting.
 	if (sdk.options.serverSessionUri) {
@@ -19,8 +15,8 @@ onMounted(async () => {
 		return;
 	} else {
 		try {
-			await handleCallback();
-			await router.push('/profile');
+			const { returnTo } = await handleCallback();
+			await router.push(returnTo ?? '/profile');
 		} catch (error) {
 			await router.push(`/error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
 		}

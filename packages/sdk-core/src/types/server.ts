@@ -29,6 +29,16 @@ export type SessionIdCookieStorageOptions = {
 	uuidGenerator?: () => string;
 };
 
+/**
+ * Minimal cookie access used by the encrypted cookie helpers (`readEncryptedCookie`, `writeEncryptedCookie`, `deleteEncryptedCookie`).
+ * `get` reads the incoming request's cookies; `set` and `delete` write to the outgoing response.
+ */
+export type CookieJar<TOptions = ServerCookieOptions> = {
+	get(name: string): string | null | undefined | Promise<string | null | undefined>;
+	set(name: string, value: string, options: TOptions): void | Promise<void>;
+	delete(name: string, options: TOptions): void | Promise<void>;
+};
+
 export type EncryptedCookieStorageOptions = {
 	/**
 	 * Default cookie options for the encrypted cookie.
@@ -110,13 +120,6 @@ export type ServerSDKOptions<
 	 * Encrypted cookie storage secret. Required when no custom `storage` is provided.
 	 */
 	secret?: string;
-
-	/**
-	 * URL prefix for auth routes (login, logout, callback, etc.) matched by `dispatch`.
-	 *
-	 * @default '/auth'
-	 */
-	authUrlPrefix: string;
 };
 
 export type ServerSDKInitConfig<
@@ -129,12 +132,19 @@ export type BaseServerSDK<TEvent = unknown> = {
 	options: ServerSDKOptions<TEvent>;
 
 	/**
-	 * Retrieves the current session data from storage.
+	 * Retrieves the current session. With `autoRefresh` (the default) it refreshes the session first when the access token is
+	 * expired or within `refreshSkew` of expiry and a refresh token exists, like the client SDK does. The refresh happens at most
+	 * once per request event: concurrent and later calls with the same event share its result. The rotated session is queued as
+	 * `Set-Cookie` on the event, so the caller (or the framework integration) must write the queued cookies to the response
+	 * (`flushSetCookies`), otherwise the rotated refresh token is lost. A failed refresh resolves to `null`.
+	 * With `autoRefresh: false` (the option, or `params.autoRefresh` for this call) the session is returned as stored, for example
+	 * where the response cookies cannot be written.
 	 *
 	 * @param {TEvent} [event] - The framework-native request event.
-	 * @returns {Promise<SessionData | null>} A promise that resolves to the current session data, or `null` if no session exists.
+	 * @param {{ autoRefresh?: boolean }} [params] - Overrides the `autoRefresh` option for this call.
+	 * @returns {Promise<SessionData | null>} The current (possibly refreshed) session, or `null`.
 	 */
-	getSession(event?: TEvent): Promise<SessionData | null>;
+	getSession(event?: TEvent, params?: { autoRefresh?: boolean }): Promise<SessionData | null>;
 
 	/**
 	 * Updates the session data for the currently authenticated user.

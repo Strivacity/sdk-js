@@ -1,5 +1,12 @@
 import type { SDKStorage } from '../types/common';
-import type { EncryptedCookieStorageOptions, ServerAdapter, ServerCookieOptions, ServerStorage, SessionIdCookieStorageOptions } from '../types/server';
+import type {
+	CookieJar,
+	EncryptedCookieStorageOptions,
+	ServerAdapter,
+	ServerCookieOptions,
+	ServerStorage,
+	SessionIdCookieStorageOptions,
+} from '../types/server';
 import { encryptString, decryptString } from '../utils/crypto';
 import { parseCookieHeader, pushSetCookie, serializeCookie } from '../utils/server';
 
@@ -129,7 +136,7 @@ export function createSessionIdCookieStorage<TEvent = unknown>(
 				await storage.delete(id);
 			}
 
-			pushSetCookie(event, serializeCookie(key, '', { ...defaultCookieOptions, maxAge: 0, expires: new Date(0) }));
+			pushSetCookie(event, serializeCookie(key, '', { ...defaultCookieOptions, maxAge: 0 }));
 		},
 	};
 
@@ -164,71 +171,97 @@ export function createEncryptedCookieStorage<TEvent = unknown>(
 		...options?.defaultCookieOptions,
 	};
 
-	async function getIncomingCookie(event: TEvent | undefined, name: string): Promise<string | undefined> {
-		if (!event) {
-			return undefined;
-		}
+	const expiredCookieOptions = { ...defaultCookieOptions, maxAge: 0 };
 
-		const request = await adapter.toRequest(event);
-		const cookies = parseCookieHeader(request.headers.get('cookie'));
+	function createJar(event: TEvent | undefined): CookieJar {
+		return {
+			get: async (name) => {
+				if (!event) {
+					return undefined;
+				}
 
-		return cookies[name];
+				const request = await adapter.toRequest(event);
+
+				return parseCookieHeader(request.headers.get('cookie'))[name];
+			},
+			set: (name, value, cookieOptions) => pushSetCookie(event, serializeCookie(name, value, cookieOptions)),
+			delete: (name) => pushSetCookie(event, serializeCookie(name, '', expiredCookieOptions)),
+		};
 	}
 
-	const storage: ServerStorage<TEvent> = {
-		async get(key, event) {
-			const cookie = await getIncomingCookie(event, key);
-
-			if (cookie) {
-				// NOTE: If the cookie is present, we can decrypt it directly without checking for chunks.
-				return await decryptString(cookie, secret, COOKIE_CONTEXT);
-			}
-
-			// NOTE: If the cookie is not present, we check for chunked cookies (e.g., `key.0`, `key.1`, etc.) and concatenate them before decryption.
-			const cookieChunks: Array<string> = [];
-
-			for (let i = 0; ; i++) {
-				const chunk = await getIncomingCookie(event, `${key}.${i}`);
-
-				if (!chunk) {
-					break;
-				}
-
-				cookieChunks.push(chunk);
-			}
-
-			if (cookieChunks.length === 0) {
-				return null;
-			}
-
-			return await decryptString(cookieChunks.join(''), secret, COOKIE_CONTEXT);
-		},
-
-		async set(key, value, event) {
-			// NOTE: Delete existing cookie(s) first to avoid leaving old chunks behind
-			await storage.delete(key, event);
-
-			const encrypted = await encryptString(value, secret, COOKIE_CONTEXT);
-
-			if (encrypted.length <= COOKIE_CHUNK_SIZE) {
-				pushSetCookie(event, serializeCookie(key, encrypted, defaultCookieOptions));
-			} else {
-				for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
-					pushSetCookie(event, serializeCookie(`${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), defaultCookieOptions));
-				}
-			}
-		},
-
-		async delete(key, event) {
-			const expiredOptions = { ...defaultCookieOptions, expires: new Date(0) };
-
-			pushSetCookie(event, serializeCookie(key, '', expiredOptions));
-
-			for (let i = 0; await getIncomingCookie(event, `${key}.${i}`); i++) {
-				pushSetCookie(event, serializeCookie(`${key}.${i}`, '', expiredOptions));
-			}
-		},
+	return {
+		get: (key, event) => readEncryptedCookie(createJar(event), key, secret),
+		set: (key, value, event) => writeEncryptedCookie(createJar(event), key, value, secret, defaultCookieOptions),
+		delete: (key, event) => deleteEncryptedCookie(createJar(event), key, defaultCookieOptions),
 	};
+}
 
-	return storage;
+/**
+ * Reads and decrypts a session written by `writeEncryptedCookie`: a single `key` cookie, or chunks `key.0`, `key.1`, ... joined in order.
+ *
+ * @param {CookieJar} jar - Access to the request's cookies.
+ * @param {string} key - The cookie name.
+ * @param {string} secret - The encryption secret.
+ * @returns {Promise<string | null>} The decrypted value, or `null` when there is no cookie.
+ */
+export async function readEncryptedCookie<TOptions>(jar: CookieJar<TOptions>, key: string, secret: string): Promise<string | null> {
+	const cookie = await jar.get(key);
+
+	if (cookie) {
+		return await decryptString(cookie, secret, COOKIE_CONTEXT);
+	}
+
+	const chunks: Array<string> = [];
+
+	for (let i = 0; ; i++) {
+		const chunk = await jar.get(`${key}.${i}`);
+
+		if (!chunk) {
+			break;
+		}
+
+		chunks.push(chunk);
+	}
+
+	return chunks.length > 0 ? await decryptString(chunks.join(''), secret, COOKIE_CONTEXT) : null;
+}
+
+/**
+ * Encrypts a value and writes it as a single `key` cookie, or as `COOKIE_CHUNK_SIZE` chunks (`key.0`, `key.1`, ...) when it is too
+ * large for one cookie. The previous cookie and all of its chunks from the request are deleted first, so no stale chunk is left behind.
+ *
+ * @param {CookieJar} jar - Access to the request's and the response's cookies.
+ * @param {string} key - The cookie name.
+ * @param {string} value - The plain value.
+ * @param {string} secret - The encryption secret.
+ * @param {TOptions} options - Cookie attributes for the written cookies (and for deleting the old ones).
+ */
+export async function writeEncryptedCookie<TOptions>(jar: CookieJar<TOptions>, key: string, value: string, secret: string, options: TOptions): Promise<void> {
+	await deleteEncryptedCookie(jar, key, options);
+
+	const encrypted = await encryptString(value, secret, COOKIE_CONTEXT);
+
+	if (encrypted.length <= COOKIE_CHUNK_SIZE) {
+		await jar.set(key, encrypted, options);
+		return;
+	}
+
+	for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
+		await jar.set(`${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), options);
+	}
+}
+
+/**
+ * Deletes a session written by `writeEncryptedCookie`: the `key` cookie and every `key.N` chunk present in the request.
+ *
+ * @param {CookieJar} jar - Access to the request's and the response's cookies.
+ * @param {string} key - The cookie name.
+ * @param {TOptions} options - Cookie attributes (`path`, `domain`) of the cookies to delete.
+ */
+export async function deleteEncryptedCookie<TOptions>(jar: CookieJar<TOptions>, key: string, options: TOptions): Promise<void> {
+	await jar.delete(key, options);
+
+	for (let i = 0; await jar.get(`${key}.${i}`); i++) {
+		await jar.delete(`${key}.${i}`, options);
+	}
 }

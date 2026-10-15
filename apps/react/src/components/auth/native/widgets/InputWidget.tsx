@@ -5,7 +5,7 @@ import { useNativeLoginContext } from '@strivacity/sdk-react';
 
 export default function Input({ formId, config }: { formId: string; config: InputWidget }) {
 	const { loading, forms, messages, setFormValue, submitForm } = useNativeLoginContext();
-	const value = (forms[formId]?.[config.id] as string) || config.value;
+	const value = (forms[formId]?.[config.id] as string | undefined) ?? config.value;
 	const disabled = !!loading || !!config.readonly;
 	const errorMessage = messages[formId]?.[config.id]?.text;
 	const validator = config.validator;

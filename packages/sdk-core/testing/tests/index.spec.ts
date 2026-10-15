@@ -25,7 +25,7 @@ describe('initFlow', () => {
 
 	test('mode: "redirect"', () => {
 		const options = createOptions({ mode: 'redirect' });
-		const flow = { type: 'redirect' };
+		const flow = { type: 'redirect' } as never;
 		vi.mocked(createRedirectFlow).mockReturnValue(flow);
 
 		expect(index.initFlow(options as never)).toBe(flow);
@@ -37,7 +37,7 @@ describe('initFlow', () => {
 
 	test('mode: "popup"', () => {
 		const options = createOptions({ mode: 'popup' });
-		const flow = { type: 'popup' };
+		const flow = { type: 'popup' } as never;
 		vi.mocked(createPopupFlow).mockReturnValue(flow);
 
 		expect(index.initFlow(options as never)).toBe(flow);
@@ -49,7 +49,7 @@ describe('initFlow', () => {
 
 	test('mode: "embedded"', () => {
 		const options = createOptions({ mode: 'embedded' });
-		const flow = { type: 'embedded' };
+		const flow = { type: 'embedded' } as never;
 		vi.mocked(createEmbeddedFlow).mockReturnValue(flow);
 
 		expect(index.initFlow(options as never)).toBe(flow);
@@ -61,7 +61,7 @@ describe('initFlow', () => {
 
 	test('mode: "native"', () => {
 		const options = createOptions({ mode: 'native' });
-		const flow = { type: 'native' };
+		const flow = { type: 'native' } as never;
 		vi.mocked(createNativeFlow).mockReturnValue(flow);
 
 		expect(index.initFlow(options as never)).toBe(flow);

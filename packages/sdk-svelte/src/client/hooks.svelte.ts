@@ -1,9 +1,7 @@
 import { getContext, setContext, onMount, onDestroy } from 'svelte';
-import { SvelteURL } from 'svelte/reactivity';
-import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow, NativeParams, NativeFlowState, NativeFlowMessage } from '@strivacity/sdk-core/types';
+import type { RedirectFlow, PopupFlow, EmbeddedFlow, NativeFlow } from '@strivacity/sdk-core/types';
 import type { LoginContext, SDKContext, UseNativeLoginOptions } from '../types';
-import { FallbackError } from '@strivacity/sdk-core/utils/errors';
-import { isSessionExpired, unflattenObject } from '@strivacity/sdk-core/utils';
+import { createNativeLoginController } from '@strivacity/sdk-core/utils';
 
 export const STRIVACITY_SDK = Symbol('strivacity-sdk');
 export const STRIVACITY_LOGIN_CONTEXT = Symbol('strivacity-login-context');
@@ -51,149 +49,21 @@ export const useNativeLoginContext = (): LoginContext => {
  * @throws {Error} - If the Strivacity SDK context is not found.
  */
 export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContext {
-	const abortController = new AbortController();
 	const ctx = useStrivacity<NativeFlow>();
+	const controller = createNativeLoginController(() => ctx.sdk, options);
+	let snapshot = $state.raw(controller.getSnapshot());
 
-	let loading = $state<boolean>(true);
-	let forms = $state<Record<string, Record<string, unknown>>>({});
-	let messages = $state<Record<string, Record<string, NativeFlowMessage>>>({});
-	let state = $state<Partial<NativeFlowState>>({});
+	const loading = $derived(snapshot.loading);
+	const forms = $derived(snapshot.forms);
+	const messages = $derived(snapshot.messages);
+	const state = $derived(snapshot.state);
 
-	onMount(async () => {
-		await ctx.init();
-
-		try {
-			await startSession(options.params);
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') {
-				return;
-			}
-
-			ctx.sdk.logging?.error('Error fetching authorization URI', error as Error);
-			void options.onError?.(error as Error);
-			loading = false;
-		}
+	const unsubscribe = controller.subscribe((next) => {
+		snapshot = next;
 	});
 
-	onDestroy(() => {
-		abortController.abort();
-	});
-
-	async function startSession(loginParams: NativeParams = {}) {
-		try {
-			loading = true;
-
-			const nextState = await ctx.sdk.startSession(loginParams);
-
-			if (nextState) {
-				handleResponse(nextState);
-			}
-		} catch (error) {
-			if (error instanceof FallbackError) {
-				ctx.sdk.logging?.error('Fallback error occurred', error);
-				void options.onFallback?.(error);
-			} else {
-				ctx.sdk.logging?.error('Error starting session', error as Error);
-				void options.onError?.(error as Error);
-			}
-		}
-	}
-
-	function handleResponse(nextState: Partial<NativeFlowState>) {
-		if (ctx.sdk.session && !isSessionExpired(ctx.sdk.session)) {
-			return void options.onLogin?.(ctx.sdk.session);
-		}
-
-		const newState: NativeFlowState = {
-			hostedUrl: nextState?.hostedUrl ?? state.hostedUrl,
-			finalizeUrl: nextState?.finalizeUrl ?? state.finalizeUrl,
-			screen: nextState?.screen ?? state.screen,
-			forms: nextState?.forms ?? state.forms,
-			layout: nextState?.layout ?? state.layout,
-			messages: nextState?.messages ?? {},
-			branding: nextState?.branding ?? state.branding,
-		};
-
-		if (newState.screen !== state.screen) {
-			forms = {};
-			messages = {};
-
-			for (const form of newState.forms ?? []) {
-				forms[form.id] = {};
-				messages[form.id] = {};
-			}
-		} else {
-			ctx.sdk.logging?.info(`Updating screen: ${newState.screen}`);
-		}
-
-		for (const formId of Object.keys(newState.messages ?? {})) {
-			if (formId === 'global') {
-				// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-				void options.onGlobalMessage?.(newState.messages?.global!);
-			} else {
-				messages[formId] = newState.messages![formId] ?? {};
-			}
-		}
-
-		state = newState;
-
-		if (!newState.finalizeUrl) {
-			loading = false;
-		}
-	}
-
-	function triggerFallback(message?: string) {
-		ctx.sdk.logging?.warn(message ? `Triggering fallback due to: ${message}` : 'Triggering fallback');
-
-		if (!state.hostedUrl) {
-			const error = new Error('No hosted URL provided');
-			ctx.sdk.logging?.error('Fallback error', error);
-			throw error;
-		}
-
-		void options.onFallback?.(new FallbackError(new SvelteURL(state.hostedUrl)));
-	}
-
-	function triggerClose() {
-		ctx.sdk.logging?.debug('Triggering close');
-		void options.onClose?.();
-	}
-
-	async function submitForm(formId: string, customBody?: Record<string, unknown>) {
-		try {
-			loading = true;
-
-			const nextState = await ctx.sdk.submitForm(formId, customBody ?? unflattenObject(forms[formId] ?? {}));
-
-			if (nextState) {
-				handleResponse(nextState);
-			}
-		} catch (error) {
-			if (error instanceof FallbackError) {
-				ctx.sdk.logging?.error('Fallback error occurred', error);
-				void options.onFallback?.(error);
-			} else {
-				ctx.sdk.logging?.error('Error submitting form', error as Error);
-				void options.onError?.(error as Error);
-			}
-		}
-	}
-
-	function setFormValue(formId: string, widgetId: string, value: unknown) {
-		if (forms[formId] === undefined) {
-			forms[formId] = {};
-		}
-
-		forms[formId][widgetId] = value === '' ? null : value;
-	}
-
-	function setMessage(formId: string, widgetId: string, value: NativeFlowMessage) {
-		if (messages[formId] === undefined) {
-			messages[formId] = {};
-		}
-
-		messages[formId][widgetId] = value;
-	}
+	onMount(() => controller.start());
+	onDestroy(unsubscribe);
 
 	const context: LoginContext = {
 		get loading() {
@@ -208,11 +78,11 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
 		get state() {
 			return state;
 		},
-		triggerFallback,
-		triggerClose,
-		submitForm,
-		setFormValue,
-		setMessage,
+		triggerFallback: controller.triggerFallback,
+		triggerClose: controller.triggerClose,
+		submitForm: controller.submitForm,
+		setFormValue: controller.setFormValue,
+		setMessage: controller.setMessage,
 	};
 
 	setContext(STRIVACITY_LOGIN_CONTEXT, context);

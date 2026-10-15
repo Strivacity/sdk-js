@@ -6,7 +6,7 @@
 	let { children }: { children: Snippet } = $props();
 
 	const ctx = useStrivacity();
-	let name = $derived(`${ctx.idTokenClaims?.given_name ?? ''} ${ctx.idTokenClaims?.family_name ?? ''}`);
+	let name = $derived(`${ctx.idTokenClaims?.given_name ?? ''} ${ctx.idTokenClaims?.family_name ?? ''}`.trim());
 </script>
 
 <div id="app">
@@ -15,7 +15,7 @@
 			{#if ctx.loading}
 				<p>Loading...</p>
 			{:else if ctx.isAuthenticated}
-				<strong>Welcome, {name}!</strong>
+				<strong>Welcome {name}!</strong>
 			{/if}
 		</div>
 		<div>

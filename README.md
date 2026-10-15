@@ -74,11 +74,21 @@ Before running any example application, create a `.env.local` file in the reposi
 cp .env.local.example .env.local
 ```
 
-| Variable         | Description                                                                |
-| ---------------- | -------------------------------------------------------------------------- |
-| `VITE_ISSUER`    | Your Strivacity cluster domain (e.g. `https://your-tenant.strivacity.com`) |
-| `VITE_CLIENT_ID` | The client ID of your application                                          |
-| `VITE_SCOPES`    | Space-separated list of scopes to request (e.g. `openid profile`)          |
+| Variable                  | Required                | Description                                                                                                                                                                           |
+| ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_MODE`               | Yes                     | Authentication mode to demo: `redirect`, `popup`, `embedded`, or `native`                                                                                                             |
+| `VITE_ISSUER`             | Yes                     | Your Strivacity cluster domain (e.g. `https://your-tenant.strivacity.com`)                                                                                                            |
+| `VITE_CLIENT_ID`          | Yes                     | The client ID of your application                                                                                                                                                     |
+| `VITE_REDIRECT_URI`       | Yes                     | OAuth2 redirect URI; must match the client configuration (e.g. `http://localhost:4200/callback`)                                                                                      |
+| `VITE_SCOPES`             | Yes                     | Space-separated list of scopes to request (e.g. `openid profile`)                                                                                                                     |
+| `VITE_LOGIN_HINT`         | No                      | Pre-fills the user identifier (`login_hint`)                                                                                                                                          |
+| `VITE_ACR_VALUES`         | No                      | Space-separated `acr_values`                                                                                                                                                          |
+| `VITE_UI_LOCALES`         | No                      | Space-separated `ui_locales`                                                                                                                                                          |
+| `VITE_AUDIENCES`          | No                      | Space-separated audiences                                                                                                                                                             |
+| `VITE_SECRET`             | Server-managed sessions | Encrypts the server-side session cookie. Required by the Server SDK: by Angular, Next.js, Nuxt, SolidStart and SvelteKit by default, and by `apps/backend`                            |
+| `VITE_SERVER_SESSION_URI` | No                      | Overrides the `serverSessionUri` SDK option. Angular, Next.js, Nuxt, SolidStart, and SvelteKit default to `/auth/login`; Vue.js, React, and Preact default to client-managed sessions |
+
+Next.js and Nuxt re-expose some of these variables without the `VITE_` prefix (e.g. `ISSUER` in Next.js, `LOGIN_HINT` and `AUDIENCES` in both) through `next.config.ts` and `nuxt.config.ts` (`runtimeConfig.public`).
 
 ---
 
@@ -112,7 +122,7 @@ pnpm app:vue-backend:serve     # Vue.js + Express backend (BFF)
 
 [`backend`](./apps/backend) application is a standalone Express server that any of the SPA-only example apps ([`apps/vue`](./apps/vue), [`apps/react`](./apps/react), [`apps/preact`](./apps/preact)) can pair with to run in [BFF](#bff) mode instead of talking to the identity provider directly from the browser. This is worth doing because it keeps tokens out of the browser entirely - they're stored in an encrypted, `http-only` cookie on the server.
 
-BFF mode is disabled by default in all three apps - uncomment the `serverSessionUri: '/auth/login'` line to enable it.
+BFF mode is disabled by default in all three apps - set `VITE_SERVER_SESSION_URI="/auth/login"` in `.env.local` to enable it.
 
 To try it, run the backend alongside the SPA app you want to pair it with:
 
@@ -125,7 +135,8 @@ Once enabled:
 
 - **Login**/**Register** navigate the browser straight to the backend's `/auth/login` (handled by the SDK itself via the `serverSessionUri` option)
 - The **Callback**, **Logout**, and **Revoke** pages check `sdk.options.serverSessionUri` and forward the browser to the backend's `/auth/callback`, `/auth/logout`, and `/auth/revoke` routes instead of calling the client SDK's `handleCallback()`, `logout()`, and `revoke()`
-- Before rendering, the app fetches the backend's `/auth/session` endpoint (with `credentials: 'include'`) to learn whether the user is authenticated and read the decoded ID token claims - raw tokens are never sent to the browser
+- Before rendering (and before any route guard runs), the app fetches the backend's `/auth/session` endpoint (with `credentials: 'include'`) and loads the result into the client SDK (`sdk.updateSession()` in Vue.js, the `session` prop of `StyAuthProvider` in React and Preact) to learn whether the user is authenticated and read the decoded ID token claims. Tokens are kept server-side in an http-only cookie and are never written to client-side storage, but for demo purposes `/auth/session` returns the full session (including the raw tokens) to the SPA - in production, return only what the UI needs
+- Token refresh is owned by the backend: `/auth/session` refreshes an expired access token itself and updates the cookie, and the Profile page's refresh button navigates to `/auth/refresh?returnTo=/profile`. The client SDK never refreshes tokens on its own in this mode (`autoRefresh` is ignored when `serverSessionUri` is set), since that would rotate the refresh token and leave the server's cookie stale
 
 See [Server-side session management](./packages/sdk-core/README.md#server-side-session-management) for the underlying SDK option, and [`apps/backend`](./apps/backend) for the server-side implementation.
 

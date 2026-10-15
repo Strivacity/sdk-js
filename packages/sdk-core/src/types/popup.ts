@@ -76,7 +76,7 @@ export type PopupParams = ExtraRequestArgs & {
 	 * If set to `true`, the SDK will verify that messages received from the popup window originate from the expected domain.
 	 * This is a security measure to prevent malicious scripts from sending unauthorized messages to the application.
 	 *
-	 * @default true
+	 * @default false
 	 */
 	checkOrigin?: boolean;
 };

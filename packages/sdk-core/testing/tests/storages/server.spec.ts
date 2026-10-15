@@ -1,6 +1,14 @@
-import type { ServerAdapter, ServerStorage, LogoutTokenClaims } from '../../../src/types';
+import type { CookieJar, ServerAdapter, ServerStorage, LogoutTokenClaims } from '../../../src/types';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { createServerStateStorage, createServerMemoryStorage, createSessionIdCookieStorage, createEncryptedCookieStorage } from '../../../src/storages';
+import {
+	createServerStateStorage,
+	createServerMemoryStorage,
+	createSessionIdCookieStorage,
+	createEncryptedCookieStorage,
+	readEncryptedCookie,
+	writeEncryptedCookie,
+	deleteEncryptedCookie,
+} from '../../../src/storages';
 import { flushSetCookies } from '../../../src/utils';
 
 type MockEvent = { request: Request };
@@ -258,7 +266,7 @@ describe('createSessionIdCookieStorage', () => {
 		const [header] = flushSetCookies(incomingEvent, new Response()).headers.getSetCookie();
 
 		expect(header).toContain('key=');
-		expect(header).toContain('Expires=Thu, 01 Jan 1970');
+		expect(header).toContain('Max-Age=0');
 	});
 
 	test('should still expire the cookie when no session id exists on delete', async () => {
@@ -271,7 +279,7 @@ describe('createSessionIdCookieStorage', () => {
 		expect(underlying.delete).not.toHaveBeenCalled();
 		const [header] = flushSetCookies(event, new Response()).headers.getSetCookie();
 
-		expect(header).toContain('Expires=Thu, 01 Jan 1970');
+		expect(header).toContain('Max-Age=0');
 	});
 
 	test('should expire the cookie immediately even when a max age is configured', async () => {
@@ -398,6 +406,19 @@ describe('createEncryptedCookieStorage', () => {
 		expect(header).not.toContain('Secure');
 	});
 
+	test('should expire the cookie immediately on delete even when a max age is configured', async () => {
+		const storage = createEncryptedCookieStorage(secret, adapter, { defaultCookieOptions: { maxAge: 3600 } });
+		const event = createMockEvent({ key: 'encrypted' });
+
+		await storage.delete('key', event);
+
+		const [header] = flushSetCookies(event, new Response()).headers.getSetCookie();
+
+		expect(header).toContain('key=;');
+		expect(header).toContain('Max-Age=0');
+		expect(header).not.toContain('Max-Age=3600');
+	});
+
 	test('should chunk values larger than the cookie size limit', async () => {
 		const storage = createEncryptedCookieStorage(secret, adapter);
 		const outgoingEvent = createMockEvent();
@@ -439,7 +460,7 @@ describe('createEncryptedCookieStorage', () => {
 		const [header] = flushSetCookies(outgoingEvent, new Response()).headers.getSetCookie();
 
 		expect(header).toContain('key=');
-		expect(header).toContain('Expires=Thu, 01 Jan 1970');
+		expect(header).toContain('Max-Age=0');
 	});
 
 	test('should return null after decrypting with a different secret', async () => {
@@ -452,5 +473,61 @@ describe('createEncryptedCookieStorage', () => {
 		const incomingEvent = createMockEvent(getSetCookies(outgoingEvent));
 
 		await expect(otherStorage.get('key', incomingEvent)).resolves.toBeNull();
+	});
+});
+
+describe('encrypted cookie helpers', () => {
+	const secret = 'test-secret-for-cookie-helpers';
+
+	function createJar(incoming: Record<string, string> = {}) {
+		const written = new Map<string, string>();
+		const deleted: Array<string> = [];
+		const jar: CookieJar<{ path: string }> = {
+			get: (name) => incoming[name],
+			set: (name, value) => void written.set(name, value),
+			delete: (name) => void deleted.push(name),
+		};
+
+		return { jar, written, deleted };
+	}
+
+	test('round-trips a small value through a single cookie', async () => {
+		const { jar, written } = createJar();
+
+		await writeEncryptedCookie(jar, 'sty.session', 'hello', secret, { path: '/' });
+
+		expect([...written.keys()]).toEqual(['sty.session']);
+		expect(await readEncryptedCookie(createJar(Object.fromEntries(written)).jar, 'sty.session', secret)).toBe('hello');
+	});
+
+	test('round-trips a large value through chunks', async () => {
+		const { jar, written } = createJar();
+		const value = 'x'.repeat(10000);
+
+		await writeEncryptedCookie(jar, 'sty.session', value, secret, { path: '/' });
+
+		expect([...written.keys()].every((name) => /^sty\.session\.\d$/.test(name))).toBe(true);
+		expect(written.size).toBeGreaterThan(1);
+		expect(await readEncryptedCookie(createJar(Object.fromEntries(written)).jar, 'sty.session', secret)).toBe(value);
+	});
+
+	test('deletes every chunk that arrived with the request before writing, so no stale chunk is left behind', async () => {
+		const { jar, deleted } = createJar({ 'sty.session.0': 'a', 'sty.session.1': 'b', 'sty.session.2': 'c' });
+
+		await writeEncryptedCookie(jar, 'sty.session', 'small', secret, { path: '/' });
+
+		expect(deleted).toEqual(['sty.session', 'sty.session.0', 'sty.session.1', 'sty.session.2']);
+	});
+
+	test('returns null when there is no cookie', async () => {
+		expect(await readEncryptedCookie(createJar().jar, 'sty.session', secret)).toBeNull();
+	});
+
+	test('deleteEncryptedCookie removes the cookie and its chunks', async () => {
+		const { jar, deleted } = createJar({ 'sty.session.0': 'a' });
+
+		await deleteEncryptedCookie(jar, 'sty.session', { path: '/' });
+
+		expect(deleted).toEqual(['sty.session', 'sty.session.0']);
 	});
 });

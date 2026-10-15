@@ -1,7 +1,7 @@
 <header>
 	<div>
 		@if (authService.isAuthenticated()) {
-		<strong>Welcome, {{ name() }}!</strong>
+		<strong>Welcome {{ name() }}!</strong>
 		} @else if (authService.loading()) {
 		<p>Loading...</p>
 		}

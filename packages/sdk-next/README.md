@@ -106,7 +106,7 @@ export const sdkOptions: SDKInitConfig = {
 	redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
 	scopes: ['openid', 'profile', 'email'], // requested user permissions/data
 
-	// Omit this line entirely for client-managed sessions
+	// Omit these lines entirely for client-managed sessions
 	serverSessionUri: '/auth/login',
 };
 ```
@@ -148,10 +148,10 @@ export const DELETE = sdk.handler;
 | `GET`  | `/auth/register`             | Starts the registration flow and redirects to the IDP       | `302` redirect to IDP                        |
 | `GET`  | `/auth/callback`             | Completes authentication (handles the IDP callback)          | `302` redirect or popup close script         |
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
-| `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `204 No Content`                             |
-| `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page         | `302` redirect to IDP logout                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | JSON with session data |
-| `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `204 No Content`                             |
+| `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
+| `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
 
@@ -198,13 +198,14 @@ For server-managed sessions, fetch the session once in your root layout (a Serve
 ```tsx
 // app/layout.tsx
 import type { ReactNode } from 'react';
+import { toClientSession } from '@strivacity/sdk-next/server';
 import { AuthProvider } from '../lib/auth/provider';
 import { sdk } from '../lib/auth/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-	const session = await sdk.getSession();
+	const session = toClientSession(await sdk.getSession());
 
 	return (
 		<html lang="en-US">
@@ -215,6 +216,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 	);
 }
 ```
+
+> **Note:** The session passed to the provider is serialized into the rendered HTML, so `toClientSession()` (exported from both `@strivacity/sdk-next/server` and `@strivacity/sdk-next/client`) removes the long-lived credentials before handing it over: the refresh token (refresh goes through `/auth/refresh` on the server) and the ID token (only the server-side `/auth/logout` route needs it).
 
 ---
 
@@ -415,7 +418,7 @@ export default function LogoutPage() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```tsx
 // app/logout/page.tsx
@@ -468,7 +471,7 @@ export function TokenPanel() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back. `sdk.refresh({ returnTo: '/profile' })` (`sdk` from `useStrivacity()`) performs the same refresh navigation for you:
 
 ```tsx
 'use client';
@@ -568,11 +571,39 @@ Popup mode always needs client-side JavaScript to open the window, so there's no
 
 **Client-managed sessions**:
 
-The popup resolves automatically - no callback page is needed. Token exchange happens inside the popup and the result is posted back to the opener window.
+The pop-up still navigates to your `redirectUri`, so you still need a callback page there - without it nothing posts the result back to the opener. Call `handleCallback()` on that page; in popup mode it never resolves (the opener closes the pop-up once it receives the result), so don't rely on code after it running:
+
+```tsx
+// app/callback/page.tsx
+'use client';
+
+import { useEffect } from 'react';
+import { useStrivacity } from '@strivacity/sdk-next/client';
+
+export default function CallbackPage() {
+	const { loading, handleCallback } = useStrivacity();
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		void handleCallback();
+	}, [loading]);
+
+	return (
+		<section>
+			<h1>Logging in...</h1>
+		</section>
+	);
+}
+```
+
+`login()` resolves in the opener once the result has been received and, for client-managed sessions, the tokens have been exchanged.
 
 **Server-managed sessions**:
 
-Same as client managed - the popup's internal callback request is also transparently proxied through `/auth/callback`, and the result is posted back to the opener window exactly the same way.
+The callback page must not call `handleCallback()`: forward the query string to `/auth/callback` instead, as in the server-managed redirect callback. The Server SDK exchanges the code, sets the session cookie and responds with a page that posts the result to the opener and closes the pop-up.
 
 ##### Registration
 
@@ -665,7 +696,7 @@ export default function LogoutPage() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```tsx
 // app/logout/page.tsx
@@ -718,7 +749,7 @@ export function TokenPanel() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back. `sdk.refresh({ returnTo: '/profile' })` (`sdk` from `useStrivacity()`) performs the same refresh navigation for you:
 
 ```tsx
 'use client';
@@ -1246,7 +1277,7 @@ export default function LogoutPage() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```tsx
 // app/logout/page.tsx
@@ -1299,7 +1330,7 @@ export function TokenPanel() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back. `sdk.refresh({ returnTo: '/profile' })` (`sdk` from `useStrivacity()`) performs the same refresh navigation for you:
 
 ```tsx
 'use client';
@@ -1353,7 +1384,6 @@ export default function LoginPage() {
 		params: {
 			prompt: 'login', // use 'create' to open the registration flow instead
 			language: 'en-US', // set the UI language (BCP 47 language tag)
-			sdk: 'web-minimal', // rendering mode: 'web-minimal' for simplified rendering, 'web' (default) for full rendering hints and branding
 			sessionId: searchParams.get('session_id'), // pass a session ID to resume an existing flow
 		},
 		onLogin: async () => {
@@ -1604,7 +1634,7 @@ export default function LogoutPage() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint:
+With `serverSessionUri` configured, the `logout()` call above doesn't clear the server session cookie, so redirect to `/auth/logout` instead - the Server SDK clears the session and redirects to the IDP end-session endpoint, which then sends the user back to `postLogoutRedirectUri`. To land somewhere else, add a same-origin `?returnTo=` (e.g. `/auth/logout?returnTo=/goodbye`); a missing, invalid, or cross-origin value falls back to `postLogoutRedirectUri`. Whichever URL is used must be registered as an allowed post-logout redirect URI:
 
 ```tsx
 // app/logout/page.tsx
@@ -1657,7 +1687,7 @@ export function TokenPanel() {
 
 **Server-managed sessions**:
 
-With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back:
+With `serverSessionUri` configured, tokens are refreshed/revoked by the Server SDK - trigger it by navigating to the catch-all route, then let it redirect back. `sdk.refresh({ returnTo: '/profile' })` (`sdk` from `useStrivacity()`) performs the same refresh navigation for you:
 
 ```tsx
 'use client';
@@ -1702,23 +1732,31 @@ const ctx = useStrivacity<RedirectFlow>();
 ```ts
 {
 	// SDK instance (access any SDK method)
-	sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
+	readonly sdk: RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow;
 
 	// Reactive state (plain values - the component re-renders when they change)
-	loading: boolean; // True during initialization
-	isAuthenticated: boolean; // True if user has valid session
-	idTokenClaims: IdTokenClaims | null; // Decoded ID token claims
-	accessToken: string | null; // Current access token
-	refreshToken: string | null; // Current refresh token
+	readonly loading: boolean; // True during initialization
+	readonly language: string; // Current BCP 47 language code
+	readonly isAuthenticated: boolean; // True if user has valid session
+	readonly idTokenClaims: IdTokenClaims | null; // Decoded ID token claims
+	readonly accessToken: string | null; // Current access token
+	readonly refreshToken: string | null; // Current refresh token
+	readonly accessTokenExpired: boolean; // True once the access token has expired
+	readonly accessTokenExpirationDate: number | null; // Access token expiration timestamp
 
-	// Methods (all are async)
-	login(params?: LoginParams): Promise<void>; // Start login flow
-	register(params?: LoginParams): Promise<void>; // Start registration flow
-	handleCallback(url?: string): Promise<void>; // Handle OAuth callback
+	// Methods (same signatures as the underlying flow's methods)
+	init(): Promise<void>; // Initialize the SDK (load metadata, restore a persisted session)
+	checkAuthentication(params?: { autoRefresh: boolean }): Promise<boolean>; // Check the session, optionally refreshing the token (never when serverSessionUri is set)
+	login(params?: RedirectParams | PopupParams): Promise<void>; // Start login flow (redirect: `returnTo` sets where handleCallback() sends the user) (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
+	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(): Promise<void>; // Refresh access token
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
-	entry(): Promise<EntryData>; // Handle external entry (embedded/native only)
+	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
+	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
+	subscribeToEvent<T extends keyof EventFunctions>(eventName: T, callbackFn: (...params: Parameters<EventFunctions[T]>) => Promise<void> | void): { dispose: () => void }; // Subscribe to a single SDK event
+	subscribeToAllEvents(callbackFn: (...params: Array<unknown>) => Promise<void> | void): { dispose: () => void }; // Subscribe to all SDK events
 }
 ```
 
@@ -1744,10 +1782,10 @@ const ctx = useNativeLogin({
 {
 	params?: NativeParams; // Initial flow parameters
 	onLogin?: (session: SessionData) => void | Promise<void>; // Called on successful login
-	onClose?: () => void; // Called when user closes the flow
-	onError?: (error: unknown) => void; // Called on error
-	onFallback?: (error: FallbackError) => void; // Called when fallback needed
-	onGlobalMessage?: (message: NativeFlowMessage) => void; // Called for global messages
+	onClose?: () => void | Promise<void>; // Called when user closes the flow
+	onError?: (error: Error) => void | Promise<void>; // Called on error
+	onFallback?: (error: FallbackError) => void | Promise<void>; // Called when fallback needed
+	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>; // Called for global messages
 }
 ```
 
@@ -1770,9 +1808,19 @@ const ctx = useNativeLogin({
 }
 ```
 
+#### useNativeLoginContext
+
+Returns the context of the currently mounted `useNativeLogin()` from any component (e.g. your own widget components), without passing it down as props. Before `useNativeLogin()` has mounted it returns an empty default context (`loading: true`, no-op methods).
+
+```ts
+import { useNativeLoginContext } from '@strivacity/sdk-next/client';
+
+const { forms, messages, setFormValue, submitForm } = useNativeLoginContext();
+```
+
 #### withAuthGuard (client)
 
-Higher-order component that guards a component with authentication. Waits for the SDK to finish loading, checks the session, and redirects to the login page if the user is not authenticated. Not to be confused with the Server SDK's [`withAuthGuard`](#withauthguard), which guards a page/route server-side.
+Higher-order component that guards a component with authentication. Waits for the SDK to finish loading, checks the session, and redirects to the login page if the user is not authenticated (with the current path as `returnTo`, e.g. `/login?returnTo=%2Forders` - pass it on with `login({ returnTo })`). With server-managed sessions, an expired session is sent through the server's refresh route instead (`sdk.refresh()`, returning to the current URL). Not to be confused with the Server SDK's [`withAuthGuard`](#withauthguard), which guards a page/route server-side.
 
 ```tsx
 'use client';
@@ -1846,7 +1894,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 ### Accessing the session server-side
 
-Call `getSession()` from any Server Component, Route Handler, or `getServerSideProps` to read the current session without going through the client SDK:
+Call `getSession()` from any Server Component, Route Handler, or `getServerSideProps` (pass the request there: `sdk.getSession(ctx.req)`) to read the current session without going through the client SDK. In Server Components (no request) and for Pages Router requests it reads the stored session without refreshing, so the returned session can be expired: a rotated session could not be saved there. Use [`withAuthGuard`](#withauthguard), which sends an expiring session through `/auth/refresh`, or check `expires_at` yourself:
 
 ```tsx
 // app/profile/page.tsx (Server Component)
@@ -1864,9 +1912,24 @@ export default async function ProfilePage() {
 }
 ```
 
+With an App Router request - in Route Handlers, where cookies can be written - `getSession(req)` also refreshes: with `autoRefresh` (the default) it refreshes an expired (or within `refreshSkew`) session first when a refresh token exists, at most once per request (concurrent and later calls with the same `req` share the result), and resolves to `null` if the refresh fails.
+
+```ts
+// app/api/me/route.ts
+import type { NextRequest } from 'next/server';
+import { sdk } from '../../../lib/auth/server';
+
+export async function GET(req: NextRequest) {
+	const session = await sdk.getSession(req);
+	return session ? Response.json({ claims: session.claims }) : Response.json({ error: 'not_authenticated' }, { status: 401 });
+}
+```
+
 ### withAuthGuard
 
 Guards a page and injects a `session` prop, redirecting to `options.loginUri` (default `/login`) when there's no active session.
+
+The guard also checks expiry. When the access token has expired (or is within `refreshSkew` seconds of expiry) and the session has a refresh token, it redirects to `${authUrlPrefix}/refresh?returnTo=...` - the refresh route writes the rotated session cookie and redirects back. The `returnTo` is the guard's `returnTo` option, falling back to `postLoginRedirectUri` (App Router) or the requested page, `ctx.resolvedUrl` (Pages Router). An expired session without a refresh token - or any expired session with `autoRefresh: false` - is treated as no session and redirects to the login page.
 
 **App Router:**
 
@@ -1893,7 +1956,7 @@ export default function ProfilePage({ session }: { session: SessionData }) {
 }
 ```
 
-Pass `returnTo` to redirect back to a specific page after login, or (Pages Router only) `getServerSideProps` to run your own data fetching alongside the guard:
+Pass `returnTo` to redirect back to a specific page after login or refresh, or (Pages Router only) `getServerSideProps` to run your own data fetching alongside the guard:
 
 ```ts
 export const getServerSideProps = sdk.withAuthGuard({
@@ -1938,7 +2001,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 #### Built-in session storages
 
 - **`createEncryptedCookieStorage(secret, options?)`** - default storage that keeps the session encrypted in an http-only cookie.
-- **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. This supports back-channel logout out of the box.
+- **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
 // lib/auth/storage.ts
@@ -1967,37 +2030,40 @@ export const sdk = createServerSDK({
 
 #### Custom storage
 
-For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage):
+For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
+
+The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // lib/auth/storage.ts
 import { createStorage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
-import type { NextServerStorage, SDKStorage } from '@strivacity/sdk-next/server';
+import type { ServerStorage, SDKStorage } from '@strivacity/sdk-next/server';
 
 const unstorageInstance = createStorage({ driver: redisDriver({ url: process.env.REDIS_URL }) });
 
-// Custom session storage for tokens
-export const sessionStorage: NextServerStorage = {
+// Session payload store - `key` is the per-browser session id provided by `createSessionIdCookieStorage`
+// (raw get/set keep the serialized session string as-is)
+export const sessionStore: ServerStorage = {
 	async get(key) {
-		return unstorageInstance.getItem<string>(key);
+		return unstorageInstance.getItemRaw<string>(`session:${key}`);
 	},
 	async set(key, value) {
-		await unstorageInstance.setItem(key, value);
+		await unstorageInstance.setItemRaw(`session:${key}`, value);
 	},
 	async delete(key) {
-		await unstorageInstance.removeItem(key);
+		await unstorageInstance.removeItem(`session:${key}`);
 	},
 	// Required for back-channel logout support - see below.
-	// Scans all stored sessions and removes those matching the logout token's sid or sub claim.
+	// Scans all stored sessions and removes those whose ID token claims match the logout token's sid or sub claim.
 	async deleteByLogoutToken(logoutToken) {
-		const keys = await unstorageInstance.getKeys();
+		const keys = await unstorageInstance.getKeys('session');
 		await Promise.all(
 			keys.map(async (key) => {
-				const raw = await unstorageInstance.getItem<string>(key);
+				const raw = await unstorageInstance.getItemRaw<string>(key);
 				if (!raw) return;
 				const session = JSON.parse(raw);
-				if ((logoutToken.sid && session.sid === logoutToken.sid) || (logoutToken.sub && session.sub === logoutToken.sub)) {
+				if ((logoutToken.sid && session.claims?.sid === logoutToken.sid) || (logoutToken.sub && session.claims?.sub === logoutToken.sub)) {
 					await unstorageInstance.removeItem(key);
 				}
 			}),
@@ -2021,13 +2087,13 @@ export const stateStorage: SDKStorage = {
 
 ```ts
 // lib/auth/server.ts
-import { createServerSDK } from '@strivacity/sdk-next/server';
+import { createServerSDK, createSessionIdCookieStorage } from '@strivacity/sdk-next/server';
 import { sdkOptions } from './options';
-import { sessionStorage, stateStorage } from './storage';
+import { sessionStore, stateStorage } from './storage';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	storage: sessionStorage, // Custom Redis-backed session storage
+	storage: createSessionIdCookieStorage(sessionStore), // Custom Redis-backed session storage, keyed by a session-id cookie
 	stateStorage, // Custom Redis-backed state storage
 });
 ```
@@ -2038,9 +2104,9 @@ export const sdk = createServerSDK({
 
 OIDC back-channel logout lets the authorization server terminate sessions server-to-server, without involving the browser. When the IDP sends a logout event (e.g. an admin terminates a session, or the user logs out from a different device), it POSTs a signed `logout_token` JWT to `/auth/backchannel-logout` - already wired up by the catch-all route from [Setup](#setup) - which routes it to `sdk.handleBackChannelLogout(req)`.
 
-The handler verifies the token's signature against the IDP's JWKS, validates the `iss`, `aud`, `iat` (freshness), and `jti` (replay protection) claims, requires the `http://schemas.openid.net/event/backchannel-logout` event and a `sid` or `sub` claim, then calls `storage.deleteByLogoutToken({ sid?, sub? })` to remove the matching session(s). It responds `200` on success, `400` for an invalid or malformed `logout_token`, and `501` if the configured storage doesn't implement `deleteByLogoutToken`.
+The handler verifies the token's signature against the IDP's JWKS, validates the `iss`, `aud`, `iat` (freshness), and `jti` (replay protection) claims, requires the `http://schemas.openid.net/event/backchannel-logout` event and a `sid` or `sub` claim, then calls `storage.deleteByLogoutToken({ sid?, sub? })` to remove the matching session(s). It responds `200` on success, `400` for an invalid or malformed `logout_token`, `501` if the configured storage doesn't implement `deleteByLogoutToken`, and `500` if deleting the session fails.
 
-> **The default encrypted-cookie storage does not support back-channel logout** because each cookie is bound to a single browser session - there is no server-side index to look up by `sid` or `sub`. To support back-channel logout, use [`createSessionIdCookieStorage`](#server-storages) with a `storage` that implements `deleteByLogoutToken` (e.g. `createServerMemoryStorage()` for local testing), or a fully custom server storage as shown in the [Custom storage](#server-storages) example above.
+> **The default encrypted-cookie storage does not support back-channel logout** because each cookie is bound to a single browser session - there is no server-side index to look up by `sid` or `sub`. To support back-channel logout, use [`createSessionIdCookieStorage`](#server-storages) with a `storage` that implements `deleteByLogoutToken`, e.g. `createServerMemoryStorage()` for local testing or the Redis-backed store from the [Custom storage](#server-storages) example above.
 
 Configure the **Back-channel logout URI** in your Strivacity application settings to:
 
@@ -2057,7 +2123,7 @@ For a complete explanation of the handshake and validation performed, see the co
 	options: ServerSDKOptions; // resolved server SDK configuration
 
 	// Session management
-	getSession(req?): Promise<SessionData | null>; // read the current session
+	getSession(req?): Promise<SessionData | null>; // read the current session; with an App Router request and `autoRefresh` (default) it refreshes an expired one first (once per request, null if the refresh fails). Without a request (Server Components) or with a Pages Router request it never refreshes
 	updateSession(session, req?): Promise<void>; // persist new session data
 	refreshSession(req?): Promise<SessionData>; // refresh tokens using the refresh token
 	revokeSession(req?): Promise<void>; // revoke tokens and clear the session
@@ -2093,8 +2159,8 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handler`/the catch-all route |
 | `loginUri` | `string` | No | `'/login'` | Page `withAuthGuard` redirects to when there's no session |
-| `postLoginRedirectUri` | `string` | No | - | Default redirect after login when no `?returnTo=` is given |
-| `postLogoutRedirectUri` | `string` | No | - | Default redirect after logout |
+| `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
+| `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
 
 ---
@@ -2130,7 +2196,7 @@ The client SDK accepts the same configuration as the core SDK - see the [core SD
 
 ### Migrating to v4.0
 
-v4 replaces the SDK's class-based flow architecture with function-based architecture, and adds a first-class Server SDK for server-managed (BFF) sessions. `StyAuthProvider`, `useStrivacity()`, `useNativeLogin()`, and the built-in `redirect`/`popup`/`embedded`/`native` modes are unchanged - only apps that used `mode: 'custom'` or drove `native` mode through the old `NativeFlowHandler` need to update their code.
+v4 replaces the SDK's class-based flow architecture with function-based architecture, and adds a first-class Server SDK for server-managed (BFF) sessions. `StyAuthProvider`, `useStrivacity()`, and the built-in `redirect`/`popup`/`embedded`/`native` modes are unchanged (`useStrivacity()` no longer exposes `options` - use `sdk.options`). `useNativeLogin()` is new in v4: it replaces v3's `<StyLoginRenderer>` component (and `NativeFlowContext`), so `native` mode now renders your own widget components driven by [`useNativeLogin()`](#usenativelogin) and [`useNativeLoginContext()`](#usenativelogincontext). Apps that rendered `<StyLoginRenderer>`, used `mode: 'custom'`, or drove `native` mode through the old `NativeFlowHandler` need to update their code.
 
 #### Class-based flows replaced by functions
 
@@ -2157,7 +2223,7 @@ import type { SDKInitConfig, SDKOptions } from '@strivacity/sdk-core/types';
 
 export function createCustomFlow(initConfig: SDKInitConfig) {
 	const state = getDefaultFlowState();
-	const options = getSDKOptions<SDKOptions>(state, initConfig);
+	const options = getSDKOptions<SDKOptions>(initConfig);
 	const base = createBaseFlow(state, options);
 
 	async function refresh(): Promise<void> {

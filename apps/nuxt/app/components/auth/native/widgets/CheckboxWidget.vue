@@ -1,13 +1,17 @@
 <script lang="ts" setup>
 import type { CheckboxWidget } from '@strivacity/sdk-nuxt';
-import { computed, useNativeLoginContext } from '#imports';
+import { computed, onMounted, useNativeLoginContext } from '#imports';
 
 const props = defineProps<{ formId: string; config: CheckboxWidget }>();
 
 const { loading, forms, messages, setFormValue } = useNativeLoginContext();
-const disabled = computed(() => !!loading.value);
-const checked = computed(() => (forms.value[props.formId]?.[props.config.id] as boolean) || props.config.value || false);
+const disabled = computed(() => !!loading.value || !!props.config.readonly);
+const checked = computed(() => (forms.value[props.formId]?.[props.config.id] as boolean | undefined) ?? props.config.value ?? false);
 const errorMessage = computed(() => messages.value[props.formId]?.[props.config.id]?.text);
+
+onMounted(() => {
+	setFormValue(props.formId, props.config.id, checked.value);
+});
 
 function onChange(checked: boolean) {
 	if (disabled.value) {

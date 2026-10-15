@@ -1,4 +1,5 @@
-import type { EntryResponse, ExtraRequestArgs, SDK } from './oidc';
+import type { EntryResponse, ExtraRequestArgs, SDK, SessionData } from './oidc';
+import type { FallbackError } from '../utils/errors';
 
 export declare const WidgetTypeList: readonly [
 	'layout',
@@ -332,7 +333,7 @@ export type NativeFlowState = {
 
 export type NativeParams = ExtraRequestArgs & {
 	/**
-	 * The SDK type to use for the native login flow. This is typically set to 'web-minimal' for web-based applications.
+	 * The SDK type to request for the native login flow (e.g. `'web-minimal'`).
 	 */
 	sdk?: string;
 
@@ -446,4 +447,76 @@ export type NativeFlow = Omit<SDK<NativeParams, Promise<EntryResponse>>, 'login'
 	 * @returns {NativeLoginFlow} Native login flow instance to drive the process.
 	 */
 	register(params?: NativeParams): NativeLoginFlow;
+};
+
+/**
+ * Callbacks and parameters of a native login flow (`createNativeLoginController`, and the framework `useNativeLogin` helpers built on it).
+ */
+export type NativeLoginControllerOptions = {
+	/**
+	 * Optional parameters to be passed to the login session request.
+	 */
+	params?: NativeParams;
+
+	/**
+	 * Called when the user successfully completes the login flow.
+	 */
+	onLogin?: (session: SessionData) => void | Promise<void>;
+
+	/**
+	 * Called when the fallback flow is triggered. Receives a `FallbackError` with the hosted URL to redirect to.
+	 */
+	onFallback?: (error: FallbackError) => void | Promise<void>;
+
+	/**
+	 * Called when the login flow is closed by the user.
+	 */
+	onClose?: () => void | Promise<void>;
+
+	/**
+	 * Called when an error occurs during the login session initialization or flow.
+	 */
+	onError?: (error: Error) => void | Promise<void>;
+
+	/**
+	 * Called when a global message is received during the login flow.
+	 */
+	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>;
+};
+
+/**
+ * An immutable snapshot of a native login flow's state. A new object is created on every change.
+ */
+export type NativeLoginSnapshot = {
+	readonly loading: boolean;
+	readonly forms: Record<string, Record<string, unknown>>;
+	readonly messages: Record<string, Record<string, NativeFlowMessage>>;
+	readonly state: Partial<NativeFlowState>;
+};
+
+/**
+ * Framework-agnostic state machine of a native login flow. Framework integrations subscribe to its snapshots and bind them to
+ * their own reactivity (React state, Vue refs, Angular/Solid signals, Svelte runes).
+ */
+export type NativeLoginController = {
+	/** Returns the current snapshot. */
+	getSnapshot: () => NativeLoginSnapshot;
+	/** Subscribes to snapshot changes. Returns the unsubscribe function. */
+	subscribe: (listener: (snapshot: NativeLoginSnapshot) => void) => () => void;
+	/** Replaces the callbacks/params (e.g. on every render in React). */
+	setOptions: (options: NativeLoginControllerOptions) => void;
+	/** Initializes the SDK and starts the session with `options.params`. Call once when the login UI mounts. */
+	start: () => Promise<void>;
+	/** Starts (or resumes, with `params.sessionId`) a login session. */
+	startSession: (params?: NativeParams) => Promise<void>;
+	/** Submits a form; without `customBody` the current (unflattened) form values are sent. */
+	submitForm: (formId: string, customBody?: Record<string, unknown>) => Promise<void>;
+	/** Signals that the hosted login page should be used instead (calls `onFallback`). Throws when there is no hosted URL. */
+	triggerFallback: (message?: string) => void;
+	/** Signals that the user closed the login flow (calls `onClose`). */
+	triggerClose: () => void;
+	/** Sets a form field value (`''` is stored as `null`). */
+	setFormValue: (formId: string, widgetId: string, value: unknown) => void;
+	/** Sets a form field message. */
+	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
 };

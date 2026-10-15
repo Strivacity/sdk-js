@@ -14,10 +14,9 @@ import type {
 	SDKInitConfig,
 	SessionData,
 	NativeFlowState,
-	NativeParams,
 	NativeFlowMessage,
+	NativeLoginControllerOptions,
 } from '@strivacity/sdk-core';
-import type { FallbackError } from '@strivacity/sdk-core/utils';
 
 export * from '@strivacity/sdk-core/types';
 
@@ -154,14 +153,14 @@ export type SDKInstance = ReturnType<typeof initFlow>;
 
 export type StyAuthProviderProps = ParentProps<{
 	/**
-	 * The options to be used by the AuthProvider. These options are passed to the SDK during initialization.
+	 * The options passed to `initFlow` when `StyAuthProvider` creates the SDK. Read once, on mount.
 	 */
 	options: SDKInitConfig;
 
 	/**
-	 * The session data to be used by the AuthProvider.
+	 * Initial session data, typically loaded on the server for server-managed sessions. Read once, on mount.
 	 *
-	 * If not provided, the AuthProvider will attempt to retrieve the session data from the SDK.
+	 * If not provided, the SDK restores the session from its own storage (or from the server endpoint in server-managed mode).
 	 */
 	session?: SessionData | null;
 }>;
@@ -197,10 +196,10 @@ export type LoginContext = {
 	submitForm: (formId: string, customBody?: Record<string, unknown>) => Promise<void>;
 
 	/**
-	 * Redirects to the hosted login UI.
+	 * Hands the flow over to the hosted login UI: calls `onFallback` with a `FallbackError` carrying the hosted URL, so the app can redirect there.
 	 *
-	 * @param message - Optional message to log before redirecting.
-	 * @returns A promise that resolves when the redirect is initiated.
+	 * @param message - Optional message to log as the fallback reason.
+	 * @throws {Error} When the IdP has not provided a hosted URL yet.
 	 */
 	triggerFallback: (message?: string) => void;
 
@@ -223,42 +222,15 @@ export type LoginContext = {
 	 *
 	 * @param formId - The ID of the form containing the widget.
 	 * @param widgetId - The ID of the widget to set the message for.
-	 * @param value - The message to set, which can be a string or a structured NativeFlowMessage.
+	 * @param value - The message to set, e.g. `{ type: 'error', text: 'Required' }`.
 	 */
 	setMessage: (formId: string, widgetId: string, value: NativeFlowMessage) => void;
 };
 
-export type UseNativeLoginOptions = {
-	/**
-	 * Optional parameters to be passed to the login session request.
-	 */
-	params?: NativeParams;
-
-	/**
-	 * Called when the user successfully completes the login flow.
-	 */
-	onLogin?: (session: SessionData) => void | Promise<void>;
-
-	/**
-	 * Called when the fallback flow is triggered.
-	 */
-	onFallback?: (error: FallbackError) => void | Promise<void>;
-
-	/**
-	 * Called when the login flow is closed by the user.
-	 */
-	onClose?: () => void | Promise<void>;
-
-	/**
-	 * Called when an error occurs during login flow initialization or submission.
-	 */
-	onError?: (error: Error) => void | Promise<void>;
-
-	/**
-	 * Called when a global message is received during the login flow.
-	 */
-	onGlobalMessage?: (message: NativeFlowMessage) => void | Promise<void>;
-};
+/**
+ * Callbacks and parameters of the native login flow. See `NativeLoginControllerOptions` in `@strivacity/sdk-core`.
+ */
+export type UseNativeLoginOptions = NativeLoginControllerOptions;
 
 export type WithAuthGuardOptions = {
 	/**

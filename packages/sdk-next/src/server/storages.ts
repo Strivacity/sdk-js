@@ -1,10 +1,21 @@
-import type { NextServerStorage, PagesRouterRequest, SessionIdCookieStorageOptions, EncryptedCookieStorageOptions } from './types';
+import type {
+	CookieJar,
+	CookieOptions,
+	NextServerStorage,
+	PagesRouterRequest,
+	PagesRouterResponse,
+	SessionIdCookieStorageOptions,
+	EncryptedCookieStorageOptions,
+} from './types';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { buildCookieString } from '@strivacity/sdk-core/utils/common';
-import { encryptString, decryptString } from '@strivacity/sdk-core/utils/crypto';
-import { COOKIE_CONTEXT, COOKIE_CHUNK_SIZE } from '@strivacity/sdk-core/server';
-import { createSessionIdCookieStorage as createSessionIdCookieStorageBase } from '@strivacity/sdk-core/storages/server';
+import {
+	createSessionIdCookieStorage as createSessionIdCookieStorageBase,
+	readEncryptedCookie,
+	writeEncryptedCookie,
+	deleteEncryptedCookie,
+} from '@strivacity/sdk-core/storages/server';
 
 export * from '@strivacity/sdk-react/storages';
 
@@ -68,6 +79,59 @@ export function createSessionIdCookieStorage(storage: NextServerStorage, options
 }
 
 /**
+ * Builds the cookie access for one storage call. Writes go to the given response (App Router `NextResponse` or Pages Router
+ * `res`), or to `cookies()` from next/headers when there is none. Reads come from the request, then from the response.
+ *
+ * @param req - The incoming request, if any.
+ * @param res - The outgoing response, if any.
+ * @returns The cookie jar.
+ */
+function createJar(req?: NextRequest | Request | PagesRouterRequest, res?: NextResponse | PagesRouterResponse): CookieJar<CookieOptions> {
+	const appendSetCookie = (response: PagesRouterResponse, cookie: string) => {
+		const existing = response.getHeader('set-cookie');
+		const existingArr = Array.isArray(existing) ? existing : existing ? [String(existing)] : [];
+
+		response.setHeader('set-cookie', [...existingArr, cookie]);
+	};
+
+	return {
+		async get(name) {
+			const fromRequest = req ? getCookieFromRequest(req, name) : null;
+
+			if (fromRequest) {
+				return fromRequest;
+			}
+			if (res instanceof NextResponse) {
+				return res.cookies.get(name)?.value;
+			}
+			if (res || req) {
+				return null;
+			}
+
+			return (await cookies()).get(name)?.value;
+		},
+		async set(name, value, cookieOptions) {
+			if (res instanceof NextResponse) {
+				res.cookies.set(name, value, cookieOptions);
+			} else if (res) {
+				appendSetCookie(res, buildCookieString(name, value, cookieOptions));
+			} else {
+				(await cookies()).set(name, value, cookieOptions);
+			}
+		},
+		async delete(name, cookieOptions) {
+			if (res instanceof NextResponse) {
+				res.cookies.set(name, '', { ...cookieOptions, maxAge: 0 });
+			} else if (res) {
+				appendSetCookie(res, buildCookieString(name, '', { ...cookieOptions, maxAge: 0 }));
+			} else {
+				(await cookies()).delete(name);
+			}
+		},
+	};
+}
+
+/**
  * Creates an encrypted cookie session storage.
  * Only callable in server-side contexts (middleware, API routes, or server components).
  *
@@ -85,137 +149,9 @@ export function createEncryptedCookieStorage(secret: string, options?: Encrypted
 		...options?.defaultCookieOptions,
 	};
 
-	const storage: NextServerStorage = {
-		async get(key, req) {
-			if (req) {
-				const cookie = getCookieFromRequest(req, key);
-
-				if (cookie) {
-					return await decryptString(cookie, secret, COOKIE_CONTEXT);
-				}
-
-				const cookieChunks: Array<string> = [];
-
-				for (let i = 0; ; i++) {
-					const chunk = getCookieFromRequest(req, `${key}.${i}`);
-
-					if (!chunk) {
-						break;
-					}
-
-					cookieChunks.push(chunk);
-				}
-
-				if (cookieChunks.length === 0) {
-					return null;
-				}
-
-				return await decryptString(cookieChunks.join(''), secret, COOKIE_CONTEXT);
-			} else {
-				const store = await cookies();
-				const cookie = store.get(key)?.value;
-
-				if (cookie) {
-					return await decryptString(cookie, secret, COOKIE_CONTEXT);
-				}
-
-				const cookieChunks: Array<string> = [];
-
-				for (let i = 0; ; i++) {
-					const chunk = store.get(`${key}.${i}`)?.value;
-
-					if (!chunk) {
-						break;
-					}
-
-					cookieChunks.push(chunk);
-				}
-
-				if (cookieChunks.length === 0) {
-					return null;
-				}
-
-				return await decryptString(cookieChunks.join(''), secret, COOKIE_CONTEXT);
-			}
-		},
-		async set(key, value, req, res, cookieOptions) {
-			cookieOptions = { ...defaultCookieOptions, ...cookieOptions };
-
-			// NOTE: Delete existing cookie(s) first to avoid leaving old chunks behind
-			await storage.delete(key, req, res);
-
-			const encrypted = await encryptString(value, secret, COOKIE_CONTEXT);
-
-			if (res instanceof NextResponse) {
-				if (encrypted.length <= COOKIE_CHUNK_SIZE) {
-					res.cookies.set(key, encrypted, cookieOptions);
-				} else {
-					for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
-						res.cookies.set(`${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), cookieOptions);
-					}
-				}
-			} else if (res) {
-				const setCookies: Array<string> = [];
-
-				if (encrypted.length <= COOKIE_CHUNK_SIZE) {
-					setCookies.push(buildCookieString(key, encrypted, cookieOptions));
-				} else {
-					for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
-						setCookies.push(buildCookieString(`${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), cookieOptions));
-					}
-				}
-
-				const existing = res.getHeader('set-cookie');
-				const existingArr = Array.isArray(existing) ? existing : existing ? [String(existing)] : [];
-
-				res.setHeader('set-cookie', [...existingArr, ...setCookies]);
-			} else {
-				const store = await cookies();
-
-				if (encrypted.length <= COOKIE_CHUNK_SIZE) {
-					store.set(key, encrypted, cookieOptions);
-				} else {
-					for (let i = 0; i * COOKIE_CHUNK_SIZE < encrypted.length; i++) {
-						store.set(`${key}.${i}`, encrypted.slice(i * COOKIE_CHUNK_SIZE, (i + 1) * COOKIE_CHUNK_SIZE), cookieOptions);
-					}
-				}
-			}
-		},
-		async delete(key, req, res, cookieOptions) {
-			cookieOptions = { ...defaultCookieOptions, ...cookieOptions, maxAge: 0 };
-
-			if (res instanceof NextResponse) {
-				res.cookies.delete(key);
-
-				for (let i = 0; res.cookies.get(`${key}.${i}`); i++) {
-					res.cookies.delete(`${key}.${i}`);
-				}
-			} else if (res) {
-				const setCookies: Array<string> = [];
-
-				setCookies.push(buildCookieString(key, '', cookieOptions));
-
-				if (req) {
-					for (let i = 0; getCookieFromRequest(req, `${key}.${i}`) !== null; i++) {
-						setCookies.push(buildCookieString(`${key}.${i}`, '', cookieOptions));
-					}
-				}
-
-				const existing = res.getHeader('set-cookie');
-				const existingArr = Array.isArray(existing) ? existing : existing ? [String(existing)] : [];
-
-				res.setHeader('set-cookie', [...existingArr, ...setCookies]);
-			} else {
-				const store = await cookies();
-
-				store.delete(key);
-
-				for (let i = 0; store.get(`${key}.${i}`); i++) {
-					store.delete(`${key}.${i}`);
-				}
-			}
-		},
+	return {
+		get: (key, req) => readEncryptedCookie(createJar(req), key, secret),
+		set: (key, value, req, res, cookieOptions) => writeEncryptedCookie(createJar(req, res), key, value, secret, { ...defaultCookieOptions, ...cookieOptions }),
+		delete: (key, req, res, cookieOptions) => deleteEncryptedCookie(createJar(req, res), key, { ...defaultCookieOptions, ...cookieOptions }),
 	};
-
-	return storage;
 }
