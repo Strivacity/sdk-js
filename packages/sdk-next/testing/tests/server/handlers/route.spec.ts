@@ -198,6 +198,18 @@ describe('pageRouteHandlerFactory', () => {
 		expect(result).toEqual({ props: { session } });
 	});
 
+	test('reads the session from the request without refreshing', async () => {
+		const session = { access_token: 'access-token', expires_at: Math.floor(Date.now() / 1000) + 3600 };
+		const getSession = vi.fn().mockResolvedValue(session);
+		const sdk = createMockBaseServerSDK<Sdk>({ getSession });
+		const req = { headers: { cookie: 'sty.session=value' } };
+		const route = pageRouteHandlerFactory(sdk)();
+
+		await route({ req } as never);
+
+		expect(getSession).toHaveBeenCalledWith(req, { autoRefresh: false });
+	});
+
 	test('merges the session into the props returned synchronously by getServerSideProps', async () => {
 		const session = { access_token: 'access-token', expires_at: Math.floor(Date.now() / 1000) + 3600 };
 		const sdk = createMockBaseServerSDK<Sdk>({ getSession: vi.fn().mockResolvedValue(session) });

@@ -55,7 +55,7 @@ export const pageRouteHandlerFactory =
 	({ getServerSideProps, returnTo } = {}) =>
 	async (ctx) => {
 		// NOTE: Server Components cannot set cookies, so never refresh here: an expired session goes through the refresh route
-		const session = await sdk.getSession(undefined, { autoRefresh: false });
+		const session = await sdk.getSession(ctx.req, { autoRefresh: false });
 
 		if (session && isSessionExpired(session, sdk.options.refreshSkew)) {
 			return {
