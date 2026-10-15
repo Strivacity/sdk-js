@@ -33,6 +33,14 @@
           "command": "vite build"
         }
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "packages/sdk-solid",
+        "command": "vitest"
+      }
     }
   }
 }
