@@ -970,4 +970,132 @@ describe('createBaseServerSDK', () => {
 			await expect(sdk.handler({ request: new Request('https://brandtegrity.io/auth/login', { method: 'POST' }) })).resolves.toBeNull();
 		});
 	});
+
+	describe('client authentication', () => {
+		type CapturedRequest = { authorization: string | null; body: URLSearchParams };
+
+		function captureEndpoint(url: string, response: () => Response): Array<CapturedRequest> {
+			const captured: Array<CapturedRequest> = [];
+
+			worker.use(
+				http.post(url, async ({ request }) => {
+					captured.push({ authorization: request.headers.get('authorization'), body: new URLSearchParams(await request.text()) });
+					return response();
+				}),
+			);
+
+			return captured;
+		}
+
+		const tokenResponse = () =>
+			HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 });
+
+		async function exchangeCode(sdk: ReturnType<typeof createServerSDK>['sdk'], stateStorage: ReturnType<typeof createServerSDK>['stateStorage']) {
+			const stateData = await seedState(stateStorage);
+
+			await sdk.handleCallback({ request: new Request(`https://brandtegrity.io/auth/callback?code=abc123&state=${stateData.id}`) });
+
+			return stateData;
+		}
+
+		test('should send only client_id without a client secret', async () => {
+			const { sdk, stateStorage } = createServerSDK();
+			const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+			await exchangeCode(sdk, stateStorage);
+
+			expect(captured[0].authorization).toBeNull();
+			expect(captured[0].body.get('client_id')).toBe('client-id');
+			expect(captured[0].body.has('client_secret')).toBe(false);
+		});
+
+		describe('client_secret_basic', () => {
+			test('should be the default when clientSecret is set', async () => {
+				const { sdk, stateStorage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				const stateData = await exchangeCode(sdk, stateStorage);
+
+				expect((options as { tokenEndpointAuthMethod?: string }).tokenEndpointAuthMethod).toBe('client_secret_basic');
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.has('client_secret')).toBe(false);
+				expect(captured[0].body.get('grant_type')).toBe('authorization_code');
+				expect(captured[0].body.get('code')).toBe('abc123');
+				expect(captured[0].body.get('code_verifier')).toBe(stateData.codeVerifier);
+			});
+
+			test('should form-urlencode the client credentials before base64 encoding them (RFC 6749 section 2.3.1)', async () => {
+				const { sdk, stateStorage } = createServerSDK({ clientId: 'client:id é', clientSecret: 'p@ss w+rd%:/' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await exchangeCode(sdk, stateStorage);
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client%3Aid+%C3%A9:p%40ss+w%2Brd%25%3A%2F')}`);
+			});
+
+			test('should authenticate the refresh request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				await storage.set(options.storageKey, serializeSession(createSessionData({ refresh_token: 'old-refresh-token' })));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await sdk.refreshSession(createMockEvent());
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.get('grant_type')).toBe('refresh_token');
+				expect(captured[0].body.get('refresh_token')).toBe('old-refresh-token');
+			});
+
+			test('should authenticate the revocation request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({}));
+
+				await sdk.revokeSession(createMockEvent());
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.get('token')).toBe('refresh-token');
+				expect(captured[0].body.get('token_type_hint')).toBe('refresh_token');
+			});
+		});
+
+		describe('client_secret_post', () => {
+			test('should send client_id and client_secret in the body of the code exchange', async () => {
+				const { sdk, stateStorage } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await exchangeCode(sdk, stateStorage);
+
+				expect(captured[0].authorization).toBeNull();
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+				expect(captured[0].body.get('code')).toBe('abc123');
+			});
+
+			test('should authenticate the refresh request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await sdk.refreshSession(createMockEvent());
+
+				expect(captured[0].authorization).toBeNull();
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+			});
+
+			test('should authenticate the revocation request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({}));
+
+				await sdk.revokeSession(createMockEvent());
+
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+			});
+		});
+	});
 });

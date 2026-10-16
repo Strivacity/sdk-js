@@ -43,6 +43,8 @@ test('should export the correct things', () => {
 		'buildAuthorizationUrl',
 		'buildEndSessionUrl',
 		'exchangeCode',
+		'formUrlEncode',
+		'sendClientRequest',
 		'refreshToken',
 		'revokeToken',
 		'fetchFlowEntry',

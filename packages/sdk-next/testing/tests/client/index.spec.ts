@@ -60,6 +60,8 @@ test('should export the correct things', () => {
 		'encodeBase64URL',
 		'encryptString',
 		'exchangeCode',
+		'formUrlEncode',
+		'sendClientRequest',
 		'fetchFlowEntry',
 		'finalizeLoginSession',
 		'flushSetCookies',

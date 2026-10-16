@@ -37,7 +37,7 @@ npm install --save-exact @strivacity/sdk-core@next
 
 ### 2. Configuration
 
-Ask the user before writing these. None of them is cookieSecret:
+Ask the user before writing these. None of them is secret:
 
 ```bash
 # .env.local (Vite)
@@ -338,7 +338,7 @@ Browser: `createLocalStorage()`, `createSessionStorage()`, `createMemoryStorage(
 
 ### Server SDK (`createBaseServerSDK<TEvent>(adapter, options)`)
 
-`adapter`: `{ toRequest(event), redirect?(url, status, event), getSessionId?(key, event) }`. Options: every client option plus `cookieSecret`, `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), `cookieMaxAge` (`2592000`), and `serverSessionUri` (`` `${authUriPrefix}/login` ``). Methods: `handler(event)` (returns `null` for unknown paths), `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout`, `getSession(event?, { autoRefresh }?)` (refreshes an expired or near-expiry session first, see below), `updateSession`, `refreshSession` (throws on failure), `revokeSession`, `completeLogin`, `logout`, `getEntrySession`. Failures redirect to `{origin}/error?type=&error=&error_description=`, so the app needs an `/error` page.
+`adapter`: `{ toRequest(event), redirect?(url, status, event), getSessionId?(key, event) }`. Options: every client option plus `cookieSecret`, `clientSecret` and `tokenEndpointAuthMethod` (`'client_secret_basic'` with `clientSecret`, otherwise `'none'`; or `'client_secret_post'`: confidential client authentication at the token and revocation endpoints, PKCE stays on; server-only, the client SDK throws on `clientSecret`), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), `cookieMaxAge` (`2592000`), and `serverSessionUri` (`` `${authUriPrefix}/login` ``). Methods: `handler(event)` (returns `null` for unknown paths), `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout`, `getSession(event?, { autoRefresh }?)` (refreshes an expired or near-expiry session first, see below), `updateSession`, `refreshSession` (throws on failure), `revokeSession`, `completeLogin`, `logout`, `getEntrySession`. Failures redirect to `{origin}/error?type=&error=&error_description=`, so the app needs an `/error` page.
 
 `getSession(event)` refreshes when `autoRefresh` is on (option or per-call param, default `true`), the access token is within `refreshSkew` of expiry and a refresh token exists, at most once per request event (concurrent and later calls with the same event object share the result). A failed refresh resolves to `null`. With `autoRefresh: false` it returns the stored session as is (no expiry check). Like `updateSession` / `refreshSession`, it only queues the rotated `Set-Cookie` headers on the event, so copy them to your response with `flushSetCookies(event, response)` from `@strivacity/sdk-core/utils` (the built-in route handlers do this for you).
 

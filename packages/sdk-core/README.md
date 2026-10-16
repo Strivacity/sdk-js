@@ -24,6 +24,7 @@ Use it directly in vanilla JS/TS projects or use one of the [framework-specific 
   - [Storages](#server-storages)
   - [Session helpers](#server-session-helpers)
   - [Back-channel logout](#server-backchannel-logout)
+  - [Client authentication](#server-client-authentication)
   - [Configuration Options](#server-configuration-options)
 - [Shared features](#shared-features)
   - [Storages](#storages)
@@ -1202,6 +1203,29 @@ Configure the **Back-channel logout URI** in your Strivacity application setting
 https://your-app.example.com/api/auth/backchannel-logout
 ```
 
+<a id="server-client-authentication"></a>
+### Client authentication
+
+By default the Server SDK is a public client: the token and revocation requests (code exchange, refresh, revoke) identify the application with `client_id` only, and PKCE protects the authorization code. Set `clientSecret` to authenticate as a confidential client.
+
+```ts
+const sdk = createServerSDK({
+	// ...
+	clientSecret: process.env.CLIENT_SECRET,
+	tokenEndpointAuthMethod: 'client_secret_basic', // default with clientSecret; or 'client_secret_post'
+});
+```
+
+| `tokenEndpointAuthMethod` | Description                                                     |
+| ------------------------- | --------------------------------------------------------------- |
+| `client_secret_basic`     | Confidential client, secret sent with HTTP Basic authentication |
+| `client_secret_post`      | Confidential client, secret sent in the request body            |
+| `none`                    | Public client, no secret                                        |
+
+- Select the same method for the application in the Strivacity Admin Console. PKCE is used with every method.
+- The secret is server-only: the client SDK throws a `ConfigurationError` when it receives `clientSecret`. Keep it out of options objects that are shared with the browser, and out of environment variables that your bundler exposes to client code.
+- A missing secret for `client_secret_basic` / `client_secret_post`, or a secret with `none`, throws a `ConfigurationError` when the SDK is created. A rejected secret surfaces as an `OidcError` with `invalid_client`.
+
 <a id="server-configuration-options"></a>
 ### Configuration Options
 
@@ -1221,6 +1245,8 @@ The server SDK accepts the same configuration as the client SDK, plus server-spe
 
 	// server-specific options
 	cookieSecret: '<your-encryption-key>', // encrypts http-only cookies
+	clientSecret: process.env.CLIENT_SECRET, // Optional - confidential client secret, see Client authentication
+	tokenEndpointAuthMethod: 'client_secret_basic', // 'client_secret_basic' | 'client_secret_post' | 'none' (default: 'client_secret_basic' with clientSecret, otherwise 'none')
 	authUriPrefix: '/auth', // Prefix for auth routes (default: '/auth')
 	loginPageUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
 	cookieMaxAge: 2592000, // Max age for session cookies in seconds (default: 30 days)

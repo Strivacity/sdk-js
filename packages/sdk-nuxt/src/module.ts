@@ -28,8 +28,18 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 			options.serverSessionUri = `${options.authUriPrefix}/login`;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { cookieSecret, storageFactoryPath, stateStorageFactoryPath, loggingFactoryPath, httpClientFactoryPath, ...publicOptions } = options;
+		/* eslint-disable @typescript-eslint/no-unused-vars */
+		const {
+			cookieSecret,
+			clientSecret,
+			tokenEndpointAuthMethod,
+			storageFactoryPath,
+			stateStorageFactoryPath,
+			loggingFactoryPath,
+			httpClientFactoryPath,
+			...publicOptions
+		} = options;
+		/* eslint-enable @typescript-eslint/no-unused-vars */
 		const noop = resolver.resolve('./runtime/utils/noop');
 
 		nuxt.options.runtimeConfig.strivacity = options;

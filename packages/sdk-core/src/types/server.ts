@@ -1,5 +1,5 @@
 import type { CookieOptions, SDKStorage } from './common';
-import type { SDKOptions, SDKInitConfig, SessionData, LogoutTokenClaims } from './oidc';
+import type { SDKOptions, SDKInitConfig, SessionData, LogoutTokenClaims, TokenEndpointAuthMethod } from './oidc';
 
 export type ServerCookieOptions = CookieOptions & {
 	/**
@@ -121,7 +121,29 @@ export type ServerSDKOptions<
 	 * Secret used to encrypt the session cookie of the default encrypted cookie storage. Required when no custom `storage` is provided.
 	 */
 	cookieSecret?: string;
+
+	/**
+	 * How the Server SDK authenticates the client at the token and revocation endpoints (code exchange, refresh, revoke).
+	 * - `client_secret_basic`: `clientId` and `clientSecret` in an HTTP Basic `Authorization` header.
+	 * - `client_secret_post`: `client_id` and `client_secret` in the request body.
+	 * - `none`: only `client_id` (public client).
+	 *
+	 * PKCE is used with every method.
+	 *
+	 * @default 'client_secret_basic' when `clientSecret` is set, otherwise 'none'
+	 */
+	tokenEndpointAuthMethod?: ServerTokenEndpointAuthMethod;
+
+	/**
+	 * Client secret of a confidential client, used by `client_secret_basic` and `client_secret_post`.
+	 */
+	clientSecret?: string;
 };
+
+/**
+ * Client authentication methods supported by the Server SDK at the token and revocation endpoints.
+ */
+export type ServerTokenEndpointAuthMethod = Extract<TokenEndpointAuthMethod, 'none' | 'client_secret_basic' | 'client_secret_post'>;
 
 export type ServerSDKInitConfig<
 	TEvent = unknown,

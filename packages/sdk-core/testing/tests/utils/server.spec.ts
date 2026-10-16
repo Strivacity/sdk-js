@@ -49,6 +49,43 @@ describe('getServerSDKOptions', () => {
 		expect(options.serverSessionUri).toBe('/custom-auth/login');
 	});
 
+	describe('tokenEndpointAuthMethod', () => {
+		test("defaults to 'none' without a client secret", () => {
+			expect(getServerSDKOptions(serverAdapter, createServerOptions()).tokenEndpointAuthMethod).toBe('none');
+		});
+
+		test("defaults to 'client_secret_basic' with a client secret", () => {
+			expect(getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret' })).tokenEndpointAuthMethod).toBe('client_secret_basic');
+		});
+
+		test('keeps an explicit method', () => {
+			const options = getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' }));
+
+			expect(options.tokenEndpointAuthMethod).toBe('client_secret_post');
+		});
+
+		test.each(['client_secret_basic', 'client_secret_post'] as const)(
+			'throws a ConfigurationError for %s without a client secret',
+			(tokenEndpointAuthMethod) => {
+				expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ tokenEndpointAuthMethod }))).toThrow(
+					new ConfigurationError(`Missing SDK option: clientSecret (required by tokenEndpointAuthMethod '${tokenEndpointAuthMethod}')`),
+				);
+			},
+		);
+
+		test("throws a ConfigurationError for a client secret with 'none'", () => {
+			expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'none' }))).toThrow(
+				new ConfigurationError("SDK option clientSecret is set, but tokenEndpointAuthMethod is 'none'"),
+			);
+		});
+
+		test('throws a ConfigurationError for an unsupported method', () => {
+			expect(() =>
+				getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'private_key_jwt' as never })),
+			).toThrow(new ConfigurationError("Unsupported SDK option: tokenEndpointAuthMethod 'private_key_jwt'"));
+		});
+	});
+
 	test('throws a ConfigurationError when neither storage nor secret is provided', () => {
 		expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ cookieSecret: undefined }))).toThrow(
 			new ConfigurationError('Missing SDK option: cookieSecret'),

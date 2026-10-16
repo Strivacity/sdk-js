@@ -66,6 +66,18 @@ export function getServerSDKOptions<
 		options.serverSessionUri ??= `${options.authUriPrefix}/login`;
 	}
 
+	options.tokenEndpointAuthMethod ??= options.clientSecret ? 'client_secret_basic' : 'none';
+
+	if (!['none', 'client_secret_basic', 'client_secret_post'].includes(options.tokenEndpointAuthMethod)) {
+		throw new ConfigurationError(`Unsupported SDK option: tokenEndpointAuthMethod '${options.tokenEndpointAuthMethod}'`);
+	}
+	if (options.tokenEndpointAuthMethod !== 'none' && !options.clientSecret) {
+		throw new ConfigurationError(`Missing SDK option: clientSecret (required by tokenEndpointAuthMethod '${options.tokenEndpointAuthMethod}')`);
+	}
+	if (options.tokenEndpointAuthMethod === 'none' && options.clientSecret) {
+		throw new ConfigurationError("SDK option clientSecret is set, but tokenEndpointAuthMethod is 'none'");
+	}
+
 	return getSDKOptions(options);
 }
 

@@ -393,7 +393,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 
 ### `@strivacity/sdk-angular/server`
 
-- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUriPrefix}/login` ``).
+- `createServerSDK(config)`: client options plus `cookieSecret`, `clientSecret` and `tokenEndpointAuthMethod` (`'client_secret_basic'` with `clientSecret`, otherwise `'none'`; or `'client_secret_post'`: confidential client authentication at the token and revocation endpoints, PKCE stays on; server-only, the client SDK throws on `clientSecret`), `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUriPrefix}/login` ``).
 - `AngularServerSDK`:
   - `handlers` (Express `Router`) and `options` (resolved).
   - Session methods: `getSession(req?, { autoRefresh }?)` (refreshes a near-expiry session once per request unless `autoRefresh` is `false`, `null` when that fails; the cookie is only queued, so flush it as in Patterns), `updateSession(session, req?)`, `refreshSession(req?)`, `revokeSession(req?)`, `completeLogin(params, req?)`, `logout(postLogoutRedirectUri, req?)`, `getEntrySession(url)`.

@@ -5,7 +5,7 @@ Add Strivacity OIDC login to a Nuxt 4 app with the `@strivacity/sdk-nuxt` module
 ## Critical rules
 
 - **Ask before creating or editing `.env` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead.
-- **The `cookieSecret` is server-only.** Pass it as `strivacity.cookieSecret` in `nuxt.config.ts`. The module keeps it in the private `runtimeConfig.strivacity` and strips it, together with the `*FactoryPath` options, from `runtimeConfig.public.strivacity`. Never put it under `runtimeConfig.public`, in a `NUXT_PUBLIC_*` variable, or in app code. There is no client cookieSecret: the client is a public PKCE client.
+- **The `cookieSecret` is server-only.** Pass it as `strivacity.cookieSecret` in `nuxt.config.ts`. The module keeps it in the private `runtimeConfig.strivacity` and strips it, together with the `*FactoryPath` options, from `runtimeConfig.public.strivacity`. Never put it under `runtimeConfig.public`, in a `NUXT_PUBLIC_*` variable, or in app code. There is no client secret: the client is a public PKCE client.
 - **v4 is a prerelease on the npm `next` dist-tag** (`4.0.0-beta.x`). A plain `npm install @strivacity/sdk-nuxt` installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Composables are auto-imported** (`useStrivacity`, `useSession`, `useNativeLogin`, `useNativeLoginContext`, plus the SDK utils and storages). Import types from `@strivacity/sdk-nuxt`. Explicit imports, for example in factory files, come from `@strivacity/sdk-nuxt/utils` or `@strivacity/sdk-nuxt/storages`. Do not add `@strivacity/sdk-core` or `@strivacity/sdk-vue`.
 - **Server-managed is the default.** Unless you set it, the module sets `serverSessionUri` to `` `${authUriPrefix}/login` ``. The routes and middleware are registered at build time, only when `serverSessionUri` is truthy, so restart or rebuild after changing it.
@@ -302,6 +302,7 @@ For login, register and logout, call `login()`, `register()` and `logout({ postL
   - `postLoginRedirectUri` / `postLogoutRedirectUri`: default origin of `redirectUri`.
   - `cookieMaxAge`: `2592000`.
   - `cookieSecret`: required unless `storageFactoryPath` is set.
+  - `clientSecret` / `tokenEndpointAuthMethod`: confidential client authentication at the token and revocation endpoints (`'client_secret_basic'` default with `clientSecret`, `'client_secret_post'`, or `'none'`). The module keeps both out of `runtimeConfig.public`.
 - Functions cannot live in `nuxt.config.ts`, so pass them as paths to modules with a default-exported factory: `storageFactoryPath`, `stateStorageFactoryPath`, `loggingFactoryPath`, `httpClientFactoryPath`. The logging and HTTP-client factories also run in the browser.
 
 ### Auto-imports

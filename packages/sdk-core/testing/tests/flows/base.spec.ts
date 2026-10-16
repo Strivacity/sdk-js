@@ -1280,7 +1280,9 @@ describe('createBaseFlow', () => {
 				const secondRefreshPromise = base.refresh();
 
 				await vi.waitFor(() => expect(resolveTokenRequest).toBeDefined());
-				resolveTokenRequest!(HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }));
+				resolveTokenRequest!(
+					HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 }),
+				);
 
 				await Promise.all([refreshPromise, revokePromise, secondRefreshPromise]);
 			} finally {
@@ -1319,5 +1321,11 @@ describe('createBaseFlow', () => {
 			expect(flowState.session).toBeNull();
 			expect(options.uriHandler).not.toHaveBeenCalled();
 		});
+	});
+
+	test('should reject a client secret, which is a Server SDK option', () => {
+		expect(() => createBaseFlow(getDefaultFlowState(), { ...createOptions(), clientSecret: 'client-secret' } as never)).toThrow(
+			new ConfigurationError('SDK option clientSecret is server-only: pass it to the Server SDK, never to the client SDK'),
+		);
 	});
 });

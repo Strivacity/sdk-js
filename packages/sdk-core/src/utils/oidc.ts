@@ -1,5 +1,7 @@
 import type { ExtraRequestArgs, IdTokenClaims, DiscoveryDocument, SDKOptions, SessionData, EntryResponse, FlowState, SigningKey } from '../types/oidc';
 import type { NativeFlowState } from '../types/native';
+import type { HttpClientResponse } from '../types/common';
+import type { ServerSDKOptions } from '../types/server';
 import { decodeBase64URL, encodeBase64URL } from './base64url';
 import { FallbackError, SessionExpiredError, OidcError, ProtocolError, ServerError, NetworkError, throwHttpError, throwTokenEndpointError } from './errors';
 import { createHttpClient } from './httpClient';
@@ -610,12 +612,16 @@ export async function exchangeCode({
 
 	const metadata = await getDiscoveryDocument(options);
 	const tokenUrl = url ?? metadata.token_endpoint;
-	const response = await options.httpClient.sendTokenRequest<Record<string, string>>(tokenUrl, {
-		grant_type: 'authorization_code',
-		client_id: options.clientId,
-		redirect_uri: options.redirectUri,
-		code_verifier: state.codeVerifier,
-		code: session.code,
+	const response = await sendClientRequest<Record<string, string>>({
+		url: tokenUrl,
+		data: {
+			grant_type: 'authorization_code',
+			client_id: options.clientId,
+			redirect_uri: options.redirectUri,
+			code_verifier: state.codeVerifier,
+			code: session.code,
+		},
+		options,
 	});
 
 	if (!response.ok) {
@@ -641,6 +647,61 @@ export async function exchangeCode({
 	}
 
 	return updatedSession;
+}
+
+/**
+ * Encodes a value with the `application/x-www-form-urlencoded` algorithm, as RFC 6749 section 2.3.1 requires for HTTP Basic client credentials.
+ *
+ * @param {string} value - The value to encode.
+ * @returns {string} The encoded value.
+ */
+export function formUrlEncode(value: string): string {
+	return new URLSearchParams({ v: value }).toString().slice(2);
+}
+
+/**
+ * Sends a request to the token or revocation endpoint, authenticating the client with the Server SDK's `tokenEndpointAuthMethod`.
+ * Client SDK options have no `clientSecret`, so their requests keep sending only `client_id`.
+ *
+ * @param {Object} options - The options for sending the request
+ * @param {string | URL} options.url - The token or revocation endpoint URL
+ * @param {Record<string, string>} options.data - The form parameters, including `client_id`
+ * @param {SDKOptions} options.options - The SDK options
+ * @returns {Promise<HttpClientResponse<T>>} The endpoint response
+ */
+export async function sendClientRequest<T>({
+	url,
+	data,
+	options,
+}: {
+	url: string | URL;
+	data: Record<string, string>;
+	options: SDKOptions;
+}): Promise<HttpClientResponse<T>> {
+	const { tokenEndpointAuthMethod, clientSecret } = options as Partial<ServerSDKOptions>;
+
+	if (clientSecret && tokenEndpointAuthMethod === 'client_secret_post') {
+		return options.httpClient.sendTokenRequest<T>(url, { ...data, client_secret: clientSecret });
+	}
+
+	if (clientSecret && tokenEndpointAuthMethod === 'client_secret_basic') {
+		// NOTE: with HTTP Basic the client is identified by the Authorization header, so client_id moves out of the body
+		const clientId = data.client_id ?? options.clientId;
+		const body = { ...data };
+
+		delete body.client_id;
+
+		return options.httpClient.request<T>(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				Authorization: `Basic ${btoa(`${formUrlEncode(clientId)}:${formUrlEncode(clientSecret)}`)}`,
+			},
+			body: new URLSearchParams(body).toString(),
+		});
+	}
+
+	return options.httpClient.sendTokenRequest<T>(url, data);
 }
 
 /**
@@ -695,7 +756,7 @@ export async function refreshToken({
 
 	const metadata = await getDiscoveryDocument(options);
 	const refreshUrl = url ?? metadata.token_endpoint;
-	const response = await options.httpClient.sendTokenRequest<Record<string, string>>(refreshUrl, params);
+	const response = await sendClientRequest<Record<string, string>>({ url: refreshUrl, data: params, options });
 
 	if (!response.ok) {
 		await throwTokenEndpointError(response);
@@ -756,10 +817,14 @@ export async function revokeToken({
 		return;
 	}
 
-	const response = await options.httpClient.sendTokenRequest<Record<string, string>>(revokeUrl, {
-		client_id: clientId ?? options.clientId,
-		token_type_hint: tokenTypeHint,
-		token,
+	const response = await sendClientRequest<Record<string, string>>({
+		url: revokeUrl,
+		data: {
+			client_id: clientId ?? options.clientId,
+			token_type_hint: tokenTypeHint,
+			token,
+		},
+		options,
 	});
 
 	if (response && !response.ok) {

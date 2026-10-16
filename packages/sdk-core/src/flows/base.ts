@@ -1,4 +1,5 @@
 import type { EventFunctions, ExtraRequestArgs, FlowState, SDK, SDKOptions, SessionData } from '../types/oidc';
+import type { ServerSDKOptions } from '../types/server';
 import { buildEndSessionUrl, exchangeCode, getDiscoveryDocument, refreshToken, revokeToken, verifyIdToken } from '../utils/oidc';
 import { loadSession, serializeSession, isSessionExpired } from '../utils/session';
 import { parseState } from '../utils/state';
@@ -15,6 +16,10 @@ import { redirectUriHandler } from '../handlers/redirect';
  * @returns An object implementing the SDK interface, with methods for initializing the flow, managing sessions, and handling authentication events.
  */
 export function createBaseFlow<URIHandlerParams extends ExtraRequestArgs = ExtraRequestArgs>(flowState: FlowState, options: SDKOptions) {
+	if ((options as Partial<ServerSDKOptions>).clientSecret) {
+		throw new ConfigurationError('SDK option clientSecret is server-only: pass it to the Server SDK, never to the client SDK');
+	}
+
 	const promises: Record<'init' | 'refresh' | 'revoke' | 'logout', Promise<void> | null> & { tokenExchange: Map<string, Promise<void>> } = {
 		init: null,
 		refresh: null,

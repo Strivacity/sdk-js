@@ -8,7 +8,7 @@ export type ResponseType = (typeof ResponseTypeList)[number];
 export const ResponseModeList = ['query', 'fragment'] as const;
 export type ResponseMode = (typeof ResponseModeList)[number];
 
-export const TokenEndpointAuthMethodList = ['none'] as const;
+export const TokenEndpointAuthMethodList = ['none', 'client_secret_basic', 'client_secret_post'] as const;
 export type TokenEndpointAuthMethod = (typeof TokenEndpointAuthMethodList)[number];
 
 export const GrantTypeList = ['authorization_code', 'refresh_token'] as const;

@@ -1661,6 +1661,8 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
 | `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storageFactoryPath` | `string` | No | Encrypted cookie storage | Path to a module default-exporting a `NuxtServerStorage` factory; see [Storages](#server-storages) |
 | `stateStorageFactoryPath` | `string` | No | In-memory `Map` | Path to a module default-exporting an `SDKStorage` factory for the OAuth2 state parameter |
 | `loggingFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKLogging` factory |
