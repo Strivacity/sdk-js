@@ -282,6 +282,7 @@ export function createBaseServerSDK<
 		const request = await adapter.toRequest(event);
 		const requestUrl = new URL(request.url);
 		const { returnTo, prompt, display, login_hint, acr_values, ui_locales, audience, ...params } = Object.fromEntries(requestUrl.searchParams);
+		const resources = requestUrl.searchParams.getAll('resource');
 		const safeReturnTo = toSafeRedirect(returnTo, requestUrl.origin);
 		const url = await buildAuthorizationUrl({
 			params: {
@@ -291,6 +292,7 @@ export function createBaseServerSDK<
 				acrValues: (acr_values ?? params.acrValues)?.split(' '),
 				uiLocales: (ui_locales ?? params.uiLocales)?.split(' '),
 				audiences: (audience ?? params.audiences)?.split(' '),
+				resources,
 				...extraParams,
 			},
 			options,

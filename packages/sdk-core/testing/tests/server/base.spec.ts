@@ -408,6 +408,22 @@ describe('createBaseServerSDK', () => {
 				/Invalid returnTo URL/,
 			);
 		});
+
+		test('should forward repeated resource query params to the IDP request', async () => {
+			const { sdk } = createServerSDK();
+			let capturedUrl: URL | undefined;
+
+			worker.use(
+				http.get('https://brandtegrity.io/oauth2/auth', ({ request }) => {
+					capturedUrl = new URL(request.url);
+					return new HttpResponse(null, { status: 302, headers: { location: 'https://brandtegrity.io/hosted-login' } });
+				}),
+			);
+
+			await sdk.handleLogin(createMockEvent('https://brandtegrity.io/auth/login?resource=https://res.example.com&resource=https://res2.example.com'));
+
+			expect(capturedUrl?.searchParams.getAll('resource')).toEqual(['https://res.example.com', 'https://res2.example.com']);
+		});
 	});
 
 	describe('handleRegister', () => {

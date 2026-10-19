@@ -260,6 +260,7 @@ export default function LoginPage() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 		});
 	}, [loading, login]);
 
@@ -539,6 +540,7 @@ export default function LoginPage() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			popupWindowTarget: '_blank', // any valid browsing context name
 			popupWindowFeatures: {
 				width: 500,
@@ -638,6 +640,7 @@ export default function RegisterPage() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			popupWindowTarget: '_blank', // any valid browsing context name
 			popupWindowFeatures: {
 				width: 500,
@@ -823,6 +826,7 @@ export default function LoginPage() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			language: 'en-US', // set the UI language (BCP 47 language tag)
 			prompt: 'login', // use 'create' to open the registration flow instead
 		};
@@ -880,6 +884,7 @@ export function LazyLogin() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			language: 'en-US', // set the UI language (BCP 47 language tag)
 			prompt: 'login', // use 'create' to open the registration flow instead
 		});
@@ -919,6 +924,7 @@ export function LazyLogin() {
 			loginHint: 'user@example.com', // identifier or JWT-encoded data to hint the login flow
 			acrValues: ['urn:strivacity:loa:2'], // request specific authentication context
 			audiences: ['https://api.example.com'], // target resources for the access token
+			resources: ['https://resource.example.com'], // RFC 8707 resource indicators for the access token
 			language: 'en-US', // set the UI language (BCP 47 language tag)
 			prompt: 'login', // use 'create' to open the registration flow instead
 		};

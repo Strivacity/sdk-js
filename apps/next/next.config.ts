@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
 		SCOPES: process.env.VITE_SCOPES,
 		SERVER_SESSION_URI: process.env.VITE_SERVER_SESSION_URI,
 		AUDIENCES: process.env.VITE_AUDIENCES,
+		RESOURCES: process.env.VITE_RESOURCES,
 		LOGIN_HINT: process.env.VITE_LOGIN_HINT,
 		ACR_VALUES: process.env.VITE_ACR_VALUES,
 		UI_LOCALES: process.env.VITE_UI_LOCALES,
