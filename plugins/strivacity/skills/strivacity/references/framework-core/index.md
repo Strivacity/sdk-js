@@ -277,9 +277,9 @@ Returns the flow object synchronously. Unless `lazyLoad: true`, it also starts `
 | `issuer`, `clientId`, `redirectUri`          | required                 | A trailing slash on `issuer` is stripped. Checked inside `init()` (`ConfigurationError`)                               |
 | `scopes`                                     | `['openid']`             | Must be an array                                                                                                       |
 | `responseType` / `responseMode`              | `'code'` / `'query'`     | `responseMode` can also be `'fragment'`                                                                                |
-| `storage`                                    | `createLocalStorage()`   | Session tokens, stored under `storageTokenName`                                                                        |
+| `storage`                                    | `createLocalStorage()`   | Session tokens, stored under `storageKey`                                                                              |
 | `stateStorage`                               | `createSessionStorage()` | PKCE `state` / `nonce` / verifier between login and callback                                                           |
-| `storageTokenName`                           | `'sty.session'`          |                                                                                                                        |
+| `storageKey`                                 | `'sty.session'`          |                                                                                                                        |
 | `autoRefresh` / `refreshSkew`                | `true` / `60`            | `checkAuthentication()` refreshes when the token expires within `refreshSkew` seconds. Ignored with `serverSessionUri` |
 | `lazyLoad`                                   | `false`                  | `true` skips the automatic `init()`. The first async call (`checkAuthentication()`, ...) runs it                       |
 | `serverSessionUri`                           | `null`                   | String: BFF login URL, tokens stay server-side. `true`: server-managed without BFF routing                             |

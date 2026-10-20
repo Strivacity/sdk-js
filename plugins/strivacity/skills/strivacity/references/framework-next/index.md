@@ -345,7 +345,7 @@ Auth route query params: `/auth/login` and `/auth/register` accept `returnTo` (s
 | `scopes`                                     | `['openid']`                                                                                           |
 | `responseType` / `responseMode`              | `'code'` / `'query'`                                                                                   |
 | `storage` / `stateStorage` (client)          | `createLocalStorage()` / `createSessionStorage()`                                                      |
-| `storageTokenName`                           | `'sty.session'` (also the server cookie name)                                                          |
+| `storageKey`                                 | `'sty.session'` (also the server cookie name)                                                          |
 | `autoRefresh` / `refreshSkew`                | `true` / `60` seconds                                                                                  |
 | `lazyLoad`                                   | `false`                                                                                                |
 | `serverSessionUri`                           | client `null`; server `` `${authUrlPrefix}/login` ``                                                   |

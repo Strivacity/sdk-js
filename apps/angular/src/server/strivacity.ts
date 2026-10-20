@@ -6,7 +6,7 @@ import { baseSdkOptions } from '../options';
 export const sdkOptions: AngularServerSDKInitConfig = {
 	...baseSdkOptions,
 	cookieSecret: import.meta.env.VITE_COOKIE_SECRET,
-	storageTokenName: 'sty.session.angular',
+	storageKey: 'sty.session.angular',
 	postLoginRedirectUri: '/profile',
 	logging: createDefaultLogging(),
 };

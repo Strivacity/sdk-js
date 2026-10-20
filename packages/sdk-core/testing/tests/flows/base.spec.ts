@@ -570,7 +570,7 @@ describe('createBaseFlow', () => {
 				vi.unstubAllGlobals();
 			}
 
-			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageKey}`, expect.any(Function));
 			expect(flowState.session?.access_token).toBe('new-access-token');
 		});
 
@@ -613,14 +613,14 @@ describe('createBaseFlow', () => {
 
 			expect(tokenRequests).toBe(0);
 			expect(flowState.session).toBeNull();
-			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+			expect(await options.storage.get(options.storageKey)).toBeNull();
 			expect(clearedCallback).toHaveBeenCalledTimes(1);
 		});
 
 		test('uses the session another tab already refreshed instead of sending the old refresh token again', async () => {
 			flowState.initialized = true;
 			flowState.session = { ...getMockStorage(options.storage).generateSession(undefined, null), expires_at: 0 };
-			const refreshedByOtherTab = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token' }, options.storageTokenName);
+			const refreshedByOtherTab = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token' }, options.storageKey);
 			let tokenRequests = 0;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () => {
@@ -641,7 +641,7 @@ describe('createBaseFlow', () => {
 		test('refreshes with the rotated refresh token of another tab when its session has expired too', async () => {
 			flowState.initialized = true;
 			flowState.session = { ...getMockStorage(options.storage).generateSession(undefined, null), expires_at: 0 };
-			const stored = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token', expires_at: 0 }, options.storageTokenName);
+			const stored = getMockStorage(options.storage).generateSession({ access_token: 'other-tab-access-token', expires_at: 0 }, options.storageKey);
 			let sentRefreshToken: string | null = null;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', async ({ request }) => {
@@ -893,14 +893,14 @@ describe('createBaseFlow', () => {
 				vi.unstubAllGlobals();
 			}
 
-			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageKey}`, expect.any(Function));
 			expect(flowState.session).toBeNull();
 		});
 
 		test('revokes the refresh token another tab rotated instead of the stale in-memory one', async () => {
 			flowState.initialized = true;
 			flowState.session = getMockStorage(options.storage).generateSession({ refresh_token: 'stale-refresh-token' }, null);
-			const stored = getMockStorage(options.storage).generateSession({ refresh_token: 'rotated-refresh-token' }, options.storageTokenName);
+			const stored = getMockStorage(options.storage).generateSession({ refresh_token: 'rotated-refresh-token' }, options.storageKey);
 			let revokedToken: string | null = null;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/revoke', async ({ request }) => {
@@ -913,7 +913,7 @@ describe('createBaseFlow', () => {
 
 			expect(revokedToken).toBe(stored.refresh_token);
 			expect(flowState.session).toBeNull();
-			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+			expect(await options.storage.get(options.storageKey)).toBeNull();
 		});
 
 		test('should clean up the session before revoking and dispatch tokenRevoked', async () => {
@@ -1063,14 +1063,14 @@ describe('createBaseFlow', () => {
 			}
 
 			expect(request).toHaveBeenCalledTimes(1);
-			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageTokenName}`, expect.any(Function));
+			expect(request).toHaveBeenCalledWith(`strivacity.session.${options.clientId}.${options.storageKey}`, expect.any(Function));
 			expect(flowState.session).toBeNull();
 		});
 
 		test('ends the session with the id_token another tab stored instead of the stale in-memory one', async () => {
 			flowState.initialized = true;
 			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'stale-id-token' }, null);
-			getMockStorage(options.storage).generateSession({ id_token: 'fresh-id-token' }, options.storageTokenName);
+			getMockStorage(options.storage).generateSession({ id_token: 'fresh-id-token' }, options.storageKey);
 
 			await base.logout();
 
@@ -1289,7 +1289,7 @@ describe('createBaseFlow', () => {
 
 			expect(revokedToken).toBe('new-refresh-token');
 			expect(flowState.session).toBeNull();
-			expect(await options.storage.get(options.storageTokenName)).toBeNull();
+			expect(await options.storage.get(options.storageKey)).toBeNull();
 		});
 
 		test('logout should wait for an in-flight refresh and reflect the post-refresh session state', async () => {

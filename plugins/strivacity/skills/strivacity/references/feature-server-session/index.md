@@ -52,7 +52,7 @@ Programmatic API on the same object: `getSession(event?, { autoRefresh? }?)`, `u
 
 ## Server SDK options
 
-All client `SDKOptions` apply (`mode`, `issuer`, `clientId`, `redirectUri`, `scopes`, `storageTokenName` (default `'sty.session'`, also the cookie name)...). Server-specific options:
+All client `SDKOptions` apply (`mode`, `issuer`, `clientId`, `redirectUri`, `scopes`, `storageKey` (default `'sty.session'`, also the cookie name)...). Server-specific options:
 
 | Option                  | Default                                                                                             | Notes                                                                                                                                                                               |
 | ----------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -354,7 +354,7 @@ export const storage = createSessionIdCookieStorage(adapter, sessions, { default
 
 Pass the same `adapter` object as the first argument of `createBaseServerSDK(adapter, { ...options, storage, stateStorage })`. `cookieSecret` is then not needed. Without `maxAge` the session-id cookie is a browser-session cookie. `createServerMemoryStorage()` (from the same entry) implements `deleteByLogoutToken` too, but only for local development.
 
-Do not pass a plain key-value store as `storage` directly. The SDK always uses the single key `storageTokenName`, so every user would share one session. Wrap it with `createSessionIdCookieStorage`.
+Do not pass a plain key-value store as `storage` directly. The SDK always uses the single key `storageKey`, so every user would share one session. Wrap it with `createSessionIdCookieStorage`.
 
 ## Common mistakes
 

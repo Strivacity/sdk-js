@@ -2038,7 +2038,7 @@ export const sdk = createServerSDK({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // lib/auth/storage.ts
@@ -2285,6 +2285,10 @@ await submitForm('formId');
 ```
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
+
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
 
 ## Migrating to v3.0
 

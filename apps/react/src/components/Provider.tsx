@@ -8,7 +8,7 @@ export const options: SDKInitConfig = {
 	clientId: import.meta.env.VITE_CLIENT_ID as SDKOptions['clientId'],
 	scopes: import.meta.env.VITE_SCOPES?.split(' ') as SDKOptions['scopes'],
 	redirectUri: import.meta.env.VITE_REDIRECT_URI as SDKOptions['redirectUri'],
-	storageTokenName: 'sty.session.react',
+	storageKey: 'sty.session.react',
 	logging: createDefaultLogging(),
 	serverSessionUri: (import.meta.env.VITE_SERVER_SESSION_URI as SDKOptions['serverSessionUri']) || false, // Set VITE_SERVER_SESSION_URI (e.g. "/auth/login") to use server-side session storage.
 };

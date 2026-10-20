@@ -1088,7 +1088,7 @@ const sdk = createBaseServerSDK(adapter, {
 You can customize storage by providing `storage` and `stateStorage` options.
 For example you can use [unstorage](https://npmjs.com/package/unstorage) which provides a unified async key-value API with dozens of built-in drivers (Redis, Cloudflare KV, filesystem, memory, and more).
 
-The `get` / `set` / `delete` methods of a `ServerStorage` receive the incoming request event as their last argument, while the SDK always calls it with the same key (`storageTokenName`). A storage that ignores the event would therefore share a single session across all users - key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The `get` / `set` / `delete` methods of a `ServerStorage` receive the incoming request event as their last argument, while the SDK always calls it with the same key (`storageKey`). A storage that ignores the event would therefore share a single session across all users - key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // storage.ts
@@ -1917,7 +1917,7 @@ injectScript('my-script', 'https://example.com/script.js');
 | `responseMode`           | `'query' \| 'fragment'`                              | No       | `'query'`         | OAuth2 response mode                                                                                                                                       |
 | `storage`                | `SDKStorage`                                         | No       | `localStorage`    | [Session storage](#storages)                                                                                                                       |
 | `stateStorage`           | `SDKStorage`                                         | No       | `createSessionStorage()` | OAuth2 PKCE / state storage                                                                                                                         |
-| `storageTokenName`       | `string`                                             | No       | `'sty.session'`   | Key under which the session is stored in the storage                                                                                                       |
+| `storageKey`       | `string`                                             | No       | `'sty.session'`   | Key under which the session is stored in the storage                                                                                                       |
 | `autoRefresh`            | `boolean`                                            | No       | `true`            | Refreshes an expired (or about-to-expire, see `refreshSkew`) access token when authentication is checked (`isAuthenticated`, `checkAuthentication()`, route guards). There is no background timer. Set to `false` to manage refresh manually. Ignored in the browser with `serverSessionUri` - the server refreshes the session instead. On the Server SDK, `false` turns off the refresh in `getSession`. Browser tabs that share the session storage refresh, revoke and log out one at a time (Web Locks API) |
 | `refreshSkew`            | `number`                                             | No       | `60`              | Number of seconds before the access token's actual expiration that it is treated as expired, so it gets refreshed early (capped at half of the token lifetime, so short-lived tokens are not refreshed on every check) |
 | `clockSkew`              | `number`                                             | No       | `60`              | Number of seconds of clock difference tolerated between the device and the authorization server when validating the ID token's expiration                |
@@ -2197,6 +2197,7 @@ See [native mode](#client-native-mode) above for the full rendering loop. Update
 - **Events are scoped per SDK instance.** In v3, event subscriptions were shared across all flow instances; in v4 each instance has its own subscribers.
 - **PKCE / login state is stored in `stateStorage`** (default: `createSessionStorage()`), separately from the session `storage`. v3 stored it in the session storage.
 - **`waitToInitialize()` was replaced by `init()`.**
+- **`storageTokenName` was renamed to `storageKey`.** The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
 - **Type renames:** `LoginFlowState` → `NativeFlowState`, `LoginFlowMessage` → `NativeFlowMessage`, `MetadataOptions` → `DiscoveryDocument`.
 
 ### Migrating to v3.0

@@ -1834,6 +1834,10 @@ await submitForm('formId');
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
 
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
 ## Migrating to v3.0
 
 ### Entry API Major Changes

@@ -294,7 +294,7 @@ For login, register and logout, call `login()`, `register()` and `logout({ postL
 
 ### Module options (`strivacity` key in `nuxt.config.ts`)
 
-- All client SDK options: `mode`, `issuer`, `clientId`, `redirectUri` (required), `scopes` (`['openid']`), `responseType` (`'code'`), `responseMode` (`'query'`), `storageTokenName` (`'sty.session'`, also the cookie name), `autoRefresh` (`true`), `refreshSkew` (`60`), `lazyLoad` (`false`), `discoveryDocumentCacheTTL` (`3600`), `jwksCacheTTL` (`600`).
+- All client SDK options: `mode`, `issuer`, `clientId`, `redirectUri` (required), `scopes` (`['openid']`), `responseType` (`'code'`), `responseMode` (`'query'`), `storageKey` (`'sty.session'`, also the cookie name), `autoRefresh` (`true`), `refreshSkew` (`60`), `lazyLoad` (`false`), `discoveryDocumentCacheTTL` (`3600`), `jwksCacheTTL` (`600`).
 - Server options:
   - `serverSessionUri`: default `` `${authUrlPrefix}/login` ``. Set `false` / `null` for client-managed sessions.
   - `authUrlPrefix`: `'/auth'`. Shared with the browser SDK, whose `refresh()` navigates to `` `${authUrlPrefix}/refresh` ``.

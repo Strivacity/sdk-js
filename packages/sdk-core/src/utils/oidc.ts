@@ -59,7 +59,7 @@ export const defaultOptions: Partial<SDKOptions> = {
 	scopes: ['openid'],
 	responseType: 'code',
 	responseMode: 'query',
-	storageTokenName: 'sty.session',
+	storageKey: 'sty.session',
 	discoveryDocumentCacheTTL: 3600,
 	jwksCacheTTL: 600,
 } as const;
@@ -220,7 +220,7 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptio
 	options.scopes ??= defaultOptions.scopes;
 	options.responseType ??= defaultOptions.responseType;
 	options.responseMode ??= defaultOptions.responseMode;
-	options.storageTokenName ??= defaultOptions.storageTokenName;
+	options.storageKey ??= defaultOptions.storageKey;
 	options.discoveryDocumentCacheTTL ??= defaultOptions.discoveryDocumentCacheTTL;
 	options.jwksCacheTTL ??= defaultOptions.jwksCacheTTL;
 

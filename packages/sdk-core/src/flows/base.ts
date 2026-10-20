@@ -72,7 +72,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		const locks = globalThis.window ? (globalThis.navigator as Navigator | undefined)?.locks : undefined;
 
 		if (locks) {
-			return locks.request(`strivacity.session.${options.clientId}.${options.storageTokenName}`, fn);
+			return locks.request(`strivacity.session.${options.clientId}.${options.storageKey}`, fn);
 		}
 
 		// NOTE: in-process fallback of the session lock where the Web Locks API is not available
@@ -93,7 +93,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return null;
 		}
 
-		return loadSession(await options.storage.get(options.storageTokenName));
+		return loadSession(await options.storage.get(options.storageKey));
 	}
 
 	async function updateSession(newData: SessionData): ReturnType<SDK<URLHandlerParams>['updateSession']> {
@@ -105,7 +105,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		}
 
 		if (!options.serverSessionUri) {
-			await options.storage.set(options.storageTokenName, serializeSession(newData));
+			await options.storage.set(options.storageKey, serializeSession(newData));
 		}
 
 		flowState.session = newData;
@@ -124,7 +124,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		await init();
 
 		if (!options.serverSessionUri) {
-			await options.storage.delete(options.storageTokenName);
+			await options.storage.delete(options.storageKey);
 		}
 
 		flowState.session = null;
@@ -185,7 +185,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 				}
 
 				if (!options.serverSessionUri) {
-					flowState.session = loadSession(await options.storage.get(options.storageTokenName));
+					flowState.session = loadSession(await options.storage.get(options.storageKey));
 				}
 
 				flowState.initialized = true;

@@ -102,7 +102,7 @@ export function createBaseServerSDK<
 	}
 
 	async function loadStoredSession(event?: TEvent): Promise<SessionData | null> {
-		return loadSession(await options.storage.get(options.storageTokenName, event));
+		return loadSession(await options.storage.get(options.storageKey, event));
 	}
 
 	async function getSession(event?: TEvent, params: { autoRefresh?: boolean } = {}): Promise<SessionData | null> {
@@ -137,11 +137,11 @@ export function createBaseServerSDK<
 	}
 
 	async function updateSession(session: SessionData, event?: TEvent): Promise<void> {
-		await options.storage.set(options.storageTokenName, serializeSession(session), event);
+		await options.storage.set(options.storageKey, serializeSession(session), event);
 	}
 
 	async function cleanupSession(event?: TEvent): Promise<void> {
-		await options.storage.delete(options.storageTokenName, event);
+		await options.storage.delete(options.storageKey, event);
 	}
 
 	async function refreshSession(event?: TEvent): Promise<SessionData> {

@@ -413,7 +413,7 @@ Route behaviour:
 
 ### Key SDK options and login params
 
-Option defaults: `scopes` `['openid']`, `responseType` `'code'`, `responseMode` `'query'`, `storageTokenName` `'sty.session'` (also the cookie name), `autoRefresh` `true`, `refreshSkew` `60`, `lazyLoad` `false`, `serverSessionUri` `null` (client), `authUrlPrefix` `'/auth'` (server-managed `refresh()` and the guard navigate to `` `${authUrlPrefix}/refresh` ``), `discoveryDocumentCacheTTL` `3600`, `jwksCacheTTL` `600`, and no `logging`.
+Option defaults: `scopes` `['openid']`, `responseType` `'code'`, `responseMode` `'query'`, `storageKey` `'sty.session'` (also the cookie name), `autoRefresh` `true`, `refreshSkew` `60`, `lazyLoad` `false`, `serverSessionUri` `null` (client), `authUrlPrefix` `'/auth'` (server-managed `refresh()` and the guard navigate to `` `${authUrlPrefix}/refresh` ``), `discoveryDocumentCacheTTL` `3600`, `jwksCacheTTL` `600`, and no `logging`.
 
 `login()` / `register()` params: `prompt`, `display`, `loginHint`, `acrValues[]`, `uiLocales[]` and `audiences[]`. Redirect mode adds `locationMethod` and `targetWindow`. Popup mode adds `popupWindowFeatures`, `popupWindowTarget` and `checkOrigin`.
 

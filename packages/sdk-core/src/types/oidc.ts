@@ -564,11 +564,11 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	stateStorage: StateStorage;
 
 	/**
-	 * The name of the storage token used to store session data.
+	 * Key under which the session is stored in `storage`. With the Server SDK's default encrypted cookie storage this is the cookie name.
 	 *
 	 * @default 'sty.session'
 	 */
-	storageTokenName: string;
+	storageKey: string;
 
 	/**
 	 * The HTTP client used for making requests to the authorization server and other endpoints.

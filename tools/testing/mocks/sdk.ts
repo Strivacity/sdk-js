@@ -166,7 +166,7 @@ export function createOptions<T = unknown>(overrides?: Partial<SDKOptions>): SDK
 		responseMode: 'query',
 		storage: createMockStorage(),
 		stateStorage: createMockStorage(),
-		storageTokenName: 'sty.session',
+		storageKey: 'sty.session',
 		authUrlPrefix: '/auth',
 		logging: createMockLogging(),
 		httpClient: createHttpClient(),

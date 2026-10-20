@@ -87,7 +87,7 @@ A custom logger implements `SDKLogging` (`debug`, `info`, `warn`, `error(message
 
 ## Inspect what the SDK stored
 
-- Client-managed session: the session is JSON under `storageTokenName` (default `'sty.session'`) in `storage` (default `localStorage`). In-progress logins are `sty.<state id>` entries in `stateStorage` (default `sessionStorage`). An empty `sessionStorage` on the callback page explains a state error.
+- Client-managed session: the session is JSON under `storageKey` (default `'sty.session'`) in `storage` (default `localStorage`). In-progress logins are `sty.<state id>` entries in `stateStorage` (default `sessionStorage`). An empty `sessionStorage` on the callback page explains a state error.
 - `sdk.idTokenClaims` shows `iss`, `aud`, `exp` and `sub` of the ID token. To look at an access token while debugging, `decodeJwt(sdk.accessToken)` (exported by every wrapper) shows its `aud` and `exp`. It does not verify anything, so never use it for authorization decisions.
 - BFF: cookies `sty.session` (or `sty.session.0`, `sty.session.1`, ... when chunked) and `sty.returnTo`. They are encrypted, so you can only check that they exist and are sent with the request.
 

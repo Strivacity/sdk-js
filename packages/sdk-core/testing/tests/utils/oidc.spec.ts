@@ -55,7 +55,7 @@ describe('defaultOptions', () => {
 			scopes: ['openid'],
 			responseType: 'code',
 			responseMode: 'query',
-			storageTokenName: 'sty.session',
+			storageKey: 'sty.session',
 			discoveryDocumentCacheTTL: 3600,
 			jwksCacheTTL: 600,
 		});

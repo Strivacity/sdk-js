@@ -12,10 +12,10 @@ Where the SDK keeps tokens, how they expire and refresh, and how to end a sessio
 
 ## What the SDK stores
 
-| Item               | Where                                                  | Key                                                                        | Content                                                                                                                               |
-| ------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Session            | `storage` (client) or the server session storage (BFF) | `storageTokenName` (default `'sty.session'`). Server: also the cookie name | JSON `SessionData`: `access_token`, `refresh_token`, `id_token`, `expires_in`, `expires_at` (Unix seconds), `scope`, `claims`         |
-| PKCE / login state | `stateStorage`                                         | `sty.<state id>`                                                           | Code verifier, nonce, `metadata` (prompt, display, audiences, ...). Deleted when the callback uses it, also for an `?error=` callback |
+| Item               | Where                                                  | Key                                                                  | Content                                                                                                                               |
+| ------------------ | ------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Session            | `storage` (client) or the server session storage (BFF) | `storageKey` (default `'sty.session'`). Server: also the cookie name | JSON `SessionData`: `access_token`, `refresh_token`, `id_token`, `expires_in`, `expires_at` (Unix seconds), `scope`, `claims`         |
+| PKCE / login state | `stateStorage`                                         | `sty.<state id>`                                                     | Code verifier, nonce, `metadata` (prompt, display, audiences, ...). Deleted when the callback uses it, also for an `?error=` callback |
 
 `expires_at` is computed as local time + `expires_in` when the token arrives, so it does not depend on clock skew between the device and the IdP. `claims` are the decoded ID token claims.
 
@@ -70,7 +70,7 @@ const options: SDKInitConfig = {
 	scopes: ['openid', 'profile', 'offline_access'], // a refresh token is only issued if the client and scopes allow it
 	storage: createMemoryStorage(), // tokens only in memory
 	stateStorage: createSessionStorage(), // the default, shown for clarity: must survive the redirect
-	storageTokenName: 'sty.session.orders', // unique per app when several apps share an origin
+	storageKey: 'sty.session.orders', // unique per app when several apps share an origin
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -94,7 +94,7 @@ import { createWorkerStorage } from '@strivacity/sdk-react';
 export const storage = createWorkerStorage(new Worker(new URL('./storage.worker.ts', import.meta.url), { type: 'module' }));
 ```
 
-### `storageTokenName`
+### `storageKey`
 
 - Default `'sty.session'`. It is the client storage key and, on the server, the cookie name.
 - Give each app its own name when several apps share an origin (they would otherwise overwrite each other's session).
@@ -261,7 +261,7 @@ If no token may reach the browser at all, do not hydrate the session: return cla
 | Treating every `tokenRefreshFailed` as a logout                        | Users signed out during a network blip                      | Check whether the session was cleared                                                        |
 | `revoke()` used as "log out"                                           | Next login skips the login form (IdP session still active)  | `logout({ postLogoutRedirectUri })`                                                          |
 | `revoke()` then `logout()`                                             | No redirect to the IdP                                      | Revoke with `revokeToken()` first, as shown above                                            |
-| Several apps on one origin with the same `storageTokenName`            | Apps overwrite each other's session                         | One name per app                                                                             |
+| Several apps on one origin with the same `storageKey`                  | Apps overwrite each other's session                         | One name per app                                                                             |
 | Logging `sessionUpdated` / `tokenRefreshed` payloads                   | Tokens in logs                                              | Log event names only                                                                         |
 | Raw session hydrated into an SSR page (Next.js, SvelteKit, SolidStart) | Refresh and ID tokens in the HTML payload                   | Pass `toClientSession(session)`, or claims only (see the SSR caveat)                         |
 | Server SDK on a non-default `authUrlPrefix`, client left at `'/auth'`  | `refresh()` and the guards land on a 404                    | Set the same `authUrlPrefix` on the client                                                   |
