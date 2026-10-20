@@ -17,7 +17,7 @@ const validInitConfig: SvelteKitServerSDKInitConfig = {
 	issuer: 'https://brandtegrity.io',
 	clientId: 'client-id',
 	redirectUri: 'https://brandtegrity.io/callback',
-	secret: 'secret',
+	cookieSecret: 'secret',
 };
 
 function installBase(overrides?: Record<string, unknown>) {
@@ -54,7 +54,7 @@ describe('createServerSDK', () => {
 	});
 
 	test('exposes the underlying options', () => {
-		const base = installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' } });
+		const base = installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' } });
 		const sdk = createServerSDK(validInitConfig);
 
 		expect(sdk.options).toBe(base.options);
@@ -197,7 +197,7 @@ describe('createServerSDK', () => {
 		});
 
 		test('redirects when the refresh failed (getSession resolves to null)', async () => {
-			installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
+			installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 
 			const error = await sdk.requireSession(createEvent()).catch((error: unknown) => error);
@@ -208,15 +208,15 @@ describe('createServerSDK', () => {
 			// the guard only redirects when there is no session at all; an expired-but-unrefreshable session is
 			// still handed back as-is rather than forced through login again.
 			const expiredSession = { access_token: 'a', expires_at: 0 };
-			const base = installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(expiredSession) });
+			const base = installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(expiredSession) });
 			const sdk = createServerSDK(validInitConfig);
 
 			await expect(sdk.requireSession(createEvent())).resolves.toBe(expiredSession);
 			expect(base.refreshSession).not.toHaveBeenCalled();
 		});
 
-		test('redirects to the authUrlPrefix login route with a returnTo defaulting to the current path, in non-embedded/native modes', async () => {
-			installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
+		test('redirects to the authUriPrefix login route with a returnTo defaulting to the current path, in non-embedded/native modes', async () => {
+			installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 			const event = createEvent({ url: new URL('https://brandtegrity.io/profile?tab=security') });
 
@@ -227,8 +227,8 @@ describe('createServerSDK', () => {
 			expect(error.location).toBe('https://brandtegrity.io/auth/login?returnTo=%2Fprofile%3Ftab%3Dsecurity');
 		});
 
-		test('redirects to options.loginUri instead, in embedded/native modes', async () => {
-			installBase({ options: { mode: 'native', loginUri: '/native-login' }, getSession: vi.fn().mockResolvedValue(null) });
+		test('redirects to options.loginPageUri instead, in embedded/native modes', async () => {
+			installBase({ options: { mode: 'native', loginPageUri: '/native-login' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 			const event = createEvent({ url: new URL('https://brandtegrity.io/app') });
 
@@ -238,7 +238,7 @@ describe('createServerSDK', () => {
 		});
 
 		test('uses a given returnTo option instead of the current path', async () => {
-			installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
+			installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 
 			const error = (await sdk.requireSession(createEvent(), { returnTo: '/custom' }).catch((error: unknown) => error)) as { location: string };
@@ -247,7 +247,7 @@ describe('createServerSDK', () => {
 		});
 
 		test('omits the returnTo query param entirely when it resolves to an empty string', async () => {
-			installBase({ options: { mode: 'redirect', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
+			installBase({ options: { mode: 'redirect', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 
 			const error = (await sdk.requireSession(createEvent(), { returnTo: '' }).catch((error: unknown) => error)) as { location: string };

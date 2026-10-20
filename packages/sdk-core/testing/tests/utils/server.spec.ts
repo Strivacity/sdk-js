@@ -15,7 +15,7 @@ import {
 
 describe('getServerSDKOptions', () => {
 	test('w/o options', async () => {
-		const options = getServerSDKOptions(serverAdapter, createServerOptions({ secret: 'secret' }));
+		const options = getServerSDKOptions(serverAdapter, createServerOptions({ cookieSecret: 'secret' }));
 
 		expect(options.storage.get).toBeInstanceOf(Function);
 		expect(options.storage.set).toBeInstanceOf(Function);
@@ -23,10 +23,10 @@ describe('getServerSDKOptions', () => {
 		expect(options.postLoginRedirectUri).toBe('https://brandtegrity.io');
 		expect(options.postLogoutRedirectUri).toBe('https://brandtegrity.io');
 		expect(options.cookieMaxAge).toBe(DEFAULT_COOKIE_MAX_AGE);
-		expect(options.authUrlPrefix).toBe('/auth');
-		expect(options.loginUri).toBe('/login');
+		expect(options.authUriPrefix).toBe('/auth');
+		expect(options.loginPageUri).toBe('/login');
 		expect(options.serverSessionUri).toBe('/auth/login');
-		await expect(options.urlHandler(new URL('https://brandtegrity.io'))).resolves.toBeUndefined();
+		await expect(options.uriHandler(new URL('https://brandtegrity.io'))).resolves.toBeUndefined();
 	});
 
 	test('w/ options', () => {
@@ -38,7 +38,7 @@ describe('getServerSDKOptions', () => {
 				cookieMaxAge: 60,
 				postLoginRedirectUri: 'https://brandtegrity.io/home',
 				postLogoutRedirectUri: 'https://brandtegrity.io/bye',
-				authUrlPrefix: '/custom-auth',
+				authUriPrefix: '/custom-auth',
 			}),
 		);
 
@@ -49,8 +49,47 @@ describe('getServerSDKOptions', () => {
 		expect(options.serverSessionUri).toBe('/custom-auth/login');
 	});
 
+	describe('tokenEndpointAuthMethod', () => {
+		test("defaults to 'none' without a client secret", () => {
+			expect(getServerSDKOptions(serverAdapter, createServerOptions()).tokenEndpointAuthMethod).toBe('none');
+		});
+
+		test("defaults to 'client_secret_basic' with a client secret", () => {
+			expect(getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret' })).tokenEndpointAuthMethod).toBe('client_secret_basic');
+		});
+
+		test('keeps an explicit method', () => {
+			const options = getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' }));
+
+			expect(options.tokenEndpointAuthMethod).toBe('client_secret_post');
+		});
+
+		test.each(['client_secret_basic', 'client_secret_post'] as const)(
+			'throws a ConfigurationError for %s without a client secret',
+			(tokenEndpointAuthMethod) => {
+				expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ tokenEndpointAuthMethod }))).toThrow(
+					new ConfigurationError(`Missing SDK option: clientSecret (required by tokenEndpointAuthMethod '${tokenEndpointAuthMethod}')`),
+				);
+			},
+		);
+
+		test("throws a ConfigurationError for a client secret with 'none'", () => {
+			expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'none' }))).toThrow(
+				new ConfigurationError("SDK option clientSecret is set, but tokenEndpointAuthMethod is 'none'"),
+			);
+		});
+
+		test('throws a ConfigurationError for an unsupported method', () => {
+			expect(() =>
+				getServerSDKOptions(serverAdapter, createServerOptions({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'private_key_jwt' as never })),
+			).toThrow(new ConfigurationError("Unsupported SDK option: tokenEndpointAuthMethod 'private_key_jwt'"));
+		});
+	});
+
 	test('throws a ConfigurationError when neither storage nor secret is provided', () => {
-		expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ secret: undefined }))).toThrow(new ConfigurationError('Missing SDK option: secret'));
+		expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ cookieSecret: undefined }))).toThrow(
+			new ConfigurationError('Missing SDK option: cookieSecret'),
+		);
 	});
 });
 

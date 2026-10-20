@@ -6,5 +6,5 @@ export const sdk = createServerSDK({
 	...(sdkOptions as NextServerSDKInitConfig),
 	logging: createDefaultLogging(),
 	postLoginRedirectUri: '/profile',
-	secret: process.env.SECRET as string,
+	cookieSecret: process.env.COOKIE_SECRET as string,
 });

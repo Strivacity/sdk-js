@@ -98,7 +98,7 @@ export default defineNuxtConfig({
 
 ### 2. Configure it
 
-Client and server options live together under a single `strivacity` key - the module automatically strips `secret` and the storage/logging/HTTP-client factory paths before exposing the rest to the client:
+Client and server options live together under a single `strivacity` key - the module automatically strips `cookieSecret` and the storage/logging/HTTP-client factory paths before exposing the rest to the client:
 
 ```ts
 // nuxt.config.ts
@@ -112,7 +112,7 @@ export default defineNuxtConfig({
 		scopes: ['openid', 'profile', 'email'], // requested user permissions/data
 
 		serverSessionUri: '/auth/login', // Set to `null` for client-managed sessions - omitting this line still defaults to server-managed
-		secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters), required for server-managed sessions
+		cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters), required for server-managed sessions
 		postLoginRedirectUri: '/profile',
 	},
 });
@@ -131,10 +131,10 @@ The module automatically:
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference).
 
 ---
 
@@ -1401,7 +1401,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1485,7 +1485,7 @@ This is the same backend-for-frontend ([BFF](../../README.md#bff)) server implem
 
 ### Setup
 
-There's no server file to create or mount - the module registers everything (the plugin, the auth routes, the session-hydration middleware) automatically from the single `strivacity: {...}` key in `nuxt.config.ts`. See [Quick start](#quick-start) for the full configuration example, including `secret` (required unless you provide a custom `storage`).
+There's no server file to create or mount - the module registers everything (the plugin, the auth routes, the session-hydration middleware) automatically from the single `strivacity: {...}` key in `nuxt.config.ts`. See [Quick start](#quick-start) for the full configuration example, including `cookieSecret` (required unless you provide a custom `storage`).
 
 ### Accessing the session server-side
 
@@ -1548,7 +1548,7 @@ export default defineNuxtConfig({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current H3 event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current H3 event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // server/storage.ts
@@ -1660,13 +1660,15 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storageFactoryPath` | `string` | No | Encrypted cookie storage | Path to a module default-exporting a `NuxtServerStorage` factory; see [Storages](#server-storages) |
 | `stateStorageFactoryPath` | `string` | No | In-memory `Map` | Path to a module default-exporting an `SDKStorage` factory for the OAuth2 state parameter |
 | `loggingFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKLogging` factory |
 | `httpClientFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKHttpClient` factory |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix under which the module registers the auth routes; with server-managed sessions `sdk.refresh()` and route guards send an expired session to `${authUrlPrefix}/refresh` |
-| `serverSessionUri` | `string \| null` | No | `` `${authUrlPrefix}/login` `` | Enables server-managed sessions when set (the default); set to `null` to use client-managed sessions instead |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix under which the module registers the auth routes; with server-managed sessions `sdk.refresh()` and route guards send an expired session to `${authUriPrefix}/refresh` |
+| `serverSessionUri` | `string \| null` | No | `` `${authUriPrefix}/login` `` | Enables server-managed sessions when set (the default); set to `null` to use client-managed sessions instead |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
@@ -1744,7 +1746,7 @@ The client SDK accepts the same configuration as the core SDK - see the [core SD
 
 ### Migrating to v4.0
 
-v4 replaces the SDK's class-based flow architecture with function-based architecture, and unifies server-managed (BFF) session handling onto a shared Server SDK. The `strivacity: {...}` key is still the only configuration, but `serverSessionUri` now defaults to server-managed sessions: add a `secret`, or set `serverSessionUri: null` to keep v3's client-managed behaviour. Custom storage and logging are referenced by file path (`storageFactoryPath`, `loggingFactoryPath`, ...). Apps need to update their code if they rendered `<StyLoginRenderer>` (replaced by `useNativeLogin()`), used `mode: 'custom'`, drove `native` mode through the old `NativeFlowHandler`, or call SDK methods during server-side rendering.
+v4 replaces the SDK's class-based flow architecture with function-based architecture, and unifies server-managed (BFF) session handling onto a shared Server SDK. The `strivacity: {...}` key is still the only configuration, but `serverSessionUri` now defaults to server-managed sessions: add a `cookieSecret`, or set `serverSessionUri: null` to keep v3's client-managed behaviour. Custom storage and logging are referenced by file path (`storageFactoryPath`, `loggingFactoryPath`, ...). Apps need to update their code if they rendered `<StyLoginRenderer>` (replaced by `useNativeLogin()`), used `mode: 'custom'`, drove `native` mode through the old `NativeFlowHandler`, or call SDK methods during server-side rendering.
 
 #### `useStrivacity()` is read-only during SSR
 
@@ -1790,7 +1792,7 @@ This is a low-level `@strivacity/sdk-core` primitive - it's used the same way no
 
 #### Server-managed sessions now share a common Server SDK
 
-Server-managed sessions in `@strivacity/sdk-nuxt` are still configured entirely through the `strivacity: {...}` key in `nuxt.config.ts` - add `serverSessionUri` (and `secret`) and the module registers the auth routes and session-hydration middleware for you, with no server file or manual router mounting needed:
+Server-managed sessions in `@strivacity/sdk-nuxt` are still configured entirely through the `strivacity: {...}` key in `nuxt.config.ts` - add `serverSessionUri` (and `cookieSecret`) and the module registers the auth routes and session-hydration middleware for you, with no server file or manual router mounting needed:
 
 ```ts
 // nuxt.config.ts
@@ -1799,7 +1801,7 @@ export default defineNuxtConfig({
 	strivacity: {
 		// ...
 		serverSessionUri: '/auth/login', // set to `null` for client-managed sessions - omitting this line still defaults to server-managed
-		secret: process.env.SECRET,
+		cookieSecret: process.env.COOKIE_SECRET,
 	},
 });
 ```
@@ -1830,6 +1832,14 @@ await submitForm('formId');
 ```
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
+
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

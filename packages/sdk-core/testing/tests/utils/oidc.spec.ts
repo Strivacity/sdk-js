@@ -51,11 +51,11 @@ describe('defaultOptions', () => {
 			refreshSkew: 60,
 			clockSkew: 60,
 			serverSessionUri: null,
-			authUrlPrefix: '/auth',
+			authUriPrefix: '/auth',
 			scopes: ['openid'],
 			responseType: 'code',
 			responseMode: 'query',
-			storageTokenName: 'sty.session',
+			storageKey: 'sty.session',
 			discoveryDocumentCacheTTL: 3600,
 			jwksCacheTTL: 600,
 		});

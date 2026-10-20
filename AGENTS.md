@@ -19,7 +19,7 @@ The Strivacity JavaScript SDKs: a pnpm + Nx monorepo that publishes `@strivacity
 | `packages/sdk-vue`       | `createStrivacitySDK` plugin, `useStrivacity`, `useNativeLogin`                                                                                                                                                                                                     |
 | `packages/sdk-angular`   | `provideStrivacity`, `StrivacityAuthService`, `StrivacityNativeLoginService`; `./server` for Express SSR                                                                                                                                                            |
 | `packages/sdk-next`      | `./client` re-exports sdk-react; `./server` has `createServerSDK` and route handler factories (**no root export**)                                                                                                                                                  |
-| `packages/sdk-nuxt`      | Nuxt module (`src/module.ts`); auto-imported composables; registers Nitro routes under `authUrlPrefix` when server sessions are on. The SDK instance is browser-only (client plugin); during SSR `useStrivacity()` is a read-only context built from `useSession()` |
+| `packages/sdk-nuxt`      | Nuxt module (`src/module.ts`); auto-imported composables; registers Nitro routes under `authUriPrefix` when server sessions are on. The SDK instance is browser-only (client plugin); during SSR `useStrivacity()` is a read-only context built from `useSession()` |
 | `packages/sdk-solid`     | `./client` and `./server` only (**no root export**)                                                                                                                                                                                                                 |
 | `packages/sdk-svelte`    | `./client` (`createStyAuthProvider`, `*.svelte.ts`) and `./server` only (**no root export**)                                                                                                                                                                        |
 | `tools/common`           | Shared helpers for the example apps (`utils/oidc.ts` → `getExtraParams` maps env vars to `ExtraRequestArgs`)                                                                                                                                                        |
@@ -77,9 +77,9 @@ Follow how the `audiences` login parameter is wired through as the reference:
   - a string: login goes through that BFF endpoint, and tokens stay server-side in encrypted http-only cookies.
   - `true`: server-managed without routing through a BFF endpoint.
 
-  The client default is `null`; the Server SDK (`createServerSDK`) defaults it to `` `${authUrlPrefix}/login` ``.
+  The client default is `null`; the Server SDK (`createServerSDK`) defaults it to `` `${authUriPrefix}/login` ``.
 
-- **Server SDK routes** (`src/server/base.ts`): `GET {authUrlPrefix}/{login,register,callback,refresh,revoke,entry,logout}` and `POST {authUrlPrefix}/backchannel-logout`.
+- **Server SDK routes** (`src/server/base.ts`): `GET {authUriPrefix}/{login,register,callback,refresh,revoke,entry,logout}` and `POST {authUriPrefix}/backchannel-logout`.
 - **Naming differs per framework:** provider/plugin is `StyAuthProvider` (React, Preact, Solid, Next), `createStyAuthProvider` (Svelte), `createStrivacitySDK` (Vue) or `provideStrivacity` (Angular). Angular uses services instead of `use*` hooks.
 
 ## Example apps

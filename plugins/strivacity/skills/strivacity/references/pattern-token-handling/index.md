@@ -4,7 +4,7 @@ Where the SDK keeps tokens, how they expire and refresh, and how to end a sessio
 
 ## Critical rules
 
-- **Browser apps use a public PKCE client.** No client secret in browser code. The Server SDK `secret` is only the cookie encryption key and stays on the server.
+- **Browser apps use a public PKCE client.** No client secret in browser code. The Server SDK `cookieSecret` is only the cookie encryption key and stays on the server.
 - **Anything a page script can reach, an XSS bug can steal.** That includes `localStorage` (the default), `sessionStorage`, IndexedDB, the Cache API and the SDK instance itself. For high-risk apps (finance, health, admin consoles) keep tokens out of the browser with a BFF (`serverSessionUri`). If you cannot run a server, prefer `createMemoryStorage()` over the default.
 - **Never log, print or send tokens anywhere except the API they are for.** No tokens in URLs, analytics, error reports or `console.log`. The built-in logger never prints them.
 - **Read `sdk.accessToken` after `await sdk.checkAuthentication()`**, not from a value captured earlier. The SDK has no background refresh timer.
@@ -12,10 +12,10 @@ Where the SDK keeps tokens, how they expire and refresh, and how to end a sessio
 
 ## What the SDK stores
 
-| Item               | Where                                                  | Key                                                                        | Content                                                                                                                               |
-| ------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Session            | `storage` (client) or the server session storage (BFF) | `storageTokenName` (default `'sty.session'`). Server: also the cookie name | JSON `SessionData`: `access_token`, `refresh_token`, `id_token`, `expires_in`, `expires_at` (Unix seconds), `scope`, `claims`         |
-| PKCE / login state | `stateStorage`                                         | `sty.<state id>`                                                           | Code verifier, nonce, `metadata` (prompt, display, audiences, ...). Deleted when the callback uses it, also for an `?error=` callback |
+| Item               | Where                                                  | Key                                                                  | Content                                                                                                                               |
+| ------------------ | ------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Session            | `storage` (client) or the server session storage (BFF) | `storageKey` (default `'sty.session'`). Server: also the cookie name | JSON `SessionData`: `access_token`, `refresh_token`, `id_token`, `expires_in`, `expires_at` (Unix seconds), `scope`, `claims`         |
+| PKCE / login state | `stateStorage`                                         | `sty.<state id>`                                                     | Code verifier, nonce, `metadata` (prompt, display, audiences, ...). Deleted when the callback uses it, also for an `?error=` callback |
 
 `expires_at` is computed as local time + `expires_in` when the token arrives, so it does not depend on clock skew between the device and the IdP. `claims` are the decoded ID token claims.
 
@@ -46,12 +46,12 @@ Client factories come from the wrapper package (`@strivacity/sdk-react`, `@striv
 
 Server factories come from `@strivacity/sdk-core/storages`, or from the framework's `/server` entry (Next.js and Nuxt ship variants without the `adapter` argument):
 
-| Factory                                                   | Default for               | Notes                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `createEncryptedCookieStorage(secret, adapter, options?)` | Server SDK `storage`      | AES-256-GCM (HKDF-SHA-256 key from `secret`). Cookie `HttpOnly; Secure; SameSite=Lax; Path=/`, `Max-Age` = `cookieMaxAge` (default 30 days), split into `name.0`, `name.1`, ... above 3900 chars. No back-channel logout |
-| `createSessionIdCookieStorage(adapter, store, options?)`  | none                      | Random session-id cookie (`crypto.randomUUID()`), payload in your `store` (Redis, database). Supports back-channel logout when `store.deleteByLogoutToken` exists                                                        |
-| `createServerMemoryStorage()`                             | none                      | Development only. Process memory, implements `deleteByLogoutToken`. Shares (and resets) the global map that `createServerStateStorage()` uses                                                                            |
-| `createServerStateStorage()`                              | Server SDK `stateStorage` | In-memory `Map` in one process, with no expiry. Replace it with a shared store with a TTL when more than one instance runs                                                                                               |
+| Factory                                                   | Default for               | Notes                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createEncryptedCookieStorage(secret, adapter, options?)` | Server SDK `storage`      | AES-256-GCM (HKDF-SHA-256 key from `cookieSecret`). Cookie `HttpOnly; Secure; SameSite=Lax; Path=/`, `Max-Age` = `cookieMaxAge` (default 30 days), split into `name.0`, `name.1`, ... above 3900 chars. No back-channel logout |
+| `createSessionIdCookieStorage(adapter, store, options?)`  | none                      | Random session-id cookie (`crypto.randomUUID()`), payload in your `store` (Redis, database). Supports back-channel logout when `store.deleteByLogoutToken` exists                                                              |
+| `createServerMemoryStorage()`                             | none                      | Development only. Process memory, implements `deleteByLogoutToken`. Shares (and resets) the global map that `createServerStateStorage()` uses                                                                                  |
+| `createServerStateStorage()`                              | Server SDK `stateStorage` | In-memory `Map` in one process, with no expiry. Replace it with a shared store with a TTL when more than one instance runs                                                                                                     |
 
 Next.js: `createEncryptedCookieStorage(secret, options?)` and `createSessionIdCookieStorage(store, options?)` from `@strivacity/sdk-next/server`. Nuxt: point `storageFactoryPath` / `stateStorageFactoryPath` in `nuxt.config.ts` at a module that default-exports a factory. These apply to the Nuxt Server SDK. The Nuxt client SDK always uses the default client storages.
 
@@ -70,7 +70,7 @@ const options: SDKInitConfig = {
 	scopes: ['openid', 'profile', 'offline_access'], // a refresh token is only issued if the client and scopes allow it
 	storage: createMemoryStorage(), // tokens only in memory
 	stateStorage: createSessionStorage(), // the default, shown for clarity: must survive the redirect
-	storageTokenName: 'sty.session.orders', // unique per app when several apps share an origin
+	storageKey: 'sty.session.orders', // unique per app when several apps share an origin
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -94,7 +94,7 @@ import { createWorkerStorage } from '@strivacity/sdk-react';
 export const storage = createWorkerStorage(new Worker(new URL('./storage.worker.ts', import.meta.url), { type: 'module' }));
 ```
 
-### `storageTokenName`
+### `storageKey`
 
 - Default `'sty.session'`. It is the client storage key and, on the server, the cookie name.
 - Give each app its own name when several apps share an origin (they would otherwise overwrite each other's session).
@@ -109,13 +109,13 @@ export const storage = createWorkerStorage(new Worker(new URL('./storage.worker.
 | `isAuthenticatedSync`                                 | Session in memory and not expired. Never refreshes                                                                                                                                                                                       |
 | `await sdk.isAuthenticated` / `checkAuthentication()` | Awaits `init()` first. Valid and more than `refreshSkew` seconds left → `true`. Otherwise, if `autoRefresh`, a refresh token and no `serverSessionUri`, calls `refresh()` (a failed refresh is not rethrown). Then returns "not expired" |
 | `checkAuthentication({ autoRefresh: false })`         | Same check without refreshing                                                                                                                                                                                                            |
-| `refresh({ returnTo }?)`                              | Refresh-token grant now. Concurrent calls share one request. Does nothing without a refresh token. Server-managed: navigates to `` `${authUrlPrefix}/refresh` `` (see below)                                                             |
+| `refresh({ returnTo }?)`                              | Refresh-token grant now. Concurrent calls share one request. Does nothing without a refresh token. Server-managed: navigates to `` `${authUriPrefix}/refresh` `` (see below)                                                             |
 
 Options: `autoRefresh` (default `true`) and `refreshSkew` (default `60` seconds, capped at half of the token lifetime `expires_in`). A refresh keeps the current refresh token when the authorization server does not issue a new one, and keeps the ID token and claims when the response has none. **`autoRefresh` does not start a timer**, and it is ignored when `serverSessionUri` is set: then the server owns the refresh token and refreshes through its `/auth/refresh` route or the framework's server helpers. Refresh happens only when something calls `checkAuthentication()`: your code, `sdk.isAuthenticated`, the wrappers' state updates after each SDK event, and the route guards (`withAuthGuard`). A tab that sits idle keeps an expired token until then. Tabs sharing the session storage refresh one at a time (Web Locks API, per client and storage key): a tab that waited re-reads the storage and uses the session the other tab just stored instead of sending the old refresh token again (which fails with refresh token rotation and clears the session).
 
-### Server-managed sessions: `authUrlPrefix`
+### Server-managed sessions: `authUriPrefix`
 
-With `serverSessionUri` set, `refresh()` navigates the browser (full page, also in popup mode) to `` `${authUrlPrefix}/refresh?returnTo=<returnTo>` ``. `authUrlPrefix` is a client option (default `'/auth'`): change it only to match a Server SDK that uses a different prefix. `returnTo` is `refresh({ returnTo })` or the current path, query and hash. The Server SDK route rotates the cookie and redirects back (it rejects a cross-origin `returnTo`, and redirects to `/error` when the refresh fails). Nothing is refreshed in the browser itself.
+With `serverSessionUri` set, `refresh()` navigates the browser (full page, also in popup mode) to `` `${authUriPrefix}/refresh?returnTo=<returnTo>` ``. `authUriPrefix` is a client option (default `'/auth'`): change it only to match a Server SDK that uses a different prefix. `returnTo` is `refresh({ returnTo })` or the current path, query and hash. The Server SDK route rotates the cookie and redirects back (it rejects a cross-origin `returnTo`, and redirects to `/error` when the refresh fails). Nothing is refreshed in the browser itself.
 
 - React, Preact and Solid `withAuthGuard`: with `serverSessionUri` set, a hydrated session that is no longer authenticated (expired) goes through `sdk.refresh()` instead of the login redirect.
 - Your own client route guards (Angular `CanActivateFn`, Nuxt / Vue route middleware): for an expired session call `await sdk.refresh({ returnTo: <target path> })` and cancel the navigation. During SSR the server already refreshed.
@@ -261,10 +261,10 @@ If no token may reach the browser at all, do not hydrate the session: return cla
 | Treating every `tokenRefreshFailed` as a logout                        | Users signed out during a network blip                      | Check whether the session was cleared                                                        |
 | `revoke()` used as "log out"                                           | Next login skips the login form (IdP session still active)  | `logout({ postLogoutRedirectUri })`                                                          |
 | `revoke()` then `logout()`                                             | No redirect to the IdP                                      | Revoke with `revokeToken()` first, as shown above                                            |
-| Several apps on one origin with the same `storageTokenName`            | Apps overwrite each other's session                         | One name per app                                                                             |
+| Several apps on one origin with the same `storageKey`                  | Apps overwrite each other's session                         | One name per app                                                                             |
 | Logging `sessionUpdated` / `tokenRefreshed` payloads                   | Tokens in logs                                              | Log event names only                                                                         |
 | Raw session hydrated into an SSR page (Next.js, SvelteKit, SolidStart) | Refresh and ID tokens in the HTML payload                   | Pass `toClientSession(session)`, or claims only (see the SSR caveat)                         |
-| Server SDK on a non-default `authUrlPrefix`, client left at `'/auth'`  | `refresh()` and the guards land on a 404                    | Set the same `authUrlPrefix` on the client                                                   |
+| Server SDK on a non-default `authUriPrefix`, client left at `'/auth'`  | `refresh()` and the guards land on a 404                    | Set the same `authUriPrefix` on the client                                                   |
 | Client secret added "to make refresh work"                             | Secret shipped to every browser                             | Public PKCE client. Request `offline_access` (or what the client allows) for a refresh token |
 
 More detail: https://github.com/Strivacity/sdk-js/tree/main/packages/sdk-core (Storages, Session state, SDK events) and https://docs.strivacity.com/reference/overview

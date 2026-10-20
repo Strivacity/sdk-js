@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
 		LOGIN_HINT: process.env.VITE_LOGIN_HINT,
 		ACR_VALUES: process.env.VITE_ACR_VALUES,
 		UI_LOCALES: process.env.VITE_UI_LOCALES,
-		SECRET: process.env.VITE_SECRET,
+		COOKIE_SECRET: process.env.VITE_COOKIE_SECRET,
 	},
 };
 

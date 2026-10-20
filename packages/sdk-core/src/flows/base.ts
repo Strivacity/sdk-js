@@ -1,20 +1,25 @@
 import type { EventFunctions, ExtraRequestArgs, FlowState, SDK, SDKOptions, SessionData } from '../types/oidc';
+import type { ServerSDKOptions } from '../types/server';
 import { buildEndSessionUrl, exchangeCode, getDiscoveryDocument, refreshToken, revokeToken, verifyIdToken } from '../utils/oidc';
 import { loadSession, serializeSession, isSessionExpired } from '../utils/session';
 import { parseState } from '../utils/state';
 import { appendReturnTo } from '../utils/path';
 import { ConfigurationError, NetworkError, ProtocolError, ServerError } from '../utils/errors';
-import { redirectUrlHandler } from '../handlers/redirect';
+import { redirectUriHandler } from '../handlers/redirect';
 
 /**
  * Creates a base flow for the Strivacity SDK, providing common functionality for managing authentication sessions.
  *
  * @param flowState - The initial state of the flow, including session data and initialization status.
  * @param options - The SDK options, including issuer, clientId, redirectUri, scopes, and storage configuration.
- * @template URLHandlerParams - The type of additional request arguments for URL handling.
+ * @template URIHandlerParams - The type of additional request arguments for URL handling.
  * @returns An object implementing the SDK interface, with methods for initializing the flow, managing sessions, and handling authentication events.
  */
-export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs>(flowState: FlowState, options: SDKOptions) {
+export function createBaseFlow<URIHandlerParams extends ExtraRequestArgs = ExtraRequestArgs>(flowState: FlowState, options: SDKOptions) {
+	if ((options as Partial<ServerSDKOptions>).clientSecret) {
+		throw new ConfigurationError('SDK option clientSecret is server-only: pass it to the Server SDK, never to the client SDK');
+	}
+
 	const promises: Record<'init' | 'refresh' | 'revoke' | 'logout', Promise<void> | null> & { tokenExchange: Map<string, Promise<void>> } = {
 		init: null,
 		refresh: null,
@@ -49,12 +54,12 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 	function subscribeToEvent<T extends keyof EventFunctions>(
 		eventName: T,
 		callbackFn: (...params: Parameters<EventFunctions[T]>) => Promise<void> | void,
-	): ReturnType<SDK<URLHandlerParams>['subscribeToEvent']> {
+	): ReturnType<SDK<URIHandlerParams>['subscribeToEvent']> {
 		eventCallbacks[eventName].add(callbackFn);
 		return { dispose: () => eventCallbacks[eventName].delete(callbackFn) };
 	}
 
-	function subscribeToAllEvents(callbackFn: (...params: Array<unknown>) => Promise<void> | void): ReturnType<SDK<URLHandlerParams>['subscribeToAllEvents']> {
+	function subscribeToAllEvents(callbackFn: (...params: Array<unknown>) => Promise<void> | void): ReturnType<SDK<URIHandlerParams>['subscribeToAllEvents']> {
 		for (const eventName in eventCallbacks) {
 			eventCallbacks[eventName as keyof EventFunctions].add(callbackFn);
 		}
@@ -72,7 +77,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		const locks = globalThis.window ? (globalThis.navigator as Navigator | undefined)?.locks : undefined;
 
 		if (locks) {
-			return locks.request(`strivacity.session.${options.clientId}.${options.storageTokenName}`, fn);
+			return locks.request(`strivacity.session.${options.clientId}.${options.storageKey}`, fn);
 		}
 
 		// NOTE: in-process fallback of the session lock where the Web Locks API is not available
@@ -93,10 +98,10 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 			return null;
 		}
 
-		return loadSession(await options.storage.get(options.storageTokenName));
+		return loadSession(await options.storage.get(options.storageKey));
 	}
 
-	async function updateSession(newData: SessionData): ReturnType<SDK<URLHandlerParams>['updateSession']> {
+	async function updateSession(newData: SessionData): ReturnType<SDK<URIHandlerParams>['updateSession']> {
 		await init();
 
 		// NOTE: only unverified callers (e.g. direct API use) need validating here
@@ -105,7 +110,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		}
 
 		if (!options.serverSessionUri) {
-			await options.storage.set(options.storageTokenName, serializeSession(newData));
+			await options.storage.set(options.storageKey, serializeSession(newData));
 		}
 
 		flowState.session = newData;
@@ -120,11 +125,11 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		]);
 	}
 
-	async function cleanupSession(): ReturnType<SDK<URLHandlerParams>['cleanupSession']> {
+	async function cleanupSession(): ReturnType<SDK<URIHandlerParams>['cleanupSession']> {
 		await init();
 
 		if (!options.serverSessionUri) {
-			await options.storage.delete(options.storageTokenName);
+			await options.storage.delete(options.storageKey);
 		}
 
 		flowState.session = null;
@@ -134,7 +139,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 
 	async function checkAuthentication(
 		params: { autoRefresh: boolean } = { autoRefresh: options.autoRefresh },
-	): ReturnType<SDK<URLHandlerParams>['checkAuthentication']> {
+	): ReturnType<SDK<URIHandlerParams>['checkAuthentication']> {
 		await init();
 
 		if (flowState.session?.access_token && !isSessionExpired(flowState.session, options.refreshSkew)) {
@@ -152,7 +157,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return !isSessionExpired(flowState.session);
 	}
 
-	async function init(): ReturnType<SDK<URLHandlerParams>['init']> {
+	async function init(): ReturnType<SDK<URIHandlerParams>['init']> {
 		if (flowState.initialized) {
 			return;
 		}
@@ -185,7 +190,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 				}
 
 				if (!options.serverSessionUri) {
-					flowState.session = loadSession(await options.storage.get(options.storageTokenName));
+					flowState.session = loadSession(await options.storage.get(options.storageKey));
 				}
 
 				flowState.initialized = true;
@@ -221,7 +226,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return promises.init;
 	}
 
-	async function tokenExchange(params: Parameters<SDK<URLHandlerParams>['tokenExchange']>[0] = {}): ReturnType<SDK<URLHandlerParams>['tokenExchange']> {
+	async function tokenExchange(params: Parameters<SDK<URIHandlerParams>['tokenExchange']>[0] = {}): ReturnType<SDK<URIHandlerParams>['tokenExchange']> {
 		await init();
 
 		const exchangeKey = params.state ?? '';
@@ -266,7 +271,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return exchangePromise;
 	}
 
-	async function handleCallback(url?: string | URL): ReturnType<SDK<URLHandlerParams>['handleCallback']> {
+	async function handleCallback(url?: string | URL): ReturnType<SDK<URIHandlerParams>['handleCallback']> {
 		await init();
 
 		const callbackUrl = url ?? globalThis.window?.location.href;
@@ -286,7 +291,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return typeof returnTo === 'string' && returnTo ? { returnTo } : {};
 	}
 
-	async function refresh(params?: { returnTo?: string }): ReturnType<SDK<URLHandlerParams>['refresh']> {
+	async function refresh(params?: { returnTo?: string }): ReturnType<SDK<URIHandlerParams>['refresh']> {
 		await init();
 
 		if (promises.refresh) {
@@ -297,7 +302,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 
 		// NOTE: with server-managed sessions the server owns the refresh token: let its refresh route rotate the cookie and come back
 		if (options.serverSessionUri) {
-			await redirectUrlHandler(appendReturnTo(`${options.authUrlPrefix}/refresh`, params?.returnTo));
+			await redirectUriHandler(appendReturnTo(`${options.authUriPrefix}/refresh`, params?.returnTo));
 			return;
 		}
 
@@ -367,7 +372,7 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 		return promises.refresh;
 	}
 
-	async function revoke(): ReturnType<SDK<URLHandlerParams>['revoke']> {
+	async function revoke(): ReturnType<SDK<URIHandlerParams>['revoke']> {
 		await init();
 
 		if (promises.revoke) {
@@ -427,9 +432,9 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 	}
 
 	async function logout(
-		params?: Parameters<SDK<URLHandlerParams>['logout']>[0],
-		urlHandlerOverride?: typeof options.urlHandler,
-	): ReturnType<SDK<URLHandlerParams>['logout']> {
+		params?: Parameters<SDK<URIHandlerParams>['logout']>[0],
+		uriHandlerOverride?: typeof options.uriHandler,
+	): ReturnType<SDK<URIHandlerParams>['logout']> {
 		await init();
 
 		if (promises.logout) {
@@ -463,9 +468,9 @@ export function createBaseFlow<URLHandlerParams extends ExtraRequestArgs = Extra
 						idToken: currentSession.id_token,
 						postLogoutRedirectUri: params?.postLogoutRedirectUri,
 					});
-					const urlHandler = urlHandlerOverride ?? options.urlHandler;
+					const uriHandler = uriHandlerOverride ?? options.uriHandler;
 
-					await urlHandler(logoutUrl, params);
+					await uriHandler(logoutUrl, params);
 				} catch (error) {
 					options.logging?.error('Unable to redirect to the end-session endpoint', error);
 				}

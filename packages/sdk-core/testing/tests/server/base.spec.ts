@@ -54,7 +54,7 @@ describe('createBaseServerSDK', () => {
 		test('should return the persisted session', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			const session = createSessionData();
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 
 			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
 		});
@@ -80,7 +80,7 @@ describe('createBaseServerSDK', () => {
 		test('returns a valid session as is, without refreshing', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			const session = createSessionData();
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 			const refreshSpy = vi.spyOn(sdk, 'refreshSession');
 
 			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
@@ -90,7 +90,7 @@ describe('createBaseServerSDK', () => {
 		test('returns an expired session as is when autoRefresh is disabled', async () => {
 			const { sdk, storage, options } = createServerSDK({ autoRefresh: false });
 			const session = { ...createSessionData(), expires_at: 0 };
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 			const refreshSpy = vi.spyOn(sdk, 'refreshSession');
 
 			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
@@ -100,7 +100,7 @@ describe('createBaseServerSDK', () => {
 		test('returns an expired session as is when autoRefresh is disabled for the call', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			const session = { ...createSessionData(), expires_at: 0 };
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 			let tokenRequests = 0;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () => {
@@ -115,7 +115,7 @@ describe('createBaseServerSDK', () => {
 
 		test('refreshes an expired session once per event and shares the result with concurrent callers', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession({ ...createSessionData(), expires_at: 0 }));
+			await storage.set(options.storageKey, serializeSession({ ...createSessionData(), expires_at: 0 }));
 			let tokenRequests = 0;
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () => {
@@ -136,7 +136,7 @@ describe('createBaseServerSDK', () => {
 
 		test('resolves to null when the refresh fails', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession({ ...createSessionData(), expires_at: 0 }));
+			await storage.set(options.storageKey, serializeSession({ ...createSessionData(), expires_at: 0 }));
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ error: 'invalid_grant' }, { status: 400 })));
 
 			await expect(sdk.getSession(createMockEvent())).resolves.toBeNull();
@@ -145,7 +145,7 @@ describe('createBaseServerSDK', () => {
 		test('returns an expired session without a refresh token as is', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			const session = { ...createSessionData({ refresh_token: null }), expires_at: 0 };
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 			worker.use(tokenResponse());
 
 			await expect(sdk.getSession(createMockEvent())).resolves.toEqual(session);
@@ -155,7 +155,7 @@ describe('createBaseServerSDK', () => {
 	describe('refreshSession', () => {
 		test('should refresh the session and persist the new tokens', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ refresh_token: 'old-refresh-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ refresh_token: 'old-refresh-token' })));
 
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
@@ -177,14 +177,14 @@ describe('createBaseServerSDK', () => {
 
 		test('should throw a ConfigurationError when there is no refresh token', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ refresh_token: null })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ refresh_token: null })));
 
 			await expect(sdk.refreshSession(createMockEvent())).rejects.toThrow(new ConfigurationError('No refresh token available'));
 		});
 
 		test('should clean up the session on failure', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/token', () => new HttpResponse(null, { status: 400 })));
 
@@ -197,7 +197,7 @@ describe('createBaseServerSDK', () => {
 		test('should revoke the refresh token and clear the session', async () => {
 			const { sdk, storage, options } = createServerSDK();
 			const session = createSessionData();
-			await storage.set(options.storageTokenName, serializeSession(session));
+			await storage.set(options.storageKey, serializeSession(session));
 			let revokedTokenTypeHint: string | null = null;
 
 			worker.use(
@@ -215,7 +215,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should revoke the access token when there is no refresh token', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ refresh_token: null })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ refresh_token: null })));
 			let revokedTokenTypeHint: string | null = null;
 
 			worker.use(
@@ -238,7 +238,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should rethrow on failure', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/revoke', () => new HttpResponse(null, { status: 400 })));
 
@@ -309,7 +309,7 @@ describe('createBaseServerSDK', () => {
 	describe('logout', () => {
 		test('should clear the session and return the end-session url', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: 'id-token' })));
 
 			const url = await sdk.logout('https://brandtegrity.io/bye', createMockEvent());
 
@@ -321,7 +321,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should return the postLogoutRedirectUri unchanged when there is no id token', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: null })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: null })));
 
 			const url = await sdk.logout('https://brandtegrity.io/bye', createMockEvent());
 
@@ -339,7 +339,7 @@ describe('createBaseServerSDK', () => {
 			const storage = createMockStorage();
 			const initOptions = createServerOptions({ storage, stateStorage: createMockStorage() });
 			const sdk = createBaseServerSDK(customServerAdapter, initOptions);
-			await storage.set(sdk.options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(sdk.options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({})));
 
@@ -351,7 +351,7 @@ describe('createBaseServerSDK', () => {
 
 		test('falls back to a plain Response with a Location header when the adapter has no override', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({})));
 
@@ -534,7 +534,7 @@ describe('createBaseServerSDK', () => {
 	describe('handleRefresh', () => {
 		test('should refresh the session and return 204 when there is no returnTo', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
@@ -549,7 +549,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should redirect to a safe returnTo after refreshing', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 			worker.use(
 				http.post('https://brandtegrity.io/oauth2/token', () =>
 					HttpResponse.json({ access_token: 'new-access-token', token_type: 'Bearer', expires_in: 3600 }),
@@ -585,7 +585,7 @@ describe('createBaseServerSDK', () => {
 	describe('handleRevoke', () => {
 		test('should revoke the session and redirect to postLogoutRedirectUri', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData()));
+			await storage.set(options.storageKey, serializeSession(createSessionData()));
 
 			worker.use(http.post('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({})));
 
@@ -625,7 +625,7 @@ describe('createBaseServerSDK', () => {
 			expect(response.status).toBe(302);
 			const location = new URL(response.headers.get('location') as string);
 
-			expect(`${location.origin}${location.pathname}`).toBe(`https://brandtegrity.io${options.loginUri}`);
+			expect(`${location.origin}${location.pathname}`).toBe(`https://brandtegrity.io${options.loginPageUri}`);
 			expect(location.searchParams.get('session_id')).toBe('abc123');
 			expect(location.searchParams.get('short_app_id')).toBe('app');
 			expect(location.searchParams.get('language')).toBe('hu-HU');
@@ -647,7 +647,7 @@ describe('createBaseServerSDK', () => {
 	describe('handleLogout', () => {
 		test('should redirect to the end-session URL', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: 'id-token' })));
 
 			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout'));
 
@@ -660,7 +660,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should use a same-origin returnTo as the post-logout redirect', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: 'id-token' })));
 
 			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout?returnTo=%2Fgoodbye'));
 
@@ -670,7 +670,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should ignore a cross-origin returnTo and fall back to postLogoutRedirectUri', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: 'id-token' })));
 
 			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout?returnTo=https%3A%2F%2Fevil.example.com'));
 
@@ -681,7 +681,7 @@ describe('createBaseServerSDK', () => {
 
 		test('should redirect to /error with an "Error without category" shape when cleanup fails', async () => {
 			const { sdk, storage, options } = createServerSDK();
-			await storage.set(options.storageTokenName, serializeSession(createSessionData({ id_token: 'id-token' })));
+			await storage.set(options.storageKey, serializeSession(createSessionData({ id_token: 'id-token' })));
 			vi.spyOn(storage, 'delete').mockRejectedValueOnce(new Error('storage failure'));
 
 			const response = await sdk.handleLogout(createMockEvent('https://brandtegrity.io/auth/logout'));
@@ -939,7 +939,7 @@ describe('createBaseServerSDK', () => {
 
 			const response = await sdk.handler(createMockEvent('https://brandtegrity.io/auth/entry'));
 
-			expect(response?.headers.get('location')).toContain(sdk.options.loginUri);
+			expect(response?.headers.get('location')).toContain(sdk.options.loginPageUri);
 		});
 
 		test('GET /auth/logout', async () => {
@@ -968,6 +968,134 @@ describe('createBaseServerSDK', () => {
 			const { sdk } = createServerSDK();
 
 			await expect(sdk.handler({ request: new Request('https://brandtegrity.io/auth/login', { method: 'POST' }) })).resolves.toBeNull();
+		});
+	});
+
+	describe('client authentication', () => {
+		type CapturedRequest = { authorization: string | null; body: URLSearchParams };
+
+		function captureEndpoint(url: string, response: () => Response): Array<CapturedRequest> {
+			const captured: Array<CapturedRequest> = [];
+
+			worker.use(
+				http.post(url, async ({ request }) => {
+					captured.push({ authorization: request.headers.get('authorization'), body: new URLSearchParams(await request.text()) });
+					return response();
+				}),
+			);
+
+			return captured;
+		}
+
+		const tokenResponse = () =>
+			HttpResponse.json({ access_token: 'new-access-token', refresh_token: 'new-refresh-token', token_type: 'Bearer', expires_in: 3600 });
+
+		async function exchangeCode(sdk: ReturnType<typeof createServerSDK>['sdk'], stateStorage: ReturnType<typeof createServerSDK>['stateStorage']) {
+			const stateData = await seedState(stateStorage);
+
+			await sdk.handleCallback({ request: new Request(`https://brandtegrity.io/auth/callback?code=abc123&state=${stateData.id}`) });
+
+			return stateData;
+		}
+
+		test('should send only client_id without a client secret', async () => {
+			const { sdk, stateStorage } = createServerSDK();
+			const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+			await exchangeCode(sdk, stateStorage);
+
+			expect(captured[0].authorization).toBeNull();
+			expect(captured[0].body.get('client_id')).toBe('client-id');
+			expect(captured[0].body.has('client_secret')).toBe(false);
+		});
+
+		describe('client_secret_basic', () => {
+			test('should be the default when clientSecret is set', async () => {
+				const { sdk, stateStorage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				const stateData = await exchangeCode(sdk, stateStorage);
+
+				expect((options as { tokenEndpointAuthMethod?: string }).tokenEndpointAuthMethod).toBe('client_secret_basic');
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.has('client_secret')).toBe(false);
+				expect(captured[0].body.get('grant_type')).toBe('authorization_code');
+				expect(captured[0].body.get('code')).toBe('abc123');
+				expect(captured[0].body.get('code_verifier')).toBe(stateData.codeVerifier);
+			});
+
+			test('should form-urlencode the client credentials before base64 encoding them (RFC 6749 section 2.3.1)', async () => {
+				const { sdk, stateStorage } = createServerSDK({ clientId: 'client:id é', clientSecret: 'p@ss w+rd%:/' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await exchangeCode(sdk, stateStorage);
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client%3Aid+%C3%A9:p%40ss+w%2Brd%25%3A%2F')}`);
+			});
+
+			test('should authenticate the refresh request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				await storage.set(options.storageKey, serializeSession(createSessionData({ refresh_token: 'old-refresh-token' })));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await sdk.refreshSession(createMockEvent());
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.get('grant_type')).toBe('refresh_token');
+				expect(captured[0].body.get('refresh_token')).toBe('old-refresh-token');
+			});
+
+			test('should authenticate the revocation request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({}));
+
+				await sdk.revokeSession(createMockEvent());
+
+				expect(captured[0].authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+				expect(captured[0].body.has('client_id')).toBe(false);
+				expect(captured[0].body.get('token')).toBe('refresh-token');
+				expect(captured[0].body.get('token_type_hint')).toBe('refresh_token');
+			});
+		});
+
+		describe('client_secret_post', () => {
+			test('should send client_id and client_secret in the body of the code exchange', async () => {
+				const { sdk, stateStorage } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await exchangeCode(sdk, stateStorage);
+
+				expect(captured[0].authorization).toBeNull();
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+				expect(captured[0].body.get('code')).toBe('abc123');
+			});
+
+			test('should authenticate the refresh request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/token', tokenResponse);
+
+				await sdk.refreshSession(createMockEvent());
+
+				expect(captured[0].authorization).toBeNull();
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+			});
+
+			test('should authenticate the revocation request', async () => {
+				const { sdk, storage, options } = createServerSDK({ clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_post' });
+				await storage.set(options.storageKey, serializeSession(createSessionData()));
+				const captured = captureEndpoint('https://brandtegrity.io/oauth2/revoke', () => HttpResponse.json({}));
+
+				await sdk.revokeSession(createMockEvent());
+
+				expect(captured[0].body.get('client_id')).toBe('client-id');
+				expect(captured[0].body.get('client_secret')).toBe('client-secret');
+			});
 		});
 	});
 });

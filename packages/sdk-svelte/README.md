@@ -120,12 +120,12 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
 
-> Read the secret from a server-only module such as `$env/dynamic/private` (or `$env/static/private`) - never from a `PUBLIC_`/`VITE_`-prefixed variable, which can end up in client bundles. The [example app](../../apps/sveltekit/src/lib/server/strivacity.ts) reads `import.meta.env.VITE_SECRET` for demo convenience only.
+> Read the secret from a server-only module such as `$env/dynamic/private` (or `$env/static/private`) - never from a `PUBLIC_`/`VITE_`-prefixed variable, which can end up in client bundles. The [example app](../../apps/sveltekit/src/lib/server/strivacity.ts) reads `import.meta.env.VITE_COOKIE_SECRET` for demo convenience only.
 
 ### 3. Wire up the server hook
 
@@ -147,10 +147,10 @@ export const handle: Handle = sdk.handle;
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `resolve(event)`, so `handle` is safe to compose with your own hooks via SvelteKit's [`sequence()`](https://svelte.dev/docs/kit/@sveltejs-kit-hooks#sequence).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `resolve(event)`, so `handle` is safe to compose with your own hooks via SvelteKit's [`sequence()`](https://svelte.dev/docs/kit/@sveltejs-kit-hooks#sequence).
 
 ### 4. Wrap your app with the client provider
 
@@ -1529,7 +1529,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1602,7 +1602,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1637,7 +1637,7 @@ export const load: LayoutServerLoad = async (event) => {
 
 When the access token is within `refreshSkew` seconds of expiry and the session has a refresh token, `getSession(event)` refreshes it before returning. The refresh runs at most once per request, and every caller of the same request - the layout and page `load()` functions SvelteKit runs concurrently, form actions, `+server.ts` handlers, `requireSession` - gets the same rotated session. The rotated session cookie is written to the response by `sdk.handle`, so there is no need to send the browser through `/auth/refresh` first. If the refresh fails, `getSession(event)` returns `null`. Set `autoRefresh: false` in the Server SDK options to turn this off.
 
-Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session (refreshed through `getSession(event)` if it's about to expire), or throws SvelteKit's own `redirect()` to the login page (`loginUri`, default `/login`, in `embedded`/`native` modes; `${authUrlPrefix}/login` in `redirect`/`popup` modes) when there's no active session or its refresh failed:
+Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session (refreshed through `getSession(event)` if it's about to expire), or throws SvelteKit's own `redirect()` to the login page (`loginPageUri`, default `/login`, in `embedded`/`native` modes; `${authUriPrefix}/login` in `redirect`/`popup` modes) when there's no active session or its refresh failed:
 
 ```ts
 // src/routes/profile/+page.server.ts
@@ -1652,7 +1652,7 @@ export const load: PageServerLoad = async (event) => {
 };
 ```
 
-> **Note**: call `requireSession` from a server `load()` (`+page.server.ts`/`+layout.server.ts`) - it needs the server `RequestEvent`, so a universal `+page.ts`/`+layout.ts` `load()` can't use it. This also works when SSR is disabled (`export const ssr = false`, as in the example app): SvelteKit still runs server `load()`s (via its `__data.json` request) and the client router follows the thrown `redirect()`. When the target isn't a page route (e.g. `${authUrlPrefix}/login` in `redirect`/`popup` modes), SvelteKit falls back to a full-page navigation, which `sdk.handle` in `hooks.server.ts` then serves. See the [example app](../../apps/sveltekit/src/routes/profile/+page.server.ts) for a working setup.
+> **Note**: call `requireSession` from a server `load()` (`+page.server.ts`/`+layout.server.ts`) - it needs the server `RequestEvent`, so a universal `+page.ts`/`+layout.ts` `load()` can't use it. This also works when SSR is disabled (`export const ssr = false`, as in the example app): SvelteKit still runs server `load()`s (via its `__data.json` request) and the client router follows the thrown `redirect()`. When the target isn't a page route (e.g. `${authUriPrefix}/login` in `redirect`/`popup` modes), SvelteKit falls back to a full-page navigation, which `sdk.handle` in `hooks.server.ts` then serves. See the [example app](../../apps/sveltekit/src/routes/profile/+page.server.ts) for a working setup.
 
 <a id="server-storages"></a>
 ### Storages
@@ -1661,7 +1661,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `cookieSecret` in an http-only cookie.
 - **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
@@ -1693,7 +1693,7 @@ export const sdk = createServerSDK({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current request event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // src/lib/server/storage.ts
@@ -1815,11 +1815,13 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storage` | `SvelteKitServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handle` |
-| `loginUri` | `string` | No | `'/login'` | Route `requireSession` redirects to when there's no session (`embedded`/`native` modes only - `redirect`/`popup` modes always use `${authUrlPrefix}/login`) |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handle` |
+| `loginPageUri` | `string` | No | `'/login'` | Route `requireSession` redirects to when there's no session (`embedded`/`native` modes only - `redirect`/`popup` modes always use `${authUriPrefix}/login`) |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
@@ -1911,7 +1913,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 
@@ -1941,6 +1943,14 @@ await ctx.submitForm('formId');
 ```
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
+
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

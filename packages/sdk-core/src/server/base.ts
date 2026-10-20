@@ -102,7 +102,7 @@ export function createBaseServerSDK<
 	}
 
 	async function loadStoredSession(event?: TEvent): Promise<SessionData | null> {
-		return loadSession(await options.storage.get(options.storageTokenName, event));
+		return loadSession(await options.storage.get(options.storageKey, event));
 	}
 
 	async function getSession(event?: TEvent, params: { autoRefresh?: boolean } = {}): Promise<SessionData | null> {
@@ -137,11 +137,11 @@ export function createBaseServerSDK<
 	}
 
 	async function updateSession(session: SessionData, event?: TEvent): Promise<void> {
-		await options.storage.set(options.storageTokenName, serializeSession(session), event);
+		await options.storage.set(options.storageKey, serializeSession(session), event);
 	}
 
 	async function cleanupSession(event?: TEvent): Promise<void> {
-		await options.storage.delete(options.storageTokenName, event);
+		await options.storage.delete(options.storageKey, event);
 	}
 
 	async function refreshSession(event?: TEvent): Promise<SessionData> {
@@ -403,7 +403,7 @@ export function createBaseServerSDK<
 
 		try {
 			const data = await getEntrySession(request.url);
-			const uri = new URL(options.loginUri, origin);
+			const uri = new URL(options.loginPageUri, origin);
 			uri.searchParams.set('session_id', data.session_id);
 			uri.searchParams.set('short_app_id', data.short_app_id);
 			uri.searchParams.set('language', data.language);
@@ -528,28 +528,28 @@ export function createBaseServerSDK<
 		const request = await adapter.toRequest(event);
 		const requestUrl = new URL(request.url);
 
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/login`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/login`) {
 			return handleLogin(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/register`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/register`) {
 			return handleRegister(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/callback`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/callback`) {
 			return handleCallback(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/refresh`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/refresh`) {
 			return handleRefresh(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/revoke`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/revoke`) {
 			return handleRevoke(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/entry`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/entry`) {
 			return handleEntry(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/logout`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/logout`) {
 			return handleLogout(event);
 		}
-		if (request.method === 'POST' && requestUrl.pathname === `${options.authUrlPrefix}/backchannel-logout`) {
+		if (request.method === 'POST' && requestUrl.pathname === `${options.authUriPrefix}/backchannel-logout`) {
 			return handleBackChannelLogout(event);
 		}
 

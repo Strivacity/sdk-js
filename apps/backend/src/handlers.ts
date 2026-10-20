@@ -27,14 +27,14 @@ const base = createBaseServerSDK<ExpressRequest>(
 		clientId: import.meta.env.VITE_CLIENT_ID,
 		redirectUri: import.meta.env.VITE_REDIRECT_URI,
 		scopes: import.meta.env.VITE_SCOPES?.split(' '),
-		secret: import.meta.env.VITE_SECRET,
-		storageTokenName: 'sty.session.backend',
+		cookieSecret: import.meta.env.VITE_COOKIE_SECRET,
+		storageKey: 'sty.session.backend',
 	},
 );
 
 export const handlers = Router();
 
-// NOTE: `base.handler` serves every auth route (`/login`, `/callback`, `/refresh`, `/logout`, ...) under `authUrlPrefix`, and
+// NOTE: `base.handler` serves every auth route (`/login`, `/callback`, `/refresh`, `/logout`, ...) under `authUriPrefix`, and
 // returns null for anything else.
 handlers.use(async (req, res, next) => {
 	try {

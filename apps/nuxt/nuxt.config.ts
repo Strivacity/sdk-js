@@ -34,8 +34,8 @@ export default defineNuxtConfig({
 		scopes: process.env.VITE_SCOPES?.split(' '),
 		clientId: process.env.VITE_CLIENT_ID,
 		redirectUri: process.env.VITE_REDIRECT_URI,
-		secret: process.env.VITE_SECRET,
-		storageTokenName: 'sty.session.nuxt',
+		cookieSecret: process.env.VITE_COOKIE_SECRET,
+		storageKey: 'sty.session.nuxt',
 		postLoginRedirectUri: '/profile',
 		serverSessionUri: process.env.VITE_SERVER_SESSION_URI || '/auth/login', // If you want to use client-side session storage, you can set this to false.
 	},

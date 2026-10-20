@@ -5,8 +5,8 @@ Add Strivacity OIDC login to a Next.js app with `@strivacity/sdk-next` v4. Sessi
 ## Critical rules
 
 - **Ask before creating or editing `.env*` files that hold real values**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead. A template with placeholders only (`.env.local.example`) is fine to create, but `create-next-app`'s `.gitignore` ignores `.env*`, so also add `!.env.local.example` there.
-- **The cookie `secret` is server-only.** Never prefix it with `NEXT_PUBLIC_`, never import the server SDK module into a `'use client'` file, and never pass the secret as a prop. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all existing sessions.
-- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the cookie-encryption `secret` exists.
+- **The `cookieSecret` is server-only.** Never prefix it with `NEXT_PUBLIC_`, never import the server SDK module into a `'use client'` file, and never pass the secret as a prop. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all existing sessions.
+- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the `cookieSecret` exists.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). A plain `npm install @strivacity/sdk-next` installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Import from the subpaths only:** `@strivacity/sdk-next/client` (hooks, provider, client types) and `@strivacity/sdk-next/server` (server SDK, storages, server types). The package `exports` map has no `.` entry, so a root `@strivacity/sdk-next` import fails to resolve (the legacy `main` / `types` fields point at the client build only for tools that ignore `exports`). Do not add `@strivacity/sdk-core` or `@strivacity/sdk-react` directly.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only the `mode` value and the login UI change between modes.
@@ -48,14 +48,14 @@ NEXT_PUBLIC_STRIVACITY_ISSUER="https://<your-cluster-domain>"
 NEXT_PUBLIC_STRIVACITY_CLIENT_ID="<your-client-id>"
 NEXT_PUBLIC_STRIVACITY_REDIRECT_URI="http://localhost:3000/callback"
 NEXT_PUBLIC_STRIVACITY_SCOPES="openid profile email"
-STRIVACITY_SECRET="<output of: openssl rand -base64 32>"
+STRIVACITY_COOKIE_SECRET="<output of: openssl rand -base64 32>"
 ```
 
 `next build` needs these too, not just `next start`: it loads `lib/auth/server.ts` while collecting page data, and `createServerSDK` throws without the secret. Set them in CI and in the hosting provider's build environment. The `NEXT_PUBLIC_*` values are inlined at build time.
 
 ### 3. Shared options
 
-`serverSessionUri` must be set explicitly here: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in server-managed mode: the client `withAuthGuard` and `refresh()` send an expired session through `` `${authUrlPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
+`serverSessionUri` must be set explicitly here: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in server-managed mode: the client `withAuthGuard` and `refresh()` send an expired session through `` `${authUriPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
 
 ```ts
 // lib/auth/options.ts
@@ -73,7 +73,7 @@ export const sdkOptions: SDKInitConfig = {
 
 ### 4. Server SDK instance (server-only module)
 
-`createServerSDK` throws `ConfigurationError` when the module loads (including during `next build`) if neither `secret` nor a custom `storage` is given.
+`createServerSDK` throws `ConfigurationError` when the module loads (including during `next build`) if neither `cookieSecret` nor a custom `storage` is given.
 
 ```ts
 // lib/auth/server.ts
@@ -83,17 +83,17 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.STRIVACITY_SECRET,
+	cookieSecret: process.env.STRIVACITY_COOKIE_SECRET,
 	postLoginRedirectUri: '/profile', // default: origin of redirectUri
 	// postLogoutRedirectUri: '/',    // default: origin of redirectUri
-	// authUrlPrefix: '/auth',        // default
-	// loginUri: '/login',            // default: where sdk.withAuthGuard sends anonymous users
+	// authUriPrefix: '/auth',        // default
+	// loginPageUri: '/login',            // default: where sdk.withAuthGuard sends anonymous users
 });
 ```
 
 ### 5. Auth route handler
 
-One catch-all handler serves `GET /auth/{login,register,callback,refresh,revoke,entry,logout}` and `POST /auth/backchannel-logout`. Unknown paths return 404. The folder must match `authUrlPrefix`.
+One catch-all handler serves `GET /auth/{login,register,callback,refresh,revoke,entry,logout}` and `POST /auth/backchannel-logout`. Unknown paths return 404. The folder must match `authUriPrefix`.
 
 ```ts
 // app/auth/[...strivacity]/route.ts
@@ -188,7 +188,7 @@ export async function AuthNav() {
 }
 ```
 
-`sdk.withAuthGuard` redirects to `loginUri` (`/login`) with `?returnTo=`. Forward it, query string included, with a route handler. A route handler always answers with a real `307`, while a page that calls `redirect()` under the layout's `<Suspense>` only redirects on the client after streaming. In server-managed mode this replaces the client `login()` component shown for Next.js in the redirect mode reference.
+`sdk.withAuthGuard` redirects to `loginPageUri` (`/login`) with `?returnTo=`. Forward it, query string included, with a route handler. A route handler always answers with a real `307`, while a page that calls `redirect()` under the layout's `<Suspense>` only redirects on the client after streaming. In server-managed mode this replaces the client `login()` component shown for Next.js in the redirect mode reference.
 
 ```ts
 // app/login/route.ts
@@ -240,7 +240,7 @@ export default async function ErrorPage({ searchParams }: { searchParams: Promis
 
 ### 9. Protected server page
 
-`sdk.withAuthGuard(fn, { returnTo })` redirects anonymous users to `${loginUri}?returnTo=...` and injects `session`. It also checks expiry (with `refreshSkew`): an expired session with a refresh token is sent to `/auth/refresh?returnTo=...` (`returnTo`, otherwise `postLoginRedirectUri`), which writes the rotated cookie and comes back. Server components cannot set cookies, so the guard cannot refresh in place. An expired session without a refresh token counts as no session.
+`sdk.withAuthGuard(fn, { returnTo })` redirects anonymous users to `${loginPageUri}?returnTo=...` and injects `session`. It also checks expiry (with `refreshSkew`): an expired session with a refresh token is sent to `/auth/refresh?returnTo=...` (`returnTo`, otherwise `postLoginRedirectUri`), which writes the rotated cookie and comes back. Server components cannot set cookies, so the guard cannot refresh in place. An expired session without a refresh token counts as no session.
 
 ```tsx
 // app/profile/page.tsx
@@ -278,11 +278,11 @@ export function UserBadge() {
 }
 ```
 
-The client `withAuthGuard` from `@strivacity/sdk-next/client` also works in `'use client'` pages. It uses the `session` passed to the provider and sets `window.location.href = '/login'` when unauthenticated. When that session has expired (it ages while the tab stays open), it calls `sdk.refresh()` instead: a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` ``, which rotates the cookie and comes back. Prefer the server `sdk.withAuthGuard` for server-managed pages.
+The client `withAuthGuard` from `@strivacity/sdk-next/client` also works in `'use client'` pages. It uses the `session` passed to the provider and sets `window.location.href = '/login'` when unauthenticated. When that session has expired (it ages while the tab stays open), it calls `sdk.refresh()` instead: a full-page navigation to `` `${authUriPrefix}/refresh?returnTo=<current URL>` ``, which rotates the cookie and comes back. Prefer the server `sdk.withAuthGuard` for server-managed pages.
 
 ### Client-managed mode (opt-in)
 
-Set `serverSessionUri: false` in `lib/auth/options.ts`, then remove the server SDK, the `app/auth/[...strivacity]` route, the `session` prop and its `<Suspense>` wrapper, the `/login` and `/callback` route handlers and `STRIVACITY_SECRET`. Tokens then live in `localStorage` and everything happens in `'use client'` components with the same API as the React integration: call `login()` / `register()` / `logout()` from `useStrivacity()`, make `/callback` a client page that calls `handleCallback()` once `loading` is false, and guard pages with the client `withAuthGuard`.
+Set `serverSessionUri: false` in `lib/auth/options.ts`, then remove the server SDK, the `app/auth/[...strivacity]` route, the `session` prop and its `<Suspense>` wrapper, the `/login` and `/callback` route handlers and `STRIVACITY_COOKIE_SECRET`. Tokens then live in `localStorage` and everything happens in `'use client'` components with the same API as the React integration: call `login()` / `register()` / `logout()` from `useStrivacity()`, make `/callback` a client page that calls `handleCallback()` once `loading` is false, and guard pages with the client `withAuthGuard`.
 
 ### Other modes in Next.js (summary)
 
@@ -291,7 +291,7 @@ All of these live in `'use client'` components:
 - `popup`: `login()` / `register()` from `useStrivacity<PopupFlow>()` resolve when the popup finishes. In server-managed mode the popup's `/auth/callback` response closes the popup and notifies the opener. Then reload or navigate.
 - `embedded`: render `<sty-login>` after ``injectScript('sty-components', `${issuer}/assets/components/bundle.js`)`` and listen for its `login` / `close` / `error` DOM events.
 - `native`: use `useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` and render `state.forms` / `state.layout` yourself. Widgets read the shared state with `useNativeLoginContext()`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` instead.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` instead.
 
 ## Common mistakes
 
@@ -300,11 +300,11 @@ All of these live in `'use client'` components:
 | `npm install @strivacity/sdk-next` installs v3                                                                   | Use `@strivacity/sdk-next@next` or an exact `4.x` version, and pin it                                                                                                                                                                                                                                                                   |
 | `import ... from '@strivacity/sdk-next'` fails to resolve                                                        | Use `@strivacity/sdk-next/client` or `@strivacity/sdk-next/server`                                                                                                                                                                                                                                                                      |
 | Options are `undefined` in the browser                                                                           | Client-visible env vars need `NEXT_PUBLIC_`. Rebuild after changing them (inlined at build time)                                                                                                                                                                                                                                        |
-| `ConfigurationError: Secret is required for encrypted cookie storage`                                            | Set `STRIVACITY_SECRET` (server env) or pass a custom `storage`. `next build` needs it too, so set it in CI and in the build environment                                                                                                                                                                                                |
+| `ConfigurationError: Missing SDK option: cookieSecret`                                                           | Set `STRIVACITY_COOKIE_SECRET` (server env) or pass a custom `storage`. `next build` needs it too, so set it in CI and in the build environment                                                                                                                                                                                         |
 | `next/headers` / `fs` errors, or the secret in the client bundle                                                 | Server SDK (`lib/auth/server.ts`, `@strivacity/sdk-next/server`) imported from a `'use client'` file. Import it only in server components, route handlers or `getServerSideProps`. Keep `import 'server-only'` (install `server-only`) at the top of it                                                                                 |
 | Client acts client-managed while the server SDK is set up                                                        | `serverSessionUri` must be set in the shared options. Only the server SDK defaults to `'/auth/login'`                                                                                                                                                                                                                                   |
 | `redirect_uri` mismatch                                                                                          | `redirectUri` must exactly match the Admin Console entry. With the forwarding page that is `/callback`, not `/auth/callback`                                                                                                                                                                                                            |
-| 404 on `/auth/login`                                                                                             | Route must be `app/auth/[...strivacity]/route.ts` (matching `authUrlPrefix`) and export `GET` (and `POST` for back-channel logout)                                                                                                                                                                                                      |
+| 404 on `/auth/login`                                                                                             | Route must be `app/auth/[...strivacity]/route.ts` (matching `authUriPrefix`) and export `GET` (and `POST` for back-channel logout)                                                                                                                                                                                                      |
 | Redirect loop or blank page after errors                                                                         | Create `app/error/page.tsx`. Auth routes redirect there on failure                                                                                                                                                                                                                                                                      |
 | "State not found or expired" on `/auth/callback` in production                                                   | Default login-state storage is in-process memory. On serverless or multi-instance hosting, pass a shared `stateStorage` (Redis/KV) to `createServerSDK`                                                                                                                                                                                 |
 | Guarded page renders with an expired token                                                                       | `withAuthGuard` already sends expired sessions to `/auth/refresh` (or to login without a refresh token). In server components `sdk.getSession()` returns the stored session without refreshing: check `isSessionExpired(session)` and redirect to `/auth/refresh?returnTo=...`. In route handlers `sdk.getSession(req)` refreshes first |
@@ -317,7 +317,7 @@ All of these live in `'use client'` components:
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-next/server`)
 
-Extra options on top of the client options: `secret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `clientSecret` and `tokenEndpointAuthMethod` (`'client_secret_basic'` with `clientSecret`, otherwise `'none'`; or `'client_secret_post'`: confidential client authentication at the token and revocation endpoints, PKCE stays on; server-only, the client SDK throws on `clientSecret`), `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUriPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                                                                                                                                                                                           |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -335,7 +335,7 @@ Auth route query params: `/auth/login` and `/auth/register` accept `returnTo` (s
 
 - `<StyAuthProvider options session? children>`.
 - `useStrivacity<Flow>()` returns `sdk`, `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`, `login`, `register`, `logout`, `handleCallback`, `refresh`, `revoke`, `checkAuthentication`, `init`, `tokenExchange`, `entry`, `subscribeToEvent`, `subscribeToAllEvents`.
-- `withAuthGuard(Component, { loginUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`.
+- `withAuthGuard(Component, { loginPageUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`.
 
 ### Key SDK options (shared)
 
@@ -345,11 +345,11 @@ Auth route query params: `/auth/login` and `/auth/register` accept `returnTo` (s
 | `scopes`                                     | `['openid']`                                                                                           |
 | `responseType` / `responseMode`              | `'code'` / `'query'`                                                                                   |
 | `storage` / `stateStorage` (client)          | `createLocalStorage()` / `createSessionStorage()`                                                      |
-| `storageTokenName`                           | `'sty.session'` (also the server cookie name)                                                          |
+| `storageKey`                                 | `'sty.session'` (also the server cookie name)                                                          |
 | `autoRefresh` / `refreshSkew`                | `true` / `60` seconds                                                                                  |
 | `lazyLoad`                                   | `false`                                                                                                |
-| `serverSessionUri`                           | client `null`; server `` `${authUrlPrefix}/login` ``                                                   |
-| `authUrlPrefix`                              | `'/auth'` (server-managed `refresh()` / client `withAuthGuard` navigate to `${authUrlPrefix}/refresh`) |
+| `serverSessionUri`                           | client `null`; server `` `${authUriPrefix}/login` ``                                                   |
+| `authUriPrefix`                              | `'/auth'` (server-managed `refresh()` / client `withAuthGuard` navigate to `${authUriPrefix}/refresh`) |
 | `discoveryDocumentCacheTTL` / `jwksCacheTTL` | `3600` / `600` seconds                                                                                 |
 | `logging`                                    | none (`createDefaultLogging()`)                                                                        |
 

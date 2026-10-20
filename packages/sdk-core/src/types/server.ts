@@ -1,5 +1,5 @@
 import type { CookieOptions, SDKStorage } from './common';
-import type { SDKOptions, SDKInitConfig, SessionData, LogoutTokenClaims } from './oidc';
+import type { SDKOptions, SDKInitConfig, SessionData, LogoutTokenClaims, TokenEndpointAuthMethod } from './oidc';
 
 export type ServerCookieOptions = CookieOptions & {
 	/**
@@ -93,11 +93,12 @@ export type ServerSDKOptions<
 	StateStorage extends SDKStorage = SDKStorage,
 > = SDKOptions<Storage, StateStorage> & {
 	/**
-	 * The URI to which the user will be redirected for login.
+	 * URI of the application's own login page. In `embedded` and `native` mode the entry route (`{authUriPrefix}/entry`) redirects here with `session_id`, `short_app_id` and `language`,
+	 * and the framework route guards redirect unauthenticated users here.
 	 *
 	 * @default '/login'
 	 */
-	loginUri: string;
+	loginPageUri: string;
 
 	/**
 	 * URI to redirect to after a successful login if no `returnTo` parameter is provided in the login request.
@@ -117,10 +118,32 @@ export type ServerSDKOptions<
 	cookieMaxAge: number;
 
 	/**
-	 * Encrypted cookie storage secret. Required when no custom `storage` is provided.
+	 * Secret used to encrypt the session cookie of the default encrypted cookie storage. Required when no custom `storage` is provided.
 	 */
-	secret?: string;
+	cookieSecret?: string;
+
+	/**
+	 * How the Server SDK authenticates the client at the token and revocation endpoints (code exchange, refresh, revoke).
+	 * - `client_secret_basic`: `clientId` and `clientSecret` in an HTTP Basic `Authorization` header.
+	 * - `client_secret_post`: `client_id` and `client_secret` in the request body.
+	 * - `none`: only `client_id` (public client).
+	 *
+	 * PKCE is used with every method.
+	 *
+	 * @default 'client_secret_basic' when `clientSecret` is set, otherwise 'none'
+	 */
+	tokenEndpointAuthMethod?: ServerTokenEndpointAuthMethod;
+
+	/**
+	 * Client secret of a confidential client, used by `client_secret_basic` and `client_secret_post`.
+	 */
+	clientSecret?: string;
 };
+
+/**
+ * Client authentication methods supported by the Server SDK at the token and revocation endpoints.
+ */
+export type ServerTokenEndpointAuthMethod = Extract<TokenEndpointAuthMethod, 'none' | 'client_secret_basic' | 'client_secret_post'>;
 
 export type ServerSDKInitConfig<
 	TEvent = unknown,
@@ -241,7 +264,7 @@ export type BaseServerSDK<TEvent = unknown> = {
 	handleBackChannelLogout(event: TEvent): Promise<Response>;
 
 	/**
-	 * Dispatches an incoming request to the matching auth route handler based on `authUrlPrefix`, or returns `null` if
+	 * Dispatches an incoming request to the matching auth route handler based on `authUriPrefix`, or returns `null` if
 	 * the request doesn't match any auth route (caller should continue its own routing/`resolve`/`next()`).
 	 *
 	 * @param {TEvent} event - The framework-native request event.

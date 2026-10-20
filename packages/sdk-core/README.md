@@ -24,6 +24,7 @@ Use it directly in vanilla JS/TS projects or use one of the [framework-specific 
   - [Storages](#server-storages)
   - [Session helpers](#server-session-helpers)
   - [Back-channel logout](#server-backchannel-logout)
+  - [Client authentication](#server-client-authentication)
   - [Configuration Options](#server-configuration-options)
 - [Shared features](#shared-features)
   - [Storages](#storages)
@@ -815,14 +816,14 @@ The logout route accepts an optional `returnTo` query param, and only a same-ori
 
 The browser never refreshes tokens in this mode - the refresh token stays on the server, and `autoRefresh` is ignored. Refresh the session on the server instead: during server rendering with the Server SDK's [`getSession(request)`](#server-session-helpers), or by sending the browser to your server's refresh route (`handleRefresh`, such as `/api/auth/refresh`), which rotates the session cookie and redirects back to a same-origin `returnTo`. On the Server SDK, `autoRefresh: false` turns off the refresh in `getSession` (and in the integrations built on it).
 
-`refresh()` does the navigation for you: it sends the browser (as a full-page navigation, also in `popup` mode) to `${authUrlPrefix}/refresh?returnTo=<url>`, where `returnTo` defaults to the current URL. `authUrlPrefix` defaults to `/auth`, the Server SDK's own default, so set it on the client only when your server uses another prefix.
+`refresh()` does the navigation for you: it sends the browser (as a full-page navigation, also in `popup` mode) to `${authUriPrefix}/refresh?returnTo=<url>`, where `returnTo` defaults to the current URL. `authUriPrefix` defaults to `/auth`, the Server SDK's own default, so set it on the client only when your server uses another prefix.
 
 ```ts
 // sdk.ts
 const sdk = initFlow({
 	// ...
 	serverSessionUri: '/api/auth/login',
-	authUrlPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUrlPrefix}/refresh`
+	authUriPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUriPrefix}/refresh`
 });
 
 // Navigates to /api/auth/refresh?returnTo=/profile, then the server redirects back to /profile
@@ -911,7 +912,7 @@ const sdk = createBaseServerSDK(
 		clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
 		redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
 		scopes: ['openid', 'profile', 'email'], // requested user permissions/data
-		secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters); Required if using cookie storage (default)
+		cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters); Required if using cookie storage (default)
 	}
 );
 ```
@@ -938,7 +939,7 @@ mount('get', '/api/auth/register', (req) => sdk.handleRegister(req));
 /**
  * Handles external flow entry (e.g., password reset link).
  * @modes embedded, native
- * @returns 302 redirect to `loginUri`
+ * @returns 302 redirect to `loginPageUri`
  */
 mount('get', '/api/auth/entry', (req) => sdk.handleEntry(req));
 
@@ -1088,7 +1089,7 @@ const sdk = createBaseServerSDK(adapter, {
 You can customize storage by providing `storage` and `stateStorage` options.
 For example you can use [unstorage](https://npmjs.com/package/unstorage) which provides a unified async key-value API with dozens of built-in drivers (Redis, Cloudflare KV, filesystem, memory, and more).
 
-The `get` / `set` / `delete` methods of a `ServerStorage` receive the incoming request event as their last argument, while the SDK always calls it with the same key (`storageTokenName`). A storage that ignores the event would therefore share a single session across all users - key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The `get` / `set` / `delete` methods of a `ServerStorage` receive the incoming request event as their last argument, while the SDK always calls it with the same key (`storageKey`). A storage that ignores the event would therefore share a single session across all users - key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // storage.ts
@@ -1202,6 +1203,29 @@ Configure the **Back-channel logout URI** in your Strivacity application setting
 https://your-app.example.com/api/auth/backchannel-logout
 ```
 
+<a id="server-client-authentication"></a>
+### Client authentication
+
+By default the Server SDK is a public client: the token and revocation requests (code exchange, refresh, revoke) identify the application with `client_id` only, and PKCE protects the authorization code. Set `clientSecret` to authenticate as a confidential client.
+
+```ts
+const sdk = createServerSDK({
+	// ...
+	clientSecret: process.env.CLIENT_SECRET,
+	tokenEndpointAuthMethod: 'client_secret_basic', // default with clientSecret; or 'client_secret_post'
+});
+```
+
+| `tokenEndpointAuthMethod` | Description                                                     |
+| ------------------------- | --------------------------------------------------------------- |
+| `client_secret_basic`     | Confidential client, secret sent with HTTP Basic authentication |
+| `client_secret_post`      | Confidential client, secret sent in the request body            |
+| `none`                    | Public client, no secret                                        |
+
+- Select the same method for the application in the Strivacity Admin Console. PKCE is used with every method.
+- The secret is server-only: the client SDK throws a `ConfigurationError` when it receives `clientSecret`. Keep it out of options objects that are shared with the browser, and out of environment variables that your bundler exposes to client code.
+- A missing secret for `client_secret_basic` / `client_secret_post`, or a secret with `none`, throws a `ConfigurationError` when the SDK is created. A rejected secret surfaces as an `OidcError` with `invalid_client`.
+
 <a id="server-configuration-options"></a>
 ### Configuration Options
 
@@ -1216,13 +1240,15 @@ The server SDK accepts the same configuration as the client SDK, plus server-spe
 	scopes: string[],
 	storage: ServerStorage, // Custom session storage
 	stateStorage: SDKStorage, // Custom OAuth2 state storage
-	serverSessionUri: string, // Optional - defaults to `${authUrlPrefix}/login`
+	serverSessionUri: string, // Optional - defaults to `${authUriPrefix}/login`
 	// ... other client SDK options
 
 	// server-specific options
-	secret: '<your-encryption-key>', // encrypts http-only cookies
-	authUrlPrefix: '/auth', // Prefix for auth routes (default: '/auth')
-	loginUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
+	cookieSecret: '<your-encryption-key>', // encrypts http-only cookies
+	clientSecret: process.env.CLIENT_SECRET, // Optional - confidential client secret, see Client authentication
+	tokenEndpointAuthMethod: 'client_secret_basic', // 'client_secret_basic' | 'client_secret_post' | 'none' (default: 'client_secret_basic' with clientSecret, otherwise 'none')
+	authUriPrefix: '/auth', // Prefix for auth routes (default: '/auth')
+	loginPageUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
 	cookieMaxAge: 2592000, // Max age for session cookies in seconds (default: 30 days)
 	postLoginRedirectUri: '/profile', // Redirect after login when no `?returnTo=` is given (default: origin of `redirectUri`)
 	postLogoutRedirectUri: '/', // Redirect after logout (default: origin of `redirectUri`)
@@ -1917,18 +1943,18 @@ injectScript('my-script', 'https://example.com/script.js');
 | `responseMode`           | `'query' \| 'fragment'`                              | No       | `'query'`         | OAuth2 response mode                                                                                                                                       |
 | `storage`                | `SDKStorage`                                         | No       | `localStorage`    | [Session storage](#storages)                                                                                                                       |
 | `stateStorage`           | `SDKStorage`                                         | No       | `createSessionStorage()` | OAuth2 PKCE / state storage                                                                                                                         |
-| `storageTokenName`       | `string`                                             | No       | `'sty.session'`   | Key under which the session is stored in the storage                                                                                                       |
+| `storageKey`       | `string`                                             | No       | `'sty.session'`   | Key under which the session is stored in the storage                                                                                                       |
 | `autoRefresh`            | `boolean`                                            | No       | `true`            | Refreshes an expired (or about-to-expire, see `refreshSkew`) access token when authentication is checked (`isAuthenticated`, `checkAuthentication()`, route guards). There is no background timer. Set to `false` to manage refresh manually. Ignored in the browser with `serverSessionUri` - the server refreshes the session instead. On the Server SDK, `false` turns off the refresh in `getSession`. Browser tabs that share the session storage refresh, revoke and log out one at a time (Web Locks API) |
 | `refreshSkew`            | `number`                                             | No       | `60`              | Number of seconds before the access token's actual expiration that it is treated as expired, so it gets refreshed early (capped at half of the token lifetime, so short-lived tokens are not refreshed on every check) |
 | `clockSkew`              | `number`                                             | No       | `60`              | Number of seconds of clock difference tolerated between the device and the authorization server when validating the ID token's expiration                |
-| `lazyLoad`               | `boolean`                                            | No       | `false`           | When `true`, defers initialization until the first method call and returns the instance synchronously                                                      |
-| `serverSessionUri`       | `string \| boolean \| null`                         | No       | `null`            | Routes login requests through your server and enables server-managed sessions; `false` / `null` keeps client-managed sessions. The Server SDK defaults it to `` `${authUrlPrefix}/login` ``; see [Server-side session management](#server-side-session-management) |
-| `authUrlPrefix`          | `string`                                             | No       | `'/auth'`         | URL prefix of the Server SDK auth routes. With server-managed sessions `refresh()` navigates the browser to `${authUrlPrefix}/refresh` with `returnTo` set to the current URL (or `refresh({ returnTo })`), so the server rotates the session cookie and redirects back; see [Refreshing the session](#refreshing-the-session) |
+| `lazyLoad`               | `boolean`                                            | No       | `false`           | When `true`, skips the automatic `init()`: the session is loaded on `init()` or the first method that needs it (`checkAuthentication()`, `login()`, ...)                                                      |
+| `serverSessionUri`       | `string \| boolean \| null`                         | No       | `null`            | Routes login requests through your server and enables server-managed sessions; `false` / `null` keeps client-managed sessions. The Server SDK defaults it to `` `${authUriPrefix}/login` ``; see [Server-side session management](#server-side-session-management) |
+| `authUriPrefix`          | `string`                                             | No       | `'/auth'`         | URL prefix of the Server SDK auth routes. With server-managed sessions `refresh()` navigates the browser to `${authUriPrefix}/refresh` with `returnTo` set to the current URL (or `refresh({ returnTo })`), so the server rotates the session cookie and redirects back; see [Refreshing the session](#refreshing-the-session) |
 | `logging`                | `SDKLogging`                                         | No       | -                 | Logging adapter; see [Logging](#logging)                                                                                                                   |
 | `httpClient`             | `SDKHttpClient`                                      | No       | fetch             | Custom HTTP client adapter; see [HTTP client](#http-client)                                                                                                |
 | `discoveryDocumentCacheTTL`       | `number`                                             | No       | `3600`            | OIDC metadata cache duration in seconds (1 hour by default)                                                                                                |
 | `jwksCacheTTL`           | `number`                                             | No       | `600`             | JWKS (JSON Web Key Set) cache duration in seconds (10 minutes by default)                                                                                  |
-| `urlHandler`             | `(url, params?) => Promise<unknown>`                 | No       | -                 | Custom handler for URL redirects (e.g. to integrate with a router instead of `window.location`)                                                            |
+| `uriHandler`             | `(url, params?) => Promise<unknown>`                 | No       | -                 | Custom handler for URL redirects (e.g. to integrate with a router instead of `window.location`)                                                            |
 | `callbackHandler`        | `(url, responseMode?) => Promise<unknown>`           | No       | -                 | Custom handler for processing the authorization server callback URL                                                                                        |
 | `factory`                | `(options: SDKInitConfig) => unknown`                | No       | -                 | Custom flow factory; when set, `initFlow` calls it with the options instead of the built-in flows - see [Custom flow](#custom-flow)                       |
 
@@ -1936,7 +1962,7 @@ injectScript('my-script', 'https://example.com/script.js');
 
 ### Configuration examples
 
-#### urlHandler
+#### uriHandler
 
 Override the default redirect behavior (which uses `window.location`) to integrate with client-side routers or custom navigation logic.
 
@@ -1947,7 +1973,7 @@ import { InAppBrowser } from '@capgo/inappbrowser';
 
 const sdk = initFlow({
 	// ... other config
-	urlHandler: async (url) => {
+	uriHandler: async (url) => {
 		if (Capacitor.getPlatform() === 'web') {
 			// On web: use standard window.location redirect
 			window.location.href = url;
@@ -2197,6 +2223,8 @@ See [native mode](#client-native-mode) above for the full rendering loop. Update
 - **Events are scoped per SDK instance.** In v3, event subscriptions were shared across all flow instances; in v4 each instance has its own subscribers.
 - **PKCE / login state is stored in `stateStorage`** (default: `createSessionStorage()`), separately from the session `storage`. v3 stored it in the session storage.
 - **`waitToInitialize()` was replaced by `init()`.**
+- **`urlHandler` was renamed to `uriHandler`**, and the built-in `redirectUrlHandler` / `popupUrlHandler` to `redirectUriHandler` / `popupUriHandler`.
+- **`storageTokenName` was renamed to `storageKey`.** The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
 - **Type renames:** `LoginFlowState` → `NativeFlowState`, `LoginFlowMessage` → `NativeFlowMessage`, `MetadataOptions` → `DiscoveryDocument`.
 
 ### Migrating to v3.0

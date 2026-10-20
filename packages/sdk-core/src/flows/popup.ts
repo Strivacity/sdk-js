@@ -3,8 +3,8 @@ import type { RedirectOptions } from '../types/redirect';
 import type { PopupFlow } from '../types/popup';
 import { getDefaultFlowState, getSDKOptions, buildAuthorizationUrl } from '../utils/oidc';
 import { isSessionExpired } from '../utils/session';
-import { popupCallbackHandler, popupUrlHandler } from '../handlers/popup';
-import { redirectUrlHandler } from '../handlers/redirect';
+import { popupCallbackHandler, popupUriHandler } from '../handlers/popup';
+import { redirectUriHandler } from '../handlers/redirect';
 import { createBaseFlow } from './base';
 
 /**
@@ -14,8 +14,8 @@ import { createBaseFlow } from './base';
  * @returns An object implementing the PopupFlow interface, with methods for login, registration, and entry flows.
  */
 export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
-	if (!initConfig.urlHandler) {
-		initConfig.urlHandler = popupUrlHandler;
+	if (!initConfig.uriHandler) {
+		initConfig.uriHandler = popupUriHandler;
 	}
 	if (!initConfig.callbackHandler) {
 		initConfig.callbackHandler = popupCallbackHandler;
@@ -45,7 +45,7 @@ export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
 		base.dispatchEvent('loginInitiated', []);
 		options.logging?.debug('Attempting to redirect for login');
 
-		const data = (await options.urlHandler(url, params)) as Record<string, string>;
+		const data = (await options.uriHandler(url, params)) as Record<string, string>;
 
 		if (!options.serverSessionUri) {
 			await base.tokenExchange(data);
@@ -57,7 +57,7 @@ export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
 	}
 
 	async function logout(params?: Parameters<PopupFlow['logout']>[0]): ReturnType<PopupFlow['logout']> {
-		return await base.logout(params, redirectUrlHandler);
+		return await base.logout(params, redirectUriHandler);
 	}
 
 	async function entry(url?: string | URL, params?: RedirectOptions): ReturnType<PopupFlow['entry']> {
@@ -67,7 +67,7 @@ export function createPopupFlow(initConfig: SDKInitConfig): PopupFlow {
 
 		options.logging?.debug('Attempting to redirect for entry');
 
-		await options.urlHandler(new URL(`/provider/entry?${entryUrl.searchParams.toString()}`, options.issuer), params);
+		await options.uriHandler(new URL(`/provider/entry?${entryUrl.searchParams.toString()}`, options.issuer), params);
 	}
 
 	const flow = {

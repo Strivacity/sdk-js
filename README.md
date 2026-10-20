@@ -107,7 +107,7 @@ cp .env.local.example .env.local
 | `VITE_ACR_VALUES`         | No                      | Space-separated `acr_values`                                                                                                                                                          |
 | `VITE_UI_LOCALES`         | No                      | Space-separated `ui_locales`                                                                                                                                                          |
 | `VITE_AUDIENCES`          | No                      | Space-separated audiences                                                                                                                                                             |
-| `VITE_SECRET`             | Server-managed sessions | Encrypts the server-side session cookie. Required by the Server SDK: by Angular, Next.js, Nuxt, SolidStart and SvelteKit by default, and by `apps/backend`                            |
+| `VITE_COOKIE_SECRET`      | Server-managed sessions | Encrypts the server-side session cookie. Required by the Server SDK: by Angular, Next.js, Nuxt, SolidStart and SvelteKit by default, and by `apps/backend`                            |
 | `VITE_SERVER_SESSION_URI` | No                      | Overrides the `serverSessionUri` SDK option. Angular, Next.js, Nuxt, SolidStart, and SvelteKit default to `/auth/login`; Vue.js, React, and Preact default to client-managed sessions |
 
 Next.js and Nuxt re-expose some of these variables without the `VITE_` prefix (e.g. `ISSUER` in Next.js, `LOGIN_HINT` and `AUDIENCES` in both) through `next.config.ts` and `nuxt.config.ts` (`runtimeConfig.public`).

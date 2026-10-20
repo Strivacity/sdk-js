@@ -74,7 +74,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): LoginContex
  *
  * @param {Component<P>} WrappedComponent - The component to guard.
  * @param {WithAuthGuardOptions} [options] - Optional options for the auth guard.
- * @param {string} [options.loginUri='/login'] - The URI to redirect to if the user is not authenticated.
+ * @param {string} [options.loginPageUri='/login'] - The URI to redirect to if the user is not authenticated.
  * @returns {Component<P>} The guarded component.
  */
 export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, options?: WithAuthGuardOptions): Component<P> {
@@ -103,7 +103,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: Component<P>, 
 							return ctx.sdk.refresh();
 						}
 
-						globalThis.location.href = appendReturnTo(options?.loginUri ?? '/login');
+						globalThis.location.href = appendReturnTo(options?.loginPageUri ?? '/login');
 					}
 				});
 

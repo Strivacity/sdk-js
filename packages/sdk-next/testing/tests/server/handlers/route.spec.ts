@@ -15,7 +15,7 @@ describe('appRouteHandlerFactory', () => {
 	test('sends an expired session with a refresh token through the refresh route, which can write the rotated cookie', async () => {
 		const { redirect } = await import('next/navigation');
 		const session = { access_token: 'old', refresh_token: 'refresh', expires_at: 0 };
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
 		const route = appRouteHandlerFactory(sdk)(vi.fn(), { returnTo: '/profile' });
 
 		await route({});
@@ -26,7 +26,7 @@ describe('appRouteHandlerFactory', () => {
 	test('treats an expired session without a refresh token as no session', async () => {
 		const { redirect } = await import('next/navigation');
 		const session = { access_token: 'old', expires_at: 0 };
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
 		const handler = vi.fn();
 		const route = appRouteHandlerFactory(sdk)(handler, { returnTo: '/profile' });
 
@@ -39,7 +39,7 @@ describe('appRouteHandlerFactory', () => {
 		const { redirect } = await import('next/navigation');
 		const session = { access_token: 'old', refresh_token: 'refresh', expires_at: 0 };
 		const sdk = createMockBaseServerSDK<Sdk>({
-			options: { loginUri: '/login', authUrlPrefix: '/auth', autoRefresh: false },
+			options: { loginPageUri: '/login', authUriPrefix: '/auth', autoRefresh: false },
 			getSession: vi.fn().mockResolvedValue(session),
 		});
 		const route = appRouteHandlerFactory(sdk)(vi.fn(), { returnTo: '/profile' });
@@ -50,9 +50,9 @@ describe('appRouteHandlerFactory', () => {
 		expect(redirect).not.toHaveBeenCalledWith('/auth/refresh?returnTo=%2Fprofile');
 	});
 
-	test('redirects to the bare loginUri when there is no session and no returnTo', async () => {
+	test('redirects to the bare loginPageUri when there is no session and no returnTo', async () => {
 		const { redirect } = await import('next/navigation');
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const handler = vi.fn();
 		const route = appRouteHandlerFactory(sdk)(handler);
 
@@ -63,7 +63,7 @@ describe('appRouteHandlerFactory', () => {
 
 	test('redirects with an encoded returnTo query param when returnTo is a string', async () => {
 		const { redirect } = await import('next/navigation');
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const handler = vi.fn();
 		const route = appRouteHandlerFactory(sdk)(handler, { returnTo: 'https://brandtegrity.io/dashboard' });
 
@@ -74,7 +74,7 @@ describe('appRouteHandlerFactory', () => {
 
 	test('resolves a function returnTo with the route params before redirecting', async () => {
 		const { redirect } = await import('next/navigation');
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const handler = vi.fn();
 		const returnTo = vi.fn().mockResolvedValue('/profile');
 		const route = appRouteHandlerFactory(sdk)(handler, { returnTo });
@@ -87,7 +87,7 @@ describe('appRouteHandlerFactory', () => {
 	});
 
 	test('still calls the wrapped handler after an unauthenticated redirect that does not itself abort execution', async () => {
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const handler = vi.fn().mockResolvedValue('handler-result');
 		const route = appRouteHandlerFactory(sdk)(handler);
 		const params = { id: '1' };
@@ -103,7 +103,7 @@ describe('appRouteHandlerFactory', () => {
 		vi.mocked(redirect).mockImplementationOnce(() => {
 			throw new Error('NEXT_REDIRECT');
 		});
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const handler = vi.fn();
 		const route = appRouteHandlerFactory(sdk)(handler);
 
@@ -114,7 +114,7 @@ describe('appRouteHandlerFactory', () => {
 	test('calls the wrapped handler with the params and session, without redirecting, when there is a session', async () => {
 		const { redirect } = await import('next/navigation');
 		const session = { access_token: 'access-token', expires_at: Math.floor(Date.now() / 1000) + 3600 };
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' }, getSession: vi.fn().mockResolvedValue(session) });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' }, getSession: vi.fn().mockResolvedValue(session) });
 		const handler = vi.fn().mockResolvedValue('handler-result');
 		const route = appRouteHandlerFactory(sdk)(handler);
 
@@ -129,7 +129,7 @@ describe('appRouteHandlerFactory', () => {
 describe('pageRouteHandlerFactory', () => {
 	test('sends an expired session with a refresh token through the refresh route', async () => {
 		const session = { access_token: 'old', refresh_token: 'refresh', expires_at: 0 };
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
 		const route = pageRouteHandlerFactory(sdk)();
 
 		const result = await route({ resolvedUrl: '/dashboard' } as never);
@@ -139,7 +139,7 @@ describe('pageRouteHandlerFactory', () => {
 
 	test('sends an expired session without a refresh token to login', async () => {
 		const session = { access_token: 'old', expires_at: 0 };
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login', authUrlPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login', authUriPrefix: '/auth' }, getSession: vi.fn().mockResolvedValue(session) });
 		const route = pageRouteHandlerFactory(sdk)();
 
 		const result = await route({ resolvedUrl: '/dashboard' } as never);
@@ -150,7 +150,7 @@ describe('pageRouteHandlerFactory', () => {
 	test('sends an expired session to login instead of refreshing it when autoRefresh is disabled', async () => {
 		const session = { access_token: 'old', refresh_token: 'refresh', expires_at: 0 };
 		const sdk = createMockBaseServerSDK<Sdk>({
-			options: { loginUri: '/login', authUrlPrefix: '/auth', autoRefresh: false },
+			options: { loginPageUri: '/login', authUriPrefix: '/auth', autoRefresh: false },
 			getSession: vi.fn().mockResolvedValue(session),
 		});
 		const route = pageRouteHandlerFactory(sdk)();
@@ -160,8 +160,8 @@ describe('pageRouteHandlerFactory', () => {
 		expect(result).toEqual({ redirect: { destination: '/login?returnTo=%2Fdashboard', permanent: false } });
 	});
 
-	test('returns a redirect to loginUri with the resolvedUrl as returnTo when there is no session and no returnTo option', async () => {
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+	test('returns a redirect to loginPageUri with the resolvedUrl as returnTo when there is no session and no returnTo option', async () => {
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const route = pageRouteHandlerFactory(sdk)();
 
 		const result = await route({ resolvedUrl: '/dashboard' } as never);
@@ -170,7 +170,7 @@ describe('pageRouteHandlerFactory', () => {
 	});
 
 	test('prefers the returnTo option over ctx.resolvedUrl', async () => {
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const route = pageRouteHandlerFactory(sdk)({ returnTo: '/profile' });
 
 		const result = await route({ resolvedUrl: '/dashboard' } as never);
@@ -179,7 +179,7 @@ describe('pageRouteHandlerFactory', () => {
 	});
 
 	test('does not call getServerSideProps when there is no session', async () => {
-		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginUri: '/login' } });
+		const sdk = createMockBaseServerSDK<Sdk>({ options: { loginPageUri: '/login' } });
 		const getServerSideProps = vi.fn();
 		const route = pageRouteHandlerFactory(sdk)({ getServerSideProps });
 

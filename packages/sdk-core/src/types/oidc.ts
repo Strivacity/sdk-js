@@ -8,7 +8,7 @@ export type ResponseType = (typeof ResponseTypeList)[number];
 export const ResponseModeList = ['query', 'fragment'] as const;
 export type ResponseMode = (typeof ResponseModeList)[number];
 
-export const TokenEndpointAuthMethodList = ['none'] as const;
+export const TokenEndpointAuthMethodList = ['none', 'client_secret_basic', 'client_secret_post'] as const;
 export type TokenEndpointAuthMethod = (typeof TokenEndpointAuthMethodList)[number];
 
 export const GrantTypeList = ['authorization_code', 'refresh_token'] as const;
@@ -564,11 +564,11 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	stateStorage: StateStorage;
 
 	/**
-	 * The name of the storage token used to store session data.
+	 * Key under which the session is stored in `storage`. With the Server SDK's default encrypted cookie storage this is the cookie name.
 	 *
 	 * @default 'sty.session'
 	 */
-	storageTokenName: string;
+	storageKey: string;
 
 	/**
 	 * The HTTP client used for making requests to the authorization server and other endpoints.
@@ -581,7 +581,10 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	logging?: SDKLogging;
 
 	/**
-	 * Indicates whether the SDK should be lazily loaded, meaning that it will be initialized only when needed.
+	 * Skips the automatic `init()` call when the flow is created. Applies to every `mode`.
+	 * - `false`: `init()` starts in the background right away: it validates the options, loads the session from `storage` and emits the `init` event.
+	 * - `true`: nothing runs until you call `init()` or a method that needs the session (`checkAuthentication()`, `login()`, `handleCallback()`, `refresh()`, `logout()`, ...),
+	 *   which calls `init()` first. Synchronous getters such as `isAuthenticated` stay at their initial values until then.
 	 *
 	 * @default false
 	 */
@@ -616,19 +619,19 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	 * If not set (or set to `false` / `null`), the SDK talks to the IDP directly and manages the session client-side.
 	 * Setting it to `true` enables server-managed session mode without routing through a BFF endpoint (the SDK builds the authorization URL itself).
 	 *
-	 * @default null (client SDK) / `${authUrlPrefix}/login` (server SDK)
+	 * @default null (client SDK) / `${authUriPrefix}/login` (server SDK)
 	 */
 	serverSessionUri?: boolean | string | null;
 
 	/**
 	 * URL prefix of the Server SDK auth routes (`/login`, `/callback`, `/refresh`, `/logout`, ...).
 	 * With server-managed sessions (`serverSessionUri`) the browser never refreshes tokens itself: `refresh()` and the route guards
-	 * (`withAuthGuard`) send the browser to `${authUrlPrefix}/refresh` with `returnTo` set to the current URL, so the server
+	 * (`withAuthGuard`) send the browser to `${authUriPrefix}/refresh` with `returnTo` set to the current URL, so the server
 	 * refreshes the session, writes the rotated cookie and redirects back.
 	 *
 	 * @default '/auth'
 	 */
-	authUrlPrefix: string;
+	authUriPrefix: string;
 
 	/**
 	 * Discovery document metadata is cached for this amount of time (in seconds) before being refreshed from the authorization server.
@@ -652,7 +655,7 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	 * @param {Record<string, unknown>} params - Optional parameters for redirection.
 	 * @returns - A promise that resolves when the redirection is handled.
 	 */
-	urlHandler: (url: string | URL, params?: Record<string, unknown>) => Promise<unknown>;
+	uriHandler: (url: string | URL, params?: Record<string, unknown>) => Promise<unknown>;
 
 	/**
 	 * Handles the callback from the authorization server after a successful authentication or authorization.
@@ -732,7 +735,7 @@ export type EventFunctions = {
 	tokenRevokeFailed: (params?: { token?: string | null; tokenTypeHint?: 'refresh_token' | 'access_token' }) => Promise<void> | void;
 };
 
-export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, EntryReturnType = Promise<void>> = {
+export type SDK<URIHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, EntryReturnType = Promise<void>> = {
 	/**
 	 * The resolved SDK configuration options in use.
 	 */
@@ -891,7 +894,7 @@ export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, En
 
 	/**
 	 * Refreshes the current access token using the refresh token.
-	 * With server-managed sessions, navigates the browser to the server's refresh route (`${authUrlPrefix}/refresh`) instead.
+	 * With server-managed sessions, navigates the browser to the server's refresh route (`${authUriPrefix}/refresh`) instead.
 	 *
 	 * @param {{ returnTo?: string }} [params] - Server-managed only: where the refresh route should return to (defaults to the current URL).
 	 * @returns {Promise<void>}
@@ -919,20 +922,20 @@ export type SDK<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs, En
 	/**
 	 * Initiates the login flow.
 	 *
-	 * @param {URLHandlerParams} [params] - Optional parameters for the login request.
+	 * @param {URIHandlerParams} [params] - Optional parameters for the login request.
 	 * @returns {Promise<void>}
 	 * @throws {Error} Throws an error if the login process fails or if the provided parameters are invalid.
 	 */
-	login(params?: URLHandlerParams): Promise<void>;
+	login(params?: URIHandlerParams): Promise<void>;
 
 	/**
 	 * Initiates the registration flow.
 	 *
-	 * @param {URLHandlerParams} [params] - Optional parameters for the registration request.
+	 * @param {URIHandlerParams} [params] - Optional parameters for the registration request.
 	 * @returns {Promise<void>}
 	 * @throws {Error} Throws an error if the registration process fails or if the provided parameters are invalid.
 	 */
-	register(params?: URLHandlerParams): Promise<void>;
+	register(params?: URIHandlerParams): Promise<void>;
 
 	/**
 	 * Handles the entry point URL of the authentication flow, typically used for embedded or native modes.

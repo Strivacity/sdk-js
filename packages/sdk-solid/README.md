@@ -120,12 +120,12 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
 
-> `src/server/strivacity.ts` only runs on the server, so read the secret from the server process environment (`process.env.SECRET`, e.g. set by your host or `node --env-file=.env server.js`). Don't give it a `VITE_` prefix: Vite exposes `VITE_`-prefixed variables through `import.meta.env`, which can be inlined into client bundles. The [example app](../../apps/solidstart/src/server/strivacity.ts) reads `import.meta.env.VITE_SECRET` for demo convenience only.
+> `src/server/strivacity.ts` only runs on the server, so read the secret from the server process environment (`process.env.COOKIE_SECRET`, e.g. set by your host or `node --env-file=.env server.js`). Don't give it a `VITE_` prefix: Vite exposes `VITE_`-prefixed variables through `import.meta.env`, which can be inlined into client bundles. The [example app](../../apps/solidstart/src/server/strivacity.ts) reads `import.meta.env.VITE_COOKIE_SECRET` for demo convenience only.
 
 ### 3. Wire up the middleware
 
@@ -165,10 +165,10 @@ export default defineConfig({
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `next(request)`, so the middleware is safe to compose with your own (or other libraries').
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `next(request)`, so the middleware is safe to compose with your own (or other libraries').
 
 ### 4. Wrap your app with the client provider
 
@@ -1747,7 +1747,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1815,7 +1815,7 @@ export default withAuthGuard(
 	function Profile() {
 		return <section>Protected content</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1823,7 +1823,7 @@ export default withAuthGuard(
 
 ```ts
 {
-	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	loginPageUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
 	onLoading?: () => JSX.Element | null; // Optional render function shown while loading/checking authentication
 }
 ```
@@ -1843,7 +1843,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: process.env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1895,7 +1895,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `cookieSecret` in an http-only cookie.
 - **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
@@ -1927,7 +1927,7 @@ export const sdk = createServerSDK({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current request event as the last argument. A storage that ignores the event would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // src/server/storage.ts
@@ -2048,11 +2048,13 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storage` | `SolidServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `middleware` |
-| `loginUri` | `string` | No | `'/login'` | Route `withAuthGuard` (client) redirects to when there's no session |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix matched by `middleware` |
+| `loginPageUri` | `string` | No | `'/login'` | Route `withAuthGuard` (client) redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |

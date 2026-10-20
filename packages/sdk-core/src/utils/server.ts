@@ -50,20 +50,32 @@ export function getServerSDKOptions<
 	options.cookieMaxAge ??= DEFAULT_COOKIE_MAX_AGE;
 
 	if (!options.storage) {
-		if (!options.secret) {
-			throw new ConfigurationError('Missing SDK option: secret');
+		if (!options.cookieSecret) {
+			throw new ConfigurationError('Missing SDK option: cookieSecret');
 		}
 
-		options.storage = createEncryptedCookieStorage<TEvent>(options.secret, adapter, { defaultCookieOptions: { maxAge: options.cookieMaxAge } });
+		options.storage = createEncryptedCookieStorage<TEvent>(options.cookieSecret, adapter, { defaultCookieOptions: { maxAge: options.cookieMaxAge } });
 	}
 
 	options.stateStorage ??= createServerStateStorage();
-	options.urlHandler ??= async () => Promise.resolve(undefined);
-	options.authUrlPrefix ??= '/auth';
-	options.loginUri ??= '/login';
+	options.uriHandler ??= async () => Promise.resolve(undefined);
+	options.authUriPrefix ??= '/auth';
+	options.loginPageUri ??= '/login';
 
 	if (typeof options.serverSessionUri === 'undefined') {
-		options.serverSessionUri ??= `${options.authUrlPrefix}/login`;
+		options.serverSessionUri ??= `${options.authUriPrefix}/login`;
+	}
+
+	options.tokenEndpointAuthMethod ??= options.clientSecret ? 'client_secret_basic' : 'none';
+
+	if (!['none', 'client_secret_basic', 'client_secret_post'].includes(options.tokenEndpointAuthMethod)) {
+		throw new ConfigurationError(`Unsupported SDK option: tokenEndpointAuthMethod '${options.tokenEndpointAuthMethod}'`);
+	}
+	if (options.tokenEndpointAuthMethod !== 'none' && !options.clientSecret) {
+		throw new ConfigurationError(`Missing SDK option: clientSecret (required by tokenEndpointAuthMethod '${options.tokenEndpointAuthMethod}')`);
+	}
+	if (options.tokenEndpointAuthMethod === 'none' && options.clientSecret) {
+		throw new ConfigurationError("SDK option clientSecret is set, but tokenEndpointAuthMethod is 'none'");
 	}
 
 	return getSDKOptions(options);

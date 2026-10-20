@@ -12,7 +12,7 @@ export function getServerSdk() {
 		...(sdkOptions as SvelteKitServerSDKInitConfig),
 		logging: createDefaultLogging(),
 		postLoginRedirectUri: '/profile',
-		secret: import.meta.env.VITE_SECRET,
+		cookieSecret: import.meta.env.VITE_COOKIE_SECRET,
 	});
 
 	return serverSdk;

@@ -122,7 +122,7 @@ export function useNativeLogin(options: UseNativeLoginOptions = {}): ReturnType<
  *
  * @param {ComponentType<P>} WrappedComponent - The component to guard.
  * @param {WithAuthGuardOptions} [options] - Optional options for the auth guard.
- * @param {string} [opts.loginUri='/login'] - The URI to redirect to if the user is not authenticated.
+ * @param {string} [opts.loginPageUri='/login'] - The URI to redirect to if the user is not authenticated.
  * @returns {ComponentType<P>} The guarded component.
  */
 export function withAuthGuard<P extends object>(WrappedComponent: ComponentType<P>, options?: WithAuthGuardOptions): ComponentType<P> {
@@ -149,7 +149,7 @@ export function withAuthGuard<P extends object>(WrappedComponent: ComponentType<
 						return sdk.refresh();
 					}
 
-					globalThis.location.href = appendReturnTo(options?.loginUri ?? '/login');
+					globalThis.location.href = appendReturnTo(options?.loginPageUri ?? '/login');
 				}
 			});
 

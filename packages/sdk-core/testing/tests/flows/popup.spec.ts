@@ -9,7 +9,7 @@ describe('createPopupFlow', () => {
 	let flow: ReturnType<typeof createPopupFlow>;
 
 	beforeEach(() => {
-		options = createOptions({ urlHandler: vi.fn().mockResolvedValue({ code: 'abc123' }) });
+		options = createOptions({ uriHandler: vi.fn().mockResolvedValue({ code: 'abc123' }) });
 		flow = createPopupFlow(options);
 	});
 
@@ -39,10 +39,10 @@ describe('createPopupFlow', () => {
 			test('w/o params', async () => {
 				await flow.login().catch(() => undefined);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { display: 'popup' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { display: 'popup' });
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -77,10 +77,10 @@ describe('createPopupFlow', () => {
 
 				await flow.login(extraParams).catch(() => undefined);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -105,14 +105,14 @@ describe('createPopupFlow', () => {
 
 		describe('w/ serverSessionUri', () => {
 			test('w/o params', async () => {
-				options = createOptions({ urlHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
 				flow = createPopupFlow(options);
 
 				await flow.login();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { display: 'popup' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { display: 'popup' });
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -135,7 +135,7 @@ describe('createPopupFlow', () => {
 			});
 
 			test('w/ params', async () => {
-				options = createOptions({ urlHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
 				flow = createPopupFlow(options);
 
 				const extraParams = {
@@ -150,9 +150,9 @@ describe('createPopupFlow', () => {
 
 				await flow.login(extraParams);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -182,7 +182,7 @@ describe('createPopupFlow', () => {
 
 			options = createOptions({
 				lazyLoad: true,
-				urlHandler: vi.fn((url) => Promise.resolve({ code: 'abc123', state: new URL(url).searchParams.get('state') })),
+				uriHandler: vi.fn((url) => Promise.resolve({ code: 'abc123', state: new URL(url).searchParams.get('state') })),
 			});
 			flow = createPopupFlow(options);
 
@@ -195,7 +195,7 @@ describe('createPopupFlow', () => {
 			options = createOptions({
 				lazyLoad: true,
 				serverSessionUri: 'https://app.example.com/login',
-				urlHandler: vi.fn().mockResolvedValue({ code: 'abc123' }),
+				uriHandler: vi.fn().mockResolvedValue({ code: 'abc123' }),
 			});
 			flow = createPopupFlow(options);
 
@@ -210,10 +210,10 @@ describe('createPopupFlow', () => {
 			test('w/o params', async () => {
 				await flow.register().catch(() => undefined);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create', display: 'popup' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create', display: 'popup' });
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -248,10 +248,10 @@ describe('createPopupFlow', () => {
 
 				await flow.register({ ...extraParams, prompt: undefined }).catch(() => undefined);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -276,14 +276,14 @@ describe('createPopupFlow', () => {
 
 		describe('w/ serverSessionUri', () => {
 			test('w/o params', async () => {
-				options = createOptions({ urlHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
 				flow = createPopupFlow(options);
 
 				await flow.register();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create', display: 'popup' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create', display: 'popup' });
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -306,7 +306,7 @@ describe('createPopupFlow', () => {
 			});
 
 			test('w/ params', async () => {
-				options = createOptions({ urlHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn().mockResolvedValue({}), serverSessionUri: 'https://app.example.com/login' });
 				flow = createPopupFlow(options);
 
 				const extraParams = {
@@ -321,9 +321,9 @@ describe('createPopupFlow', () => {
 
 				await flow.register({ ...extraParams, prompt: undefined });
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -351,7 +351,7 @@ describe('createPopupFlow', () => {
 		test('should redirect to the provider entry endpoint preserving query parameters', async () => {
 			await flow.entry('https://brandtegrity.io/entry?challenge=abc123&foo=bar');
 
-			const [url, params] = vi.mocked(options.urlHandler).mock.calls[0];
+			const [url, params] = vi.mocked(options.uriHandler).mock.calls[0];
 
 			expect((url as URL).toString()).toBe('https://brandtegrity.io/provider/entry?challenge=abc123&foo=bar');
 			expect(params).toBeUndefined();
@@ -362,14 +362,14 @@ describe('createPopupFlow', () => {
 
 			await flow.entry();
 
-			const [url] = vi.mocked(options.urlHandler).mock.calls[0];
+			const [url] = vi.mocked(options.uriHandler).mock.calls[0];
 
 			expect((url as URL).toString()).toBe('https://brandtegrity.io/provider/entry?challenge=abc123&foo=bar');
 		});
 	});
 
 	test('flow state accessors', async () => {
-		options = createOptions({ lazyLoad: true, urlHandler: vi.fn().mockResolvedValue({ code: 'abc123' }) });
+		options = createOptions({ lazyLoad: true, uriHandler: vi.fn().mockResolvedValue({ code: 'abc123' }) });
 		flow = createPopupFlow(options);
 
 		expect(flow.options).toEqual(expect.objectContaining(options));

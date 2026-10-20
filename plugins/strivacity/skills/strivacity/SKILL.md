@@ -144,7 +144,7 @@ This is an SDK version upgrade, not a new integration. Change only what the upgr
 ## Ground rules for every intent
 
 - Ask before creating or changing `.env` files. Never read existing `.env` contents into your context without permission.
-- Browser code uses a **public** PKCE client. Never put a client secret in browser code. The Server SDK `secret` is only an encryption key for session cookies, and it stays server-side.
+- Browser code uses a **public** PKCE client. Never put a client secret in browser code. The Server SDK `cookieSecret` is only an encryption key for session cookies, and it stays server-side.
 - Use the framework wrapper (`@strivacity/sdk-react`, `@strivacity/sdk-vue`, …). Do not import from `@strivacity/sdk-core` directly in a framework app unless the reference says so.
 - The `mode` must match the client type in the Strivacity Admin Console. `redirect` and `popup` need **OIDC using no-code components**; `embedded` and `native` need **OIDC using the Journey Flow API**. When login fails right after a mode change, check this first.
 - Every redirect URI the app uses must be registered on the client in the Admin Console.

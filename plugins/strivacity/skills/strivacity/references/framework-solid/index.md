@@ -7,8 +7,8 @@ Add Strivacity OIDC login to a Solid 2 app with `@strivacity/sdk-solid` v4. The 
 - **Ask before creating or editing `.env*` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead.
 - **Solid 2 only.** Peer dependencies are `solid-js >=2` and `@solidjs/web >=2` (currently `2.0.0-rc.x`). Solid 1.x apps and classic SolidStart 1.x (`@solidjs/start`, `app.config.ts`, vinxi) are **not supported** by v4. Tell the user instead of forcing it in.
 - **There is no root export.** Import from `@strivacity/sdk-solid/client` (provider, hooks, `withAuthGuard`, client types) and `@strivacity/sdk-solid/server` (server SDK, storages, server types). The package `exports` map has no `.` entry, so `import ... from '@strivacity/sdk-solid'` fails to resolve in Vite (the legacy `main` / `types` fields point at the client build only for tools that ignore `exports`). Do not add `@strivacity/sdk-core` directly.
-- **The cookie `secret` is server-only.** Give it no `VITE_` prefix, read it only in server modules (`src/server/*`, `src/middleware.ts`, `'use server'` functions), and never import those modules from components. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
-- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the cookie-encryption `secret` exists.
+- **The `cookieSecret` is server-only.** Give it no `VITE_` prefix, read it only in server modules (`src/server/*`, `src/middleware.ts`, `'use server'` functions), and never import those modules from components. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
+- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the `cookieSecret` exists.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). A plain `npm install @strivacity/sdk-solid` installs v3. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Context values are accessors.** `useStrivacity()` returns `loading()`, `isAuthenticated()`, `idTokenClaims()` and so on. Call them inside JSX or reactive scopes. Do not destructure them into plain values.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only the `mode` value and the login UI change between modes.
@@ -51,10 +51,10 @@ VITE_STRIVACITY_ISSUER="https://<your-cluster-domain>"
 VITE_STRIVACITY_CLIENT_ID="<your-client-id>"
 VITE_STRIVACITY_REDIRECT_URI="http://localhost:3000/callback"
 VITE_STRIVACITY_SCOPES="openid profile email"
-STRIVACITY_SECRET="<output of: openssl rand -base64 32>"
+STRIVACITY_COOKIE_SECRET="<output of: openssl rand -base64 32>"
 ```
 
-In production, set `STRIVACITY_SECRET` in the server process environment.
+In production, set `STRIVACITY_COOKIE_SECRET` in the server process environment.
 
 ### 3. Vite config
 
@@ -66,7 +66,7 @@ import { defineConfig, loadEnv } from 'vite';
 import solid from '@solidjs/vite-plugin';
 
 export default defineConfig(({ mode }) => {
-	// Make STRIVACITY_SECRET from .env* visible to server code as process.env (real env vars win)
+	// Make STRIVACITY_COOKIE_SECRET from .env* visible to server code as process.env (real env vars win)
 	Object.assign(process.env, { ...loadEnv(mode, process.cwd(), ''), ...process.env });
 
 	return {
@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
 
 ### 4. Shared options
 
-`serverSessionUri` must be set explicitly: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in this mode: `withAuthGuard` and `refresh()` send an expired session through the server's refresh route at `` `${authUrlPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
+`serverSessionUri` must be set explicitly: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in this mode: `withAuthGuard` and `refresh()` send an expired session through the server's refresh route at `` `${authUriPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
 
 ```ts
 // src/options.ts
@@ -96,7 +96,7 @@ export const sdkOptions: SDKInitConfig = {
 
 ### 5. Server SDK, middleware and session server function
 
-`createServerSDK` throws `ConfigurationError: Missing SDK option: secret` if neither `secret` nor a custom `storage` is given, so create it lazily (a build pass without env vars must not crash).
+`createServerSDK` throws `ConfigurationError: Missing SDK option: cookieSecret` if neither `cookieSecret` nor a custom `storage` is given, so create it lazily (a build pass without env vars must not crash).
 
 ```ts
 // src/server/strivacity.ts
@@ -109,11 +109,11 @@ let sdk: SolidServerSDK | undefined;
 export function getServerSdk(): SolidServerSDK {
 	sdk ??= createServerSDK({
 		...sdkOptions,
-		secret: process.env.STRIVACITY_SECRET,
+		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET,
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
-		// authUrlPrefix: '/auth',        // default
-		// loginUri: '/login',            // default
+		// authUriPrefix: '/auth',        // default
+		// loginPageUri: '/login',            // default
 	});
 
 	return sdk;
@@ -320,7 +320,7 @@ export default function ErrorPage() {
 
 ### 9. Protected route and claims
 
-`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
+`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginPageUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUriPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
 
 ```tsx
 // src/routes/profile.tsx
@@ -339,21 +339,21 @@ function Profile() {
 	);
 }
 
-export default withAuthGuard(Profile, { loginUri: '/login', onLoading: () => <p>Loading...</p> });
+export default withAuthGuard(Profile, { loginPageUri: '/login', onLoading: () => <p>Loading...</p> });
 ```
 
 Reactive accessors: `idTokenClaims()`, `accessToken()`, `refreshToken()`, `accessTokenExpired()`, `accessTokenExpirationDate()` (Unix seconds), `isAuthenticated()`, `language()`. Server-side, call `await getServerSdk().getSession()` inside a `'use server'` function or the middleware. It refreshes a near-expiry session (see step 5) and returns `null` when there is no usable session. A middleware guard is in Patterns.
 
 ### Client-managed mode (opt-in)
 
-Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.ts` (and `start.middleware`), `src/server/*`, the `session` prop and `STRIVACITY_SECRET`. Tokens live in `localStorage`. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: globalThis.location.origin })` from click handlers instead of links, and keep the `/callback` route (its `handleCallback()` branch runs). `ssr: true` may stay, but the session is only known in the browser.
+Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.ts` (and `start.middleware`), `src/server/*`, the `session` prop and `STRIVACITY_COOKIE_SECRET`. Tokens live in `localStorage`. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: globalThis.location.origin })` from click handlers instead of links, and keep the `/callback` route (its `handleCallback()` branch runs). `ssr: true` may stay, but the session is only known in the browser.
 
 ### Other modes in Solid (summary)
 
 - `popup`: `ctx.login()` / `ctx.register()` from `useStrivacity<PopupFlow>()` resolve when the popup finishes. Call them from a click handler. In server-managed mode the popup's `/auth/callback` response closes the popup and notifies the opener. Then reload or navigate.
 - `embedded`: render `<sty-login ref={(el) => (loginEl = el)}>` (JSX types ship with `./client`), call ``injectScript('sty-components', `${issuer}/assets/components/bundle.js`)`` in `onSettled`, set `params` / `sessionId` / `shortAppId` / `lang` as DOM properties on the element and listen for its `login` / `close` / `error` DOM events.
 - `native`: `const ctx = useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` returns accessors (`ctx.loading()`, `ctx.state()`, `ctx.forms()`, `ctx.messages()`) plus `submitForm`, `setFormValue`, `setMessage`, `triggerFallback`, `triggerClose`. **Wrap your widget tree in `<STRIVACITY_LOGIN_CONTEXT value={ctx}>`** so widgets can call `useNativeLoginContext()`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` route.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` route.
 
 ## Common mistakes
 
@@ -363,7 +363,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 | `import ... from '@strivacity/sdk-solid'` fails to resolve      | Use `@strivacity/sdk-solid/client` or `@strivacity/sdk-solid/server`                                                                     |
 | Peer dependency errors, or `onSettled` / `Loading` not exported | The app is on Solid 1.x. v4 needs `solid-js` / `@solidjs/web` `>=2`                                                                      |
 | `ctx.isAuthenticated` is always truthy                          | It is an accessor. Call `ctx.isAuthenticated()`                                                                                          |
-| `ConfigurationError: Missing SDK option: secret`                | Set `STRIVACITY_SECRET` in the server env (dev: the `loadEnv` line in `vite.config.ts`) or pass a custom `storage`                       |
+| `ConfigurationError: Missing SDK option: cookieSecret`          | Set `STRIVACITY_COOKIE_SECRET` in the server env (dev: the `loadEnv` line in `vite.config.ts`) or pass a custom `storage`                |
 | 404 or app page on `/auth/login`                                | `start: { middleware: './src/middleware.ts' }` missing, or the link was client-routed. Add `rel="external"` to auth links                |
 | `getSession()` returns `null` in the browser / errors on client | It must be a `'use server'` function, and `serverFunctions: true` must be set in the plugin options                                      |
 | Client acts client-managed while the server SDK is set up       | `serverSessionUri` must be set in the shared options. Only the server SDK defaults to `'/auth/login'`                                    |
@@ -376,7 +376,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-solid/server`)
 
-Extra options on top of the client options: `secret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `clientSecret` and `tokenEndpointAuthMethod` (`'client_secret_basic'` with `clientSecret`, otherwise `'none'`; or `'client_secret_post'`: confidential client authentication at the token and revocation endpoints, PKCE stays on; server-only, the client SDK throws on `clientSecret`), `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUriPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -387,7 +387,7 @@ Extra options on top of the client options: `secret`, `storage` (default encrypt
 | `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout` | Individual route handlers                                                                                                 |
 | `completeLogin(params, event?)`, `logout(postLogoutRedirectUri, event?)`, `getEntrySession(entryUrl)`                                        | Building blocks for custom routes                                                                                         |
 
-Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
+Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginPageUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
 
 Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(storage, options?)`, `createServerMemoryStorage`, `isSessionExpired`, `toClientSession`, `createDefaultLogging`, errors, and types `SolidServerSDK`, `SolidServerSDKInitConfig`, `RequestEvent`.
 
@@ -395,11 +395,11 @@ Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(sto
 
 - `<StyAuthProvider options session?>{children}</StyAuthProvider>`.
 - `useStrivacity<Flow>()`: `sdk` (getter), accessors `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`, and methods `login`, `register`, `logout`, `handleCallback`, `refresh`, `revoke`, `checkAuthentication`, `init`, `tokenExchange`, `entry`, `subscribeToEvent`, `subscribeToAllEvents`.
-- `withAuthGuard(Component, { loginUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`, `STRIVACITY_LOGIN_CONTEXT`, `injectScript`, client storages, `createDefaultLogging`.
+- `withAuthGuard(Component, { loginPageUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`, `STRIVACITY_LOGIN_CONTEXT`, `injectScript`, client storages, `createDefaultLogging`.
 
 ### Key SDK options (shared) and defaults
 
-`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageTokenName` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUrlPrefix}/login` ``), `authUrlPrefix` (`'/auth'`; with server-managed sessions the browser `refresh()` and `withAuthGuard` navigate to `` `${authUrlPrefix}/refresh` ``, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
+`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageKey` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUriPrefix}/login` ``), `authUriPrefix` (`'/auth'`; with server-managed sessions the browser `refresh()` and `withAuthGuard` navigate to `` `${authUriPrefix}/refresh` ``, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
 
 `login()` / `register()` params (`ExtraRequestArgs`): `prompt`, `display`, `loginHint`, `acrValues`, `uiLocales` and `audiences`. In server-managed mode the client forwards them to `serverSessionUri` as query params.
 

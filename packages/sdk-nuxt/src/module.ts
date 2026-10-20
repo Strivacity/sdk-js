@@ -21,15 +21,25 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 	setup: async (options, nuxt) => {
 		const resolver = createResolver(import.meta.url);
 
-		if (!options.authUrlPrefix) {
-			options.authUrlPrefix = '/auth';
+		if (!options.authUriPrefix) {
+			options.authUriPrefix = '/auth';
 		}
 		if (typeof options.serverSessionUri === 'undefined') {
-			options.serverSessionUri = `${options.authUrlPrefix}/login`;
+			options.serverSessionUri = `${options.authUriPrefix}/login`;
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { secret, storageFactoryPath, stateStorageFactoryPath, loggingFactoryPath, httpClientFactoryPath, ...publicOptions } = options;
+		/* eslint-disable @typescript-eslint/no-unused-vars */
+		const {
+			cookieSecret,
+			clientSecret,
+			tokenEndpointAuthMethod,
+			storageFactoryPath,
+			stateStorageFactoryPath,
+			loggingFactoryPath,
+			httpClientFactoryPath,
+			...publicOptions
+		} = options;
+		/* eslint-enable @typescript-eslint/no-unused-vars */
 		const noop = resolver.resolve('./runtime/utils/noop');
 
 		nuxt.options.runtimeConfig.strivacity = options;
@@ -68,42 +78,42 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/login`,
+				route: `${options.authUriPrefix}/login`,
 				handler: resolver.resolve('./runtime/server/api/auth/login.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/register`,
+				route: `${options.authUriPrefix}/register`,
 				handler: resolver.resolve('./runtime/server/api/auth/register.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/callback`,
+				route: `${options.authUriPrefix}/callback`,
 				handler: resolver.resolve('./runtime/server/api/auth/callback.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/refresh`,
+				route: `${options.authUriPrefix}/refresh`,
 				handler: resolver.resolve('./runtime/server/api/auth/refresh.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/revoke`,
+				route: `${options.authUriPrefix}/revoke`,
 				handler: resolver.resolve('./runtime/server/api/auth/revoke.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/entry`,
+				route: `${options.authUriPrefix}/entry`,
 				handler: resolver.resolve('./runtime/server/api/auth/entry.get'),
 			});
 			addServerHandler({
 				method: 'get',
-				route: `${options.authUrlPrefix}/logout`,
+				route: `${options.authUriPrefix}/logout`,
 				handler: resolver.resolve('./runtime/server/api/auth/logout.get'),
 			});
 			addServerHandler({
 				method: 'post',
-				route: `${options.authUrlPrefix}/backchannel-logout`,
+				route: `${options.authUriPrefix}/backchannel-logout`,
 				handler: resolver.resolve('./runtime/server/api/auth/backchannel-logout.post'),
 			});
 		}

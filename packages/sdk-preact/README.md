@@ -1411,7 +1411,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
@@ -1489,7 +1489,7 @@ export default withAuthGuard(
 	function Profile() {
 		return <section>Protected content</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1497,7 +1497,7 @@ export default withAuthGuard(
 
 ```ts
 {
-	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	loginPageUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
 	onLoading?: () => ComponentChildren; // Optional render function shown while loading/checking authentication
 }
 ```
@@ -1506,7 +1506,7 @@ export default withAuthGuard(
 
 ## Route guards
 
-Protect routes that require authentication with the `withAuthGuard` higher-order component. It waits for the SDK to finish loading, verifies the session, and redirects to the login page if the user is not authenticated (with the current path as `returnTo`, e.g. `/login?returnTo=%2Forders` - pass it on with `login({ returnTo })`). With server-managed sessions, an expired session is refreshed through the server (`${authUrlPrefix}/refresh`) instead of starting a new login (see [Server-side session (BFF) mode](#server-side-session-bff-mode)):
+Protect routes that require authentication with the `withAuthGuard` higher-order component. It waits for the SDK to finish loading, verifies the session, and redirects to the login page if the user is not authenticated (with the current path as `returnTo`, e.g. `/login?returnTo=%2Forders` - pass it on with `login({ returnTo })`). With server-managed sessions, an expired session is refreshed through the server (`${authUriPrefix}/refresh`) instead of starting a new login (see [Server-side session (BFF) mode](#server-side-session-bff-mode)):
 
 ```tsx
 // pages/Profile.tsx
@@ -1518,7 +1518,7 @@ export default withAuthGuard(
 
 		return <section>Hello, {idTokenClaims?.given_name}</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1560,7 +1560,7 @@ The Preact SDK accepts the same configuration as the core SDK. For detailed info
 
 ### Ionic / Capacitor support
 
-The SDK works with Ionic and Capacitor applications. For native mobile platforms (iOS/Android), you need to override the default `urlHandler`, `callbackHandler`, and `storage` implementations to integrate with Capacitor plugins.
+The SDK works with Ionic and Capacitor applications. For native mobile platforms (iOS/Android), you need to override the default `uriHandler`, `callbackHandler`, and `storage` implementations to integrate with Capacitor plugins.
 
 ```tsx
 // main.tsx
@@ -1569,7 +1569,7 @@ import { StyAuthProvider, SDKStorage, SDKHttpClient, LocalStorage } from '@striv
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { InAppBrowser } from '@capacitor/inappbrowser';
-import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
+import { redirectUriHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
 import type { PluginListenerHandle } from '@capacitor/core';
 import type { HttpClientResponse } from '@strivacity/sdk-preact';
 import { App } from './App';
@@ -1629,9 +1629,9 @@ render(
 			storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
 
 			// Handle URL redirects with InAppBrowser on native platforms
-			async urlHandler(url, responseMode) {
+			async uriHandler(url, responseMode) {
 				if (Capacitor.getPlatform() === 'web') {
-					return redirectUrlHandler(url, responseMode);
+					return redirectUriHandler(url, responseMode);
 				} else {
 					await InAppBrowser.openInWebView({
 						url,
@@ -1730,7 +1730,7 @@ render(
 			redirectUri: 'https://your-app.example.com/callback',
 			scopes: ['openid', 'profile', 'email'],
 			serverSessionUri: '/api/auth/login', // Requests are routed through your server; tokens are NOT written to client storage
-			authUrlPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUrlPrefix}/refresh`
+			authUriPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUriPrefix}/refresh`
 		}}
 	>
 		<App />
@@ -1741,7 +1741,7 @@ render(
 
 In this mode `logout()` doesn't clear the server session cookie. Navigate the browser to your server's logout route instead (e.g. `/api/auth/logout`, optionally with a same-origin `?returnTo=`), which clears the server session and redirects to the IDP end-session endpoint. See [Logging out](../sdk-core/README.md#logging-out) in the core SDK README for the `returnTo` rules.
 
-The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. `withAuthGuard` does the same for an expired session instead of redirecting to `loginUri`. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
+The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUriPrefix}/refresh` (default `/auth`; set `authUriPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. `withAuthGuard` does the same for an expired session instead of redirecting to `loginPageUri`. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
 
 See [`apps/preact`](../../apps/preact) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 

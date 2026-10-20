@@ -56,7 +56,7 @@ export function ProfileView() {
 		}
 
 		const handler = () => {
-			// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUrlPrefix}/refresh`), which comes back to /profile
+			// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUriPrefix}/refresh`), which comes back to /profile
 			refresh({ returnTo: '/profile' })
 				.then(() => {
 					if (!sdk.options.serverSessionUri) {

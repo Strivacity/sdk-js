@@ -32,7 +32,7 @@ export function createRedirectFlow(initConfig: SDKInitConfig): RedirectFlow {
 		base.dispatchEvent('loginInitiated', []);
 		options.logging?.debug('Attempting to redirect for login');
 
-		await options.urlHandler(url, params);
+		await options.uriHandler(url, params);
 	}
 
 	async function register(params: Parameters<RedirectFlow['register']>[0] = {}): ReturnType<RedirectFlow['register']> {
@@ -46,7 +46,7 @@ export function createRedirectFlow(initConfig: SDKInitConfig): RedirectFlow {
 
 		options.logging?.debug('Attempting to redirect for entry');
 
-		await options.urlHandler(new URL(`/provider/entry?${entryUrl.searchParams.toString()}`, options.issuer), params);
+		await options.uriHandler(new URL(`/provider/entry?${entryUrl.searchParams.toString()}`, options.issuer), params);
 	}
 
 	const flow = {

@@ -122,7 +122,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -150,10 +150,10 @@ export const DELETE = sdk.handler;
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference).
 
 ### 4. Wrap your app with the client provider
 
@@ -1757,7 +1757,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
@@ -1837,7 +1837,7 @@ export default withAuthGuard(
 	function Profile() {
 		return <section>Protected content</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1845,7 +1845,7 @@ export default withAuthGuard(
 
 ```ts
 {
-	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	loginPageUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
 	onLoading?: () => ReactNode; // Optional render function shown while loading/checking authentication
 }
 ```
@@ -1866,7 +1866,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: process.env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1933,9 +1933,9 @@ export async function GET(req: NextRequest) {
 
 ### withAuthGuard
 
-Guards a page and injects a `session` prop, redirecting to `options.loginUri` (default `/login`) when there's no active session.
+Guards a page and injects a `session` prop, redirecting to `options.loginPageUri` (default `/login`) when there's no active session.
 
-The guard also checks expiry. When the access token has expired (or is within `refreshSkew` seconds of expiry) and the session has a refresh token, it redirects to `${authUrlPrefix}/refresh?returnTo=...` - the refresh route writes the rotated session cookie and redirects back. The `returnTo` is the guard's `returnTo` option, falling back to `postLoginRedirectUri` (App Router) or the requested page, `ctx.resolvedUrl` (Pages Router). An expired session without a refresh token - or any expired session with `autoRefresh: false` - is treated as no session and redirects to the login page.
+The guard also checks expiry. When the access token has expired (or is within `refreshSkew` seconds of expiry) and the session has a refresh token, it redirects to `${authUriPrefix}/refresh?returnTo=...` - the refresh route writes the rotated session cookie and redirects back. The `returnTo` is the guard's `returnTo` option, falling back to `postLoginRedirectUri` (App Router) or the requested page, `ctx.resolvedUrl` (Pages Router). An expired session without a refresh token - or any expired session with `autoRefresh: false` - is treated as no session and redirects to the login page.
 
 **App Router:**
 
@@ -2038,7 +2038,7 @@ export const sdk = createServerSDK({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // lib/auth/storage.ts
@@ -2146,7 +2146,7 @@ For a complete explanation of the handshake and validation performed, see the co
 	handleEntry(req): Promise<Response>;
 	handleLogout(req): Promise<Response>;
 	handleBackChannelLogout(req): Promise<Response>;
-	handler(req): Promise<Response | null>; // dispatches based on `authUrlPrefix`, or null if no route matched
+	handler(req): Promise<Response | null>; // dispatches based on `authUriPrefix`, or null if no route matched
 
 	// Next.js-specific
 	withAuthGuard(...): ...; // see withAuthGuard
@@ -2160,11 +2160,13 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storage` | `NextServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handler`/the catch-all route |
-| `loginUri` | `string` | No | `'/login'` | Page `withAuthGuard` redirects to when there's no session |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handler`/the catch-all route |
+| `loginPageUri` | `string` | No | `'/login'` | Page `withAuthGuard` redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
@@ -2255,7 +2257,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 
@@ -2285,6 +2287,14 @@ await submitForm('formId');
 ```
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `useNativeLogin()` instead.
+
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

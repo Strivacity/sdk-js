@@ -31,7 +31,7 @@ export type SvelteKitServerSDKInitConfig<
 
 export type SvelteKitServerSDK = BaseServerSDK<RequestEvent> & {
 	/**
-	 * A SvelteKit `Handle` hook that intercepts and serves the `authUrlPrefix` auth routes.
+	 * A SvelteKit `Handle` hook that intercepts and serves the `authUriPrefix` auth routes.
 	 * Mount it in `src/hooks.server.ts`, optionally combined with your own hooks via `sequence()`.
 	 */
 	handle: Handle;

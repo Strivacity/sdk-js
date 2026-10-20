@@ -119,14 +119,14 @@ import { sdkOptions } from '../options';
 
 export const serverSdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
 
 ### 3. Mount the Express router
 
-`sdk.handlers` is an Express `Router` exposing every auth route - mount it under `authUrlPrefix` in your SSR server entry, ahead of Angular's own request handler:
+`sdk.handlers` is an Express `Router` exposing every auth route - mount it under `authUriPrefix` in your SSR server entry, ahead of Angular's own request handler:
 
 ```ts
 // src/server/server.ts
@@ -137,7 +137,7 @@ import { serverSdk } from './strivacity';
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 
 app.use((req, res, next) => {
 	angularApp
@@ -172,10 +172,10 @@ export const config = mergeApplicationConfig(appConfig, serverConfig);
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference).
 
 ### 4. Provide the SDK
 
@@ -1793,7 +1793,7 @@ export class SomeComponent {
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1873,7 +1873,7 @@ import { sdkOptions } from '../options';
 
 export const serverSdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: process.env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1887,7 +1887,7 @@ import { serverSdk } from './strivacity';
 
 const app = express();
 
-app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 ```
 
 ### Accessing the session server-side
@@ -1920,7 +1920,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `cookieSecret` in an http-only cookie.
 - **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
@@ -1952,7 +1952,7 @@ export const serverSdk = createServerSDK({
 
 For example you can use Redis via [unstorage](https://npmjs.com/package/unstorage).
 
-The SDK always reads and writes the session under the same key (`storageTokenName`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
+The SDK always reads and writes the session under the same key (`storageKey`), and passes the current request as the last argument. A storage that ignores the request would therefore share a single session across all users, so key the data per browser session instead. The easiest way is to wrap your key-value store with `createSessionIdCookieStorage`, which puts a random session id in a cookie and calls your store with that id as the key:
 
 ```ts
 // src/server/storage.ts
@@ -2060,7 +2060,7 @@ For a complete explanation of the handshake and validation performed, see the co
 	handleEntry(req): Promise<Response>;
 	handleLogout(req): Promise<Response>;
 	handleBackChannelLogout(req): Promise<Response>;
-	handler(req): Promise<Response | null>; // dispatches based on `authUrlPrefix`, or null if no route matched
+	handler(req): Promise<Response | null>; // dispatches based on `authUriPrefix`, or null if no route matched
 
 	// Angular-specific
 	readonly handlers: Router; // the Express router exposing the auth endpoints; see Setup
@@ -2073,11 +2073,13 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `clientSecret` | `string` | Only for a confidential client | - | Client secret used to authenticate at the token and revocation endpoints. Keep it server-side - see [Client authentication](../sdk-core/README.md#server-client-authentication) |
+| `tokenEndpointAuthMethod` | `'client_secret_basic' \| 'client_secret_post' \| 'none'` | No | `'client_secret_basic'` with `clientSecret`, otherwise `'none'` | How the client authenticates at the token and revocation endpoints (code exchange, refresh, revoke) |
 | `storage` | `AngularServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `sdk.handlers` |
-| `loginUri` | `string` | No | `'/login'` | Route your own [route guard](#route-guards) redirects to when there's no session |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix matched by `sdk.handlers` |
+| `loginPageUri` | `string` | No | `'/login'` | Route your own [route guard](#route-guards) redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
@@ -2213,7 +2215,7 @@ import { sdkOptions } from '../options';
 
 export const serverSdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 
@@ -2247,6 +2249,14 @@ export class LoginPage {
 ```
 
 Update any code that calls `login()`/`register()` and drives the returned handler in `native` mode to use `StrivacityNativeLoginService` instead.
+
+#### `storageTokenName` renamed to `storageKey`
+
+The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

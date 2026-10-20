@@ -43,4 +43,28 @@ describe('sdk-nuxt module', () => {
 
 		expect(kit.addRouteMiddleware).not.toHaveBeenCalled();
 	});
+
+	test('keeps the secrets and the client authentication out of the public runtime config', async () => {
+		const module = (await import('../../src/module')).default as unknown as ModuleDefinition;
+		const nuxt = createNuxt();
+
+		await module.setup(
+			{
+				issuer: 'https://brandtegrity.io',
+				clientId: 'client-id',
+				redirectUri: 'https://brandtegrity.io/callback',
+				cookieSecret: 'cookie-secret',
+				clientSecret: 'client-secret',
+				tokenEndpointAuthMethod: 'client_secret_basic',
+			},
+			nuxt,
+		);
+
+		const publicConfig = JSON.stringify(nuxt.options.runtimeConfig.public);
+
+		expect(publicConfig).not.toContain('cookie-secret');
+		expect(publicConfig).not.toContain('client-secret');
+		expect(publicConfig).not.toContain('tokenEndpointAuthMethod');
+		expect(nuxt.options.runtimeConfig).toMatchObject({ strivacity: { clientSecret: 'client-secret', tokenEndpointAuthMethod: 'client_secret_basic' } });
+	});
 });
