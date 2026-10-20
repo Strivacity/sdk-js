@@ -581,7 +581,10 @@ export type SDKOptions<Storage extends SDKStorage = SDKStorage, StateStorage ext
 	logging?: SDKLogging;
 
 	/**
-	 * Indicates whether the SDK should be lazily loaded, meaning that it will be initialized only when needed.
+	 * Skips the automatic `init()` call when the flow is created. Applies to every `mode`.
+	 * - `false`: `init()` starts in the background right away: it validates the options, loads the session from `storage` and emits the `init` event.
+	 * - `true`: nothing runs until you call `init()` or a method that needs the session (`checkAuthentication()`, `login()`, `handleCallback()`, `refresh()`, `logout()`, ...),
+	 *   which calls `init()` first. Synchronous getters such as `isAuthenticated` stay at their initial values until then.
 	 *
 	 * @default false
 	 */
