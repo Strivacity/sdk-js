@@ -29,7 +29,7 @@ export default defineNuxtModule<NuxtServerSDKInitConfig>({
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { secret, storageFactoryPath, stateStorageFactoryPath, loggingFactoryPath, httpClientFactoryPath, ...publicOptions } = options;
+		const { cookieSecret, storageFactoryPath, stateStorageFactoryPath, loggingFactoryPath, httpClientFactoryPath, ...publicOptions } = options;
 		const noop = resolver.resolve('./runtime/utils/noop');
 
 		nuxt.options.runtimeConfig.strivacity = options;

@@ -146,7 +146,7 @@ describe('auth.server nitro plugin', () => {
 	});
 
 	test('falls back to an encrypted cookie storage keyed by the configured secret when no storage is configured', async () => {
-		const { requestHook } = await installPlugin(createServerOptions({ storage: undefined, stateStorage: createMockStorage(), secret: 'secret' }));
+		const { requestHook } = await installPlugin(createServerOptions({ storage: undefined, stateStorage: createMockStorage(), cookieSecret: 'secret' }));
 
 		const event = createFakeH3Event();
 
@@ -157,14 +157,14 @@ describe('auth.server nitro plugin', () => {
 	test('logs the error and wires a stub sdk that fails every request with a clear 500, instead of silently leaving the context unset, when setup fails (e.g. missing secret)', async () => {
 		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-		const { requestHook } = await installPlugin(createServerOptions({ storage: undefined, stateStorage: createMockStorage(), secret: undefined }));
+		const { requestHook } = await installPlugin(createServerOptions({ storage: undefined, stateStorage: createMockStorage(), cookieSecret: undefined }));
 
 		const event = { context: {} } as unknown as H3Event;
 		await requestHook!(event);
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(
 			'[@strivacity/sdk-nuxt] Failed to initialize the Strivacity server SDK:',
-			expect.objectContaining({ message: 'Secret is required for encrypted cookie storage' }),
+			expect.objectContaining({ message: 'Missing SDK option: cookieSecret' }),
 		);
 
 		expect(() => event.context.strivacity.sdk.getSession()).toThrow(

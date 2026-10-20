@@ -122,7 +122,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1866,7 +1866,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: process.env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -2160,7 +2160,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
 | `storage` | `NextServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handler`/the catch-all route |
@@ -2255,7 +2255,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 

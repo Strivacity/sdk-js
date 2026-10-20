@@ -29,7 +29,12 @@ vi.mock('next/headers', () => ({ cookies: vi.fn() }));
 
 type Event = NextRequest | Request | PagesRouterRequest | undefined;
 
-const validInitConfig = { issuer: 'https://brandtegrity.io', clientId: 'client-id', redirectUri: 'https://brandtegrity.io/callback', secret: 'my-secret' };
+const validInitConfig = {
+	issuer: 'https://brandtegrity.io',
+	clientId: 'client-id',
+	redirectUri: 'https://brandtegrity.io/callback',
+	cookieSecret: 'my-secret',
+};
 
 function installBase(overrides?: Record<string, unknown>) {
 	const base = createMockBaseServerSDK<BaseServerSDK<Event>>(overrides);
@@ -41,7 +46,7 @@ function installBase(overrides?: Record<string, unknown>) {
 describe('createServerSDK', () => {
 	test('throws a ConfigurationError when neither a storage nor a secret is given', () => {
 		expect(() => createServerSDK({ issuer: 'https://brandtegrity.io', clientId: 'client-id', redirectUri: 'https://brandtegrity.io/callback' })).toThrow(
-			new ConfigurationError('Secret is required for encrypted cookie storage'),
+			new ConfigurationError('Missing SDK option: cookieSecret'),
 		);
 		expect(createBaseServerSDK).not.toHaveBeenCalled();
 	});

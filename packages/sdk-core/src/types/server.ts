@@ -117,9 +117,9 @@ export type ServerSDKOptions<
 	cookieMaxAge: number;
 
 	/**
-	 * Encrypted cookie storage secret. Required when no custom `storage` is provided.
+	 * Secret used to encrypt the session cookie of the default encrypted cookie storage. Required when no custom `storage` is provided.
 	 */
-	secret?: string;
+	cookieSecret?: string;
 };
 
 export type ServerSDKInitConfig<

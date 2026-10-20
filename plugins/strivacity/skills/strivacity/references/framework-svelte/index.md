@@ -8,8 +8,8 @@ Add Strivacity OIDC login to a Svelte 5 / SvelteKit 2 app with `@strivacity/sdk-
 - **Svelte 5 (runes) only.** Peer dependencies are `svelte >=5` and `@sveltejs/kit >=2` (optional, needed for the server SDK). Svelte 3/4 stores-based apps are **not supported** by v4. Tell the user instead of forcing it in.
 - **There is no root export.** Import from `@strivacity/sdk-svelte/client` (`createStyAuthProvider`, `useStrivacity`, `useNativeLogin`, client types) and `@strivacity/sdk-svelte/server` (`createServerSDK`, storages, server types). The package `exports` map has no `.` entry, so `import ... from '@strivacity/sdk-svelte'` fails to resolve in Vite / SvelteKit (the legacy `main` / `types` fields point at the client build only for tools that ignore `exports`). Do not add `@strivacity/sdk-core` directly.
 - **`createStyAuthProvider` is a function, not a component.** Call it once, synchronously, at the top of the root `+layout.svelte` `<script>`. `useStrivacity()` / `useNativeLogin()` use Svelte context, so call them at the top of a component `<script>` too, never in `onMount`, event handlers or plain `.ts` modules. Your own helpers that use runes must live in `*.svelte.ts` files.
-- **The cookie `secret` is server-only.** Read it through `$env/dynamic/private` (or `$env/static/private`) inside `src/lib/server/` or `hooks.server.ts`. SvelteKit refuses to bundle those into client code. Never give it a `PUBLIC_` / `VITE_` prefix. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
-- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the cookie-encryption `secret` exists.
+- **The `cookieSecret` is server-only.** Read it through `$env/dynamic/private` (or `$env/static/private`) inside `src/lib/server/` or `hooks.server.ts`. SvelteKit refuses to bundle those into client code. Never give it a `PUBLIC_` / `VITE_` prefix. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
+- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the `cookieSecret` exists.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). A plain `npm install @strivacity/sdk-svelte` installs v3. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only the `mode` value and the login UI change between modes.
 
@@ -48,7 +48,7 @@ PUBLIC_STRIVACITY_ISSUER="https://<your-cluster-domain>"
 PUBLIC_STRIVACITY_CLIENT_ID="<your-client-id>"
 PUBLIC_STRIVACITY_REDIRECT_URI="http://localhost:5173/callback"
 PUBLIC_STRIVACITY_SCOPES="openid profile email"
-STRIVACITY_SECRET="<output of: openssl rand -base64 32>"
+STRIVACITY_COOKIE_SECRET="<output of: openssl rand -base64 32>"
 ```
 
 ### 3. Shared options
@@ -72,7 +72,7 @@ export const sdkOptions: SDKInitConfig = {
 
 ### 4. Server SDK (server-only module)
 
-`createServerSDK` throws `ConfigurationError: Missing SDK option: secret` if neither `secret` nor a custom `storage` is given, so create it lazily (a build or prerender pass without env vars must not crash).
+`createServerSDK` throws `ConfigurationError: Missing SDK option: cookieSecret` if neither `cookieSecret` nor a custom `storage` is given, so create it lazily (a build or prerender pass without env vars must not crash).
 
 ```ts
 // src/lib/server/strivacity.ts
@@ -86,7 +86,7 @@ let sdk: SvelteKitServerSDK | undefined;
 export function getServerSdk(): SvelteKitServerSDK {
 	sdk ??= createServerSDK({
 		...sdkOptions,
-		secret: env.STRIVACITY_SECRET,
+		cookieSecret: env.STRIVACITY_COOKIE_SECRET,
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 		// authUrlPrefix: '/auth',        // default
@@ -289,7 +289,7 @@ export const load: PageServerLoad = async (event) => {
 
 ### Client-managed mode (opt-in)
 
-Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server.ts`, `src/lib/server/strivacity.ts`, both `+*.server.ts` loads, the `session` getter and `STRIVACITY_SECRET`. Tokens live in `localStorage`, so server `load` cannot see them. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: location.origin })` from click handlers, keep `/callback` (its `handleCallback()` branch runs) and guard pages in the component:
+Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server.ts`, `src/lib/server/strivacity.ts`, both `+*.server.ts` loads, the `session` getter and `STRIVACITY_COOKIE_SECRET`. Tokens live in `localStorage`, so server `load` cannot see them. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: location.origin })` from click handlers, keep `/callback` (its `handleCallback()` branch runs) and guard pages in the component:
 
 ```svelte
 <script lang="ts">
@@ -327,7 +327,7 @@ Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server
 | `Missing SDK context`                                          | `createStyAuthProvider` must run in the root `+layout.svelte`, and `useStrivacity()` at the top of a component `<script>`                |
 | `lifecycle_outside_component` / `getContext` errors            | `useStrivacity()` / `useNativeLogin()` called in `onMount`, an event handler or a plain `.ts` module. Call it during component init      |
 | UI never updates after login                                   | Context was destructured. Read `ctx.isAuthenticated`, not a copied value                                                                 |
-| `ConfigurationError: Missing SDK option: secret`               | Set `STRIVACITY_SECRET` (server env) or pass a custom `storage`                                                                          |
+| `ConfigurationError: Missing SDK option: cookieSecret`         | Set `STRIVACITY_COOKIE_SECRET` (server env) or pass a custom `storage`                                                                   |
 | "Cannot import $env/dynamic/private into client-side code"     | The server SDK module was imported from a `.svelte` file or universal `+page.ts`. Keep it in `$lib/server/` and server loads/hooks       |
 | 404 on `/auth/login`                                           | `hooks.server.ts` does not export `handle`, or it was not wired to `sdk.handle`                                                          |
 | Client acts client-managed while the server SDK is set up      | `serverSessionUri` must be set in the shared options. Only the server SDK defaults to `'/auth/login'`                                    |
@@ -340,7 +340,7 @@ Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-svelte/server`)
 
-Extra options on top of the client options: `secret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |

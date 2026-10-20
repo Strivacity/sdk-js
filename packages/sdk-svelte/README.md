@@ -120,12 +120,12 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
 
-> Read the secret from a server-only module such as `$env/dynamic/private` (or `$env/static/private`) - never from a `PUBLIC_`/`VITE_`-prefixed variable, which can end up in client bundles. The [example app](../../apps/sveltekit/src/lib/server/strivacity.ts) reads `import.meta.env.VITE_SECRET` for demo convenience only.
+> Read the secret from a server-only module such as `$env/dynamic/private` (or `$env/static/private`) - never from a `PUBLIC_`/`VITE_`-prefixed variable, which can end up in client bundles. The [example app](../../apps/sveltekit/src/lib/server/strivacity.ts) reads `import.meta.env.VITE_COOKIE_SECRET` for demo convenience only.
 
 ### 3. Wire up the server hook
 
@@ -1602,7 +1602,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1661,7 +1661,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `cookieSecret` in an http-only cookie.
 - **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
@@ -1815,7 +1815,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
 | `storage` | `SvelteKitServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handle` |
@@ -1911,7 +1911,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 });
 ```
 

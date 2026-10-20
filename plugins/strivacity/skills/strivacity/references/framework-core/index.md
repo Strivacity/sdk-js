@@ -5,7 +5,7 @@ Use `@strivacity/sdk-core` v4 directly: in a browser app without a Strivacity fr
 ## Critical rules
 
 - **Ask before creating or editing `.env` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead.
-- **Browser code is a public PKCE client.** Never put a client secret, or the Server SDK `secret`, in browser code or in a `VITE_` / `PUBLIC_` variable.
+- **Browser code is a public PKCE client.** Never put a client secret, or the Server SDK `cookieSecret`, in browser code or in a `VITE_` / `PUBLIC_` variable.
 - **v4 is a prerelease on the npm `next` dist-tag** (`4.0.0-beta.x`). `npm install @strivacity/sdk-core` without a tag installs v3, which has a different, class-based API. Install with `@next` or an exact 4.x version and pin it.
 - **Pass the flow type to `initFlow`.** Write `initFlow<RedirectFlow>({ mode: 'redirect', ... })`. Without the type argument TypeScript types the result as `unknown`, even though the runtime object is correct.
 - **Create the SDK once, in one module, and import that instance everywhere.** Each `initFlow()` call creates an independent flow with its own session state and event subscribers.
@@ -37,7 +37,7 @@ npm install --save-exact @strivacity/sdk-core@next
 
 ### 2. Configuration
 
-Ask the user before writing these. None of them is secret:
+Ask the user before writing these. None of them is cookieSecret:
 
 ```bash
 # .env.local (Vite)
@@ -153,7 +153,7 @@ export const auth = createBaseServerSDK<Request>(
 		clientId: process.env.STRIVACITY_CLIENT_ID!, // <your-client-id>
 		redirectUri: process.env.STRIVACITY_REDIRECT_URI!, // same value as the browser SDK
 		scopes: ['openid', 'profile', 'email'],
-		secret: process.env.STRIVACITY_SESSION_SECRET!, // server-only, e.g. `openssl rand -base64 32`
+		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET!, // server-only, e.g. `openssl rand -base64 32`
 		postLoginRedirectUri: '/profile',
 	},
 );
@@ -215,7 +215,7 @@ const auth = createBaseServerSDK<ExpressRequest>(
 		issuer: process.env.STRIVACITY_ISSUER!,
 		clientId: process.env.STRIVACITY_CLIENT_ID!,
 		redirectUri: process.env.STRIVACITY_REDIRECT_URI!,
-		secret: process.env.STRIVACITY_SESSION_SECRET!,
+		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET!,
 	},
 );
 
@@ -260,7 +260,7 @@ Add `serverSessionUri: '/auth/login'` to the browser `initFlow` options. `login(
 | Passing a class as `storage` (`storage: MyStorage`)                | Pass an object: `storage: createSessionStorage()` or `{ get, set, delete }`                                                 |
 | `redirect_uri` mismatch                                            | `redirectUri` must exactly match the Admin Console entry (scheme, host, port, path, trailing slash)                         |
 | Popup blocked (`PopupBlockedError`)                                | Call popup `login()` / `register()` from a click handler, not on page load                                                  |
-| Server: `ConfigurationError: Missing SDK option: secret`           | Set a server-only `secret`, or pass a custom `storage`                                                                      |
+| Server: `ConfigurationError: Missing SDK option: cookieSecret`     | Set a server-only `cookieSecret`, or pass a custom `storage`                                                                |
 | Server: cookies missing after login                                | Copy **all** `set-cookie` headers back (`response.headers.getSetCookie()`), and pass the same event object to every call    |
 | Server: `handler()` always returns `null`                          | It matches on the full pathname `{authUrlPrefix}/...` from `toRequest()`. Keep the prefix in the URL or set `authUrlPrefix` |
 | Server: callback fails with "State not found" on several instances | The default `stateStorage` is in-memory per process. Use a shared store (Redis, KV)                                         |
@@ -338,7 +338,7 @@ Browser: `createLocalStorage()`, `createSessionStorage()`, `createMemoryStorage(
 
 ### Server SDK (`createBaseServerSDK<TEvent>(adapter, options)`)
 
-`adapter`: `{ toRequest(event), redirect?(url, status, event), getSessionId?(key, event) }`. Options: every client option plus `secret`, `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), `cookieMaxAge` (`2592000`), and `serverSessionUri` (`` `${authUrlPrefix}/login` ``). Methods: `handler(event)` (returns `null` for unknown paths), `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout`, `getSession(event?, { autoRefresh }?)` (refreshes an expired or near-expiry session first, see below), `updateSession`, `refreshSession` (throws on failure), `revokeSession`, `completeLogin`, `logout`, `getEntrySession`. Failures redirect to `{origin}/error?type=&error=&error_description=`, so the app needs an `/error` page.
+`adapter`: `{ toRequest(event), redirect?(url, status, event), getSessionId?(key, event) }`. Options: every client option plus `cookieSecret`, `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), `cookieMaxAge` (`2592000`), and `serverSessionUri` (`` `${authUrlPrefix}/login` ``). Methods: `handler(event)` (returns `null` for unknown paths), `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout`, `getSession(event?, { autoRefresh }?)` (refreshes an expired or near-expiry session first, see below), `updateSession`, `refreshSession` (throws on failure), `revokeSession`, `completeLogin`, `logout`, `getEntrySession`. Failures redirect to `{origin}/error?type=&error=&error_description=`, so the app needs an `/error` page.
 
 `getSession(event)` refreshes when `autoRefresh` is on (option or per-call param, default `true`), the access token is within `refreshSkew` of expiry and a refresh token exists, at most once per request event (concurrent and later calls with the same event object share the result). A failed refresh resolves to `null`. With `autoRefresh: false` it returns the stored session as is (no expiry check). Like `updateSession` / `refreshSession`, it only queues the rotated `Set-Cookie` headers on the event, so copy them to your response with `flushSetCookies(event, response)` from `@strivacity/sdk-core/utils` (the built-in route handlers do this for you).
 

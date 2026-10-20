@@ -4,7 +4,7 @@ Where the SDK keeps tokens, how they expire and refresh, and how to end a sessio
 
 ## Critical rules
 
-- **Browser apps use a public PKCE client.** No client secret in browser code. The Server SDK `secret` is only the cookie encryption key and stays on the server.
+- **Browser apps use a public PKCE client.** No client secret in browser code. The Server SDK `cookieSecret` is only the cookie encryption key and stays on the server.
 - **Anything a page script can reach, an XSS bug can steal.** That includes `localStorage` (the default), `sessionStorage`, IndexedDB, the Cache API and the SDK instance itself. For high-risk apps (finance, health, admin consoles) keep tokens out of the browser with a BFF (`serverSessionUri`). If you cannot run a server, prefer `createMemoryStorage()` over the default.
 - **Never log, print or send tokens anywhere except the API they are for.** No tokens in URLs, analytics, error reports or `console.log`. The built-in logger never prints them.
 - **Read `sdk.accessToken` after `await sdk.checkAuthentication()`**, not from a value captured earlier. The SDK has no background refresh timer.
@@ -46,12 +46,12 @@ Client factories come from the wrapper package (`@strivacity/sdk-react`, `@striv
 
 Server factories come from `@strivacity/sdk-core/storages`, or from the framework's `/server` entry (Next.js and Nuxt ship variants without the `adapter` argument):
 
-| Factory                                                   | Default for               | Notes                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `createEncryptedCookieStorage(secret, adapter, options?)` | Server SDK `storage`      | AES-256-GCM (HKDF-SHA-256 key from `secret`). Cookie `HttpOnly; Secure; SameSite=Lax; Path=/`, `Max-Age` = `cookieMaxAge` (default 30 days), split into `name.0`, `name.1`, ... above 3900 chars. No back-channel logout |
-| `createSessionIdCookieStorage(adapter, store, options?)`  | none                      | Random session-id cookie (`crypto.randomUUID()`), payload in your `store` (Redis, database). Supports back-channel logout when `store.deleteByLogoutToken` exists                                                        |
-| `createServerMemoryStorage()`                             | none                      | Development only. Process memory, implements `deleteByLogoutToken`. Shares (and resets) the global map that `createServerStateStorage()` uses                                                                            |
-| `createServerStateStorage()`                              | Server SDK `stateStorage` | In-memory `Map` in one process, with no expiry. Replace it with a shared store with a TTL when more than one instance runs                                                                                               |
+| Factory                                                   | Default for               | Notes                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createEncryptedCookieStorage(secret, adapter, options?)` | Server SDK `storage`      | AES-256-GCM (HKDF-SHA-256 key from `cookieSecret`). Cookie `HttpOnly; Secure; SameSite=Lax; Path=/`, `Max-Age` = `cookieMaxAge` (default 30 days), split into `name.0`, `name.1`, ... above 3900 chars. No back-channel logout |
+| `createSessionIdCookieStorage(adapter, store, options?)`  | none                      | Random session-id cookie (`crypto.randomUUID()`), payload in your `store` (Redis, database). Supports back-channel logout when `store.deleteByLogoutToken` exists                                                              |
+| `createServerMemoryStorage()`                             | none                      | Development only. Process memory, implements `deleteByLogoutToken`. Shares (and resets) the global map that `createServerStateStorage()` uses                                                                                  |
+| `createServerStateStorage()`                              | Server SDK `stateStorage` | In-memory `Map` in one process, with no expiry. Replace it with a shared store with a TTL when more than one instance runs                                                                                                     |
 
 Next.js: `createEncryptedCookieStorage(secret, options?)` and `createSessionIdCookieStorage(store, options?)` from `@strivacity/sdk-next/server`. Nuxt: point `storageFactoryPath` / `stateStorageFactoryPath` in `nuxt.config.ts` at a module that default-exports a factory. These apply to the Nuxt Server SDK. The Nuxt client SDK always uses the default client storages.
 

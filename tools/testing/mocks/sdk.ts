@@ -195,7 +195,7 @@ export function createServerOptions(overrides: Partial<ServerSDKInitConfig<MockE
 		redirectUri: 'https://brandtegrity.io/callback',
 		scopes: ['openid'],
 		logging: createMockLogging(),
-		secret: 'secret',
+		cookieSecret: 'secret',
 		...overrides,
 	};
 }

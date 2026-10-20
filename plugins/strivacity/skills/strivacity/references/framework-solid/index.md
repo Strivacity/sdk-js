@@ -7,8 +7,8 @@ Add Strivacity OIDC login to a Solid 2 app with `@strivacity/sdk-solid` v4. The 
 - **Ask before creating or editing `.env*` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead.
 - **Solid 2 only.** Peer dependencies are `solid-js >=2` and `@solidjs/web >=2` (currently `2.0.0-rc.x`). Solid 1.x apps and classic SolidStart 1.x (`@solidjs/start`, `app.config.ts`, vinxi) are **not supported** by v4. Tell the user instead of forcing it in.
 - **There is no root export.** Import from `@strivacity/sdk-solid/client` (provider, hooks, `withAuthGuard`, client types) and `@strivacity/sdk-solid/server` (server SDK, storages, server types). The package `exports` map has no `.` entry, so `import ... from '@strivacity/sdk-solid'` fails to resolve in Vite (the legacy `main` / `types` fields point at the client build only for tools that ignore `exports`). Do not add `@strivacity/sdk-core` directly.
-- **The cookie `secret` is server-only.** Give it no `VITE_` prefix, read it only in server modules (`src/server/*`, `src/middleware.ts`, `'use server'` functions), and never import those modules from components. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
-- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the cookie-encryption `secret` exists.
+- **The `cookieSecret` is server-only.** Give it no `VITE_` prefix, read it only in server modules (`src/server/*`, `src/middleware.ts`, `'use server'` functions), and never import those modules from components. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all sessions.
+- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the `cookieSecret` exists.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). A plain `npm install @strivacity/sdk-solid` installs v3. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Context values are accessors.** `useStrivacity()` returns `loading()`, `isAuthenticated()`, `idTokenClaims()` and so on. Call them inside JSX or reactive scopes. Do not destructure them into plain values.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only the `mode` value and the login UI change between modes.
@@ -51,10 +51,10 @@ VITE_STRIVACITY_ISSUER="https://<your-cluster-domain>"
 VITE_STRIVACITY_CLIENT_ID="<your-client-id>"
 VITE_STRIVACITY_REDIRECT_URI="http://localhost:3000/callback"
 VITE_STRIVACITY_SCOPES="openid profile email"
-STRIVACITY_SECRET="<output of: openssl rand -base64 32>"
+STRIVACITY_COOKIE_SECRET="<output of: openssl rand -base64 32>"
 ```
 
-In production, set `STRIVACITY_SECRET` in the server process environment.
+In production, set `STRIVACITY_COOKIE_SECRET` in the server process environment.
 
 ### 3. Vite config
 
@@ -66,7 +66,7 @@ import { defineConfig, loadEnv } from 'vite';
 import solid from '@solidjs/vite-plugin';
 
 export default defineConfig(({ mode }) => {
-	// Make STRIVACITY_SECRET from .env* visible to server code as process.env (real env vars win)
+	// Make STRIVACITY_COOKIE_SECRET from .env* visible to server code as process.env (real env vars win)
 	Object.assign(process.env, { ...loadEnv(mode, process.cwd(), ''), ...process.env });
 
 	return {
@@ -96,7 +96,7 @@ export const sdkOptions: SDKInitConfig = {
 
 ### 5. Server SDK, middleware and session server function
 
-`createServerSDK` throws `ConfigurationError: Missing SDK option: secret` if neither `secret` nor a custom `storage` is given, so create it lazily (a build pass without env vars must not crash).
+`createServerSDK` throws `ConfigurationError: Missing SDK option: cookieSecret` if neither `cookieSecret` nor a custom `storage` is given, so create it lazily (a build pass without env vars must not crash).
 
 ```ts
 // src/server/strivacity.ts
@@ -109,7 +109,7 @@ let sdk: SolidServerSDK | undefined;
 export function getServerSdk(): SolidServerSDK {
 	sdk ??= createServerSDK({
 		...sdkOptions,
-		secret: process.env.STRIVACITY_SECRET,
+		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET,
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 		// authUrlPrefix: '/auth',        // default
@@ -346,7 +346,7 @@ Reactive accessors: `idTokenClaims()`, `accessToken()`, `refreshToken()`, `acces
 
 ### Client-managed mode (opt-in)
 
-Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.ts` (and `start.middleware`), `src/server/*`, the `session` prop and `STRIVACITY_SECRET`. Tokens live in `localStorage`. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: globalThis.location.origin })` from click handlers instead of links, and keep the `/callback` route (its `handleCallback()` branch runs). `ssr: true` may stay, but the session is only known in the browser.
+Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.ts` (and `start.middleware`), `src/server/*`, the `session` prop and `STRIVACITY_COOKIE_SECRET`. Tokens live in `localStorage`. Use `ctx.login()` / `ctx.register()` / `ctx.logout({ postLogoutRedirectUri: globalThis.location.origin })` from click handlers instead of links, and keep the `/callback` route (its `handleCallback()` branch runs). `ssr: true` may stay, but the session is only known in the browser.
 
 ### Other modes in Solid (summary)
 
@@ -363,7 +363,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 | `import ... from '@strivacity/sdk-solid'` fails to resolve      | Use `@strivacity/sdk-solid/client` or `@strivacity/sdk-solid/server`                                                                     |
 | Peer dependency errors, or `onSettled` / `Loading` not exported | The app is on Solid 1.x. v4 needs `solid-js` / `@solidjs/web` `>=2`                                                                      |
 | `ctx.isAuthenticated` is always truthy                          | It is an accessor. Call `ctx.isAuthenticated()`                                                                                          |
-| `ConfigurationError: Missing SDK option: secret`                | Set `STRIVACITY_SECRET` in the server env (dev: the `loadEnv` line in `vite.config.ts`) or pass a custom `storage`                       |
+| `ConfigurationError: Missing SDK option: cookieSecret`          | Set `STRIVACITY_COOKIE_SECRET` in the server env (dev: the `loadEnv` line in `vite.config.ts`) or pass a custom `storage`                |
 | 404 or app page on `/auth/login`                                | `start: { middleware: './src/middleware.ts' }` missing, or the link was client-routed. Add `rel="external"` to auth links                |
 | `getSession()` returns `null` in the browser / errors on client | It must be a `'use server'` function, and `serverFunctions: true` must be set in the plugin options                                      |
 | Client acts client-managed while the server SDK is set up       | `serverSessionUri` must be set in the shared options. Only the server SDK defaults to `'/auth/login'`                                    |
@@ -376,7 +376,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-solid/server`)
 
-Extra options on top of the client options: `secret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |

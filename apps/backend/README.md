@@ -15,7 +15,7 @@ This app is not a standalone example on its own - it's meant to be run alongside
 
 ## Running this app
 
-From the repository root (see the [root README](../../README.md#environment-configuration) for the required `.env.local`, plus a `VITE_SECRET` for cookie encryption):
+From the repository root (see the [root README](../../README.md#environment-configuration) for the required `.env.local`, plus a `VITE_COOKIE_SECRET` for cookie encryption):
 
 ```bash
 pnpm app:backend:serve
@@ -53,7 +53,7 @@ Starts an Express server on `http://localhost:3000` (override with the `PORT` en
 
 In addition to the shared variables documented in the [root README](../../README.md#environment-configuration), this app reads:
 
-| Variable      | Description                               |
-| ------------- | ----------------------------------------- |
-| `VITE_SECRET` | Secret used to encrypt the session cookie |
-| `PORT`        | Port to listen on (default `3000`)        |
+| Variable             | Description                               |
+| -------------------- | ----------------------------------------- |
+| `VITE_COOKIE_SECRET` | Secret used to encrypt the session cookie |
+| `PORT`               | Port to listen on (default `3000`)        |

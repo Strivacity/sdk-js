@@ -50,11 +50,11 @@ export function getServerSDKOptions<
 	options.cookieMaxAge ??= DEFAULT_COOKIE_MAX_AGE;
 
 	if (!options.storage) {
-		if (!options.secret) {
-			throw new ConfigurationError('Missing SDK option: secret');
+		if (!options.cookieSecret) {
+			throw new ConfigurationError('Missing SDK option: cookieSecret');
 		}
 
-		options.storage = createEncryptedCookieStorage<TEvent>(options.secret, adapter, { defaultCookieOptions: { maxAge: options.cookieMaxAge } });
+		options.storage = createEncryptedCookieStorage<TEvent>(options.cookieSecret, adapter, { defaultCookieOptions: { maxAge: options.cookieMaxAge } });
 	}
 
 	options.stateStorage ??= createServerStateStorage();

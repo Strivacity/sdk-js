@@ -34,7 +34,7 @@ export type StrivacityRuntimeConfig = NuxtServerSDKInitConfig;
 
 export type StrivacityPublicRuntimeConfig = Omit<
 	NuxtServerSDKInitConfig,
-	'secret' | 'storageFactoryPath' | 'stateStorageFactoryPath' | 'loggingFactoryPath' | 'httpClientFactoryPath'
+	'cookieSecret' | 'storageFactoryPath' | 'stateStorageFactoryPath' | 'loggingFactoryPath' | 'httpClientFactoryPath'
 >;
 
 export type SDKContext<Flow extends RedirectFlow | PopupFlow | NativeFlow | EmbeddedFlow> = {

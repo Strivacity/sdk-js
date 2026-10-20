@@ -5,8 +5,8 @@ Add Strivacity OIDC login to a Next.js app with `@strivacity/sdk-next` v4. Sessi
 ## Critical rules
 
 - **Ask before creating or editing `.env*` files that hold real values**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead. A template with placeholders only (`.env.local.example`) is fine to create, but `create-next-app`'s `.gitignore` ignores `.env*`, so also add `!.env.local.example` there.
-- **The cookie `secret` is server-only.** Never prefix it with `NEXT_PUBLIC_`, never import the server SDK module into a `'use client'` file, and never pass the secret as a prop. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all existing sessions.
-- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the cookie-encryption `secret` exists.
+- **The `cookieSecret` is server-only.** Never prefix it with `NEXT_PUBLIC_`, never import the server SDK module into a `'use client'` file, and never pass the secret as a prop. Generate it with `openssl rand -base64 32` (32+ random characters). Changing it invalidates all existing sessions.
+- **No client secret anywhere.** Strivacity clients used by this SDK are public PKCE clients. Only the `cookieSecret` exists.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). A plain `npm install @strivacity/sdk-next` installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Import from the subpaths only:** `@strivacity/sdk-next/client` (hooks, provider, client types) and `@strivacity/sdk-next/server` (server SDK, storages, server types). The package `exports` map has no `.` entry, so a root `@strivacity/sdk-next` import fails to resolve (the legacy `main` / `types` fields point at the client build only for tools that ignore `exports`). Do not add `@strivacity/sdk-core` or `@strivacity/sdk-react` directly.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only the `mode` value and the login UI change between modes.
@@ -48,7 +48,7 @@ NEXT_PUBLIC_STRIVACITY_ISSUER="https://<your-cluster-domain>"
 NEXT_PUBLIC_STRIVACITY_CLIENT_ID="<your-client-id>"
 NEXT_PUBLIC_STRIVACITY_REDIRECT_URI="http://localhost:3000/callback"
 NEXT_PUBLIC_STRIVACITY_SCOPES="openid profile email"
-STRIVACITY_SECRET="<output of: openssl rand -base64 32>"
+STRIVACITY_COOKIE_SECRET="<output of: openssl rand -base64 32>"
 ```
 
 `next build` needs these too, not just `next start`: it loads `lib/auth/server.ts` while collecting page data, and `createServerSDK` throws without the secret. Set them in CI and in the hosting provider's build environment. The `NEXT_PUBLIC_*` values are inlined at build time.
@@ -73,7 +73,7 @@ export const sdkOptions: SDKInitConfig = {
 
 ### 4. Server SDK instance (server-only module)
 
-`createServerSDK` throws `ConfigurationError` when the module loads (including during `next build`) if neither `secret` nor a custom `storage` is given.
+`createServerSDK` throws `ConfigurationError` when the module loads (including during `next build`) if neither `cookieSecret` nor a custom `storage` is given.
 
 ```ts
 // lib/auth/server.ts
@@ -83,7 +83,7 @@ import { sdkOptions } from './options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.STRIVACITY_SECRET,
+	cookieSecret: process.env.STRIVACITY_COOKIE_SECRET,
 	postLoginRedirectUri: '/profile', // default: origin of redirectUri
 	// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 	// authUrlPrefix: '/auth',        // default
@@ -282,7 +282,7 @@ The client `withAuthGuard` from `@strivacity/sdk-next/client` also works in `'us
 
 ### Client-managed mode (opt-in)
 
-Set `serverSessionUri: false` in `lib/auth/options.ts`, then remove the server SDK, the `app/auth/[...strivacity]` route, the `session` prop and its `<Suspense>` wrapper, the `/login` and `/callback` route handlers and `STRIVACITY_SECRET`. Tokens then live in `localStorage` and everything happens in `'use client'` components with the same API as the React integration: call `login()` / `register()` / `logout()` from `useStrivacity()`, make `/callback` a client page that calls `handleCallback()` once `loading` is false, and guard pages with the client `withAuthGuard`.
+Set `serverSessionUri: false` in `lib/auth/options.ts`, then remove the server SDK, the `app/auth/[...strivacity]` route, the `session` prop and its `<Suspense>` wrapper, the `/login` and `/callback` route handlers and `STRIVACITY_COOKIE_SECRET`. Tokens then live in `localStorage` and everything happens in `'use client'` components with the same API as the React integration: call `login()` / `register()` / `logout()` from `useStrivacity()`, make `/callback` a client page that calls `handleCallback()` once `loading` is false, and guard pages with the client `withAuthGuard`.
 
 ### Other modes in Next.js (summary)
 
@@ -300,7 +300,7 @@ All of these live in `'use client'` components:
 | `npm install @strivacity/sdk-next` installs v3                                                                   | Use `@strivacity/sdk-next@next` or an exact `4.x` version, and pin it                                                                                                                                                                                                                                                                   |
 | `import ... from '@strivacity/sdk-next'` fails to resolve                                                        | Use `@strivacity/sdk-next/client` or `@strivacity/sdk-next/server`                                                                                                                                                                                                                                                                      |
 | Options are `undefined` in the browser                                                                           | Client-visible env vars need `NEXT_PUBLIC_`. Rebuild after changing them (inlined at build time)                                                                                                                                                                                                                                        |
-| `ConfigurationError: Secret is required for encrypted cookie storage`                                            | Set `STRIVACITY_SECRET` (server env) or pass a custom `storage`. `next build` needs it too, so set it in CI and in the build environment                                                                                                                                                                                                |
+| `ConfigurationError: Missing SDK option: cookieSecret`                                                           | Set `STRIVACITY_COOKIE_SECRET` (server env) or pass a custom `storage`. `next build` needs it too, so set it in CI and in the build environment                                                                                                                                                                                         |
 | `next/headers` / `fs` errors, or the secret in the client bundle                                                 | Server SDK (`lib/auth/server.ts`, `@strivacity/sdk-next/server`) imported from a `'use client'` file. Import it only in server components, route handlers or `getServerSideProps`. Keep `import 'server-only'` (install `server-only`) at the top of it                                                                                 |
 | Client acts client-managed while the server SDK is set up                                                        | `serverSessionUri` must be set in the shared options. Only the server SDK defaults to `'/auth/login'`                                                                                                                                                                                                                                   |
 | `redirect_uri` mismatch                                                                                          | `redirectUri` must exactly match the Admin Console entry. With the forwarding page that is `/callback`, not `/auth/callback`                                                                                                                                                                                                            |
@@ -317,7 +317,7 @@ All of these live in `'use client'` components:
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-next/server`)
 
-Extra options on top of the client options: `secret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                                                                                                                                                                                           |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

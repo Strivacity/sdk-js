@@ -911,7 +911,7 @@ const sdk = createBaseServerSDK(
 		clientId: 'YOUR_CLIENT_ID', // OAuth2 client ID
 		redirectUri: 'https://your-app.example.com/callback', // callback URL after authentication
 		scopes: ['openid', 'profile', 'email'], // requested user permissions/data
-		secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters); Required if using cookie storage (default)
+		cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters); Required if using cookie storage (default)
 	}
 );
 ```
@@ -1220,7 +1220,7 @@ The server SDK accepts the same configuration as the client SDK, plus server-spe
 	// ... other client SDK options
 
 	// server-specific options
-	secret: '<your-encryption-key>', // encrypts http-only cookies
+	cookieSecret: '<your-encryption-key>', // encrypts http-only cookies
 	authUrlPrefix: '/auth', // Prefix for auth routes (default: '/auth')
 	loginUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
 	cookieMaxAge: 2592000, // Max age for session cookies in seconds (default: 30 days)

@@ -103,12 +103,12 @@ async function setupAuthPlugin(): Promise<BaseSDK> {
 	}
 
 	if (!initConfig.storage) {
-		if (!initConfig.secret) {
-			throw new ConfigurationError('Secret is required for encrypted cookie storage');
+		if (!initConfig.cookieSecret) {
+			throw new ConfigurationError('Missing SDK option: cookieSecret');
 		}
 
 		initConfig.cookieMaxAge ??= 30 * 24 * 60 * 60;
-		initConfig.storage = createEncryptedCookieStorage(initConfig.secret, { defaultCookieOptions: { maxAge: initConfig.cookieMaxAge } });
+		initConfig.storage = createEncryptedCookieStorage(initConfig.cookieSecret, { defaultCookieOptions: { maxAge: initConfig.cookieMaxAge } });
 	}
 
 	return createBaseServerSDK<H3Event>(

@@ -17,7 +17,7 @@ const validInitConfig: SvelteKitServerSDKInitConfig = {
 	issuer: 'https://brandtegrity.io',
 	clientId: 'client-id',
 	redirectUri: 'https://brandtegrity.io/callback',
-	secret: 'secret',
+	cookieSecret: 'secret',
 };
 
 function installBase(overrides?: Record<string, unknown>) {

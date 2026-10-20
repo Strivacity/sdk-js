@@ -15,7 +15,7 @@ import {
 
 describe('getServerSDKOptions', () => {
 	test('w/o options', async () => {
-		const options = getServerSDKOptions(serverAdapter, createServerOptions({ secret: 'secret' }));
+		const options = getServerSDKOptions(serverAdapter, createServerOptions({ cookieSecret: 'secret' }));
 
 		expect(options.storage.get).toBeInstanceOf(Function);
 		expect(options.storage.set).toBeInstanceOf(Function);
@@ -50,7 +50,9 @@ describe('getServerSDKOptions', () => {
 	});
 
 	test('throws a ConfigurationError when neither storage nor secret is provided', () => {
-		expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ secret: undefined }))).toThrow(new ConfigurationError('Missing SDK option: secret'));
+		expect(() => getServerSDKOptions(serverAdapter, createServerOptions({ cookieSecret: undefined }))).toThrow(
+			new ConfigurationError('Missing SDK option: cookieSecret'),
+		);
 	});
 });
 

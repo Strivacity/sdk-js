@@ -5,7 +5,7 @@ Add Strivacity OIDC (PKCE) login to an Angular app with `@strivacity/sdk-angular
 ## Critical rules
 
 - **Ask before creating or editing `.env` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. Tell the user which variables to add instead.
-- **Public PKCE client only.** No client secret anywhere. The only secret is the Server SDK cookie-encryption `secret`. Read it from `process.env['STRIVACITY_SECRET']` in server-only files (`src/server/*`). Never put it in `src/app/**` or `environment*.ts`, because those files are bundled for the browser.
+- **Public PKCE client only.** No client secret anywhere. The only secret is the Server SDK `cookieSecret`. Read it from `process.env['STRIVACITY_COOKIE_SECRET']` in server-only files (`src/server/*`). Never put it in `src/app/**` or `environment*.ts`, because those files are bundled for the browser.
 - **v4 is a prerelease on the npm `next` dist-tag** (`4.0.0-beta.x`). A plain `npm install @strivacity/sdk-angular` installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Two entry points.** Import everything for the browser and shared code from `@strivacity/sdk-angular`. It re-exports core flows, storages, errors, utils and types, so do not add `@strivacity/sdk-core`. Import `@strivacity/sdk-angular/server` (Express, `node:stream`) only from the SSR server files: `server.ts`, `app.config.server.ts` and modules that only they import.
 - **Provide the SDK once, at the root**, with `provideStrivacity(config)` or `StrivacityAuthModule.forRoot(config)`. `StrivacityAuthService` creates the SDK in its constructor, so listing it in a component's `providers` creates a second SDK instance. `StrivacityNativeLoginService` is the opposite: provide it per component.
@@ -296,7 +296,7 @@ For an outgoing request, read `auth.sdk.accessToken` right after `await auth.che
 The Strivacity example app uses this setup by default. Tokens stay in an encrypted http-only cookie, and the Express server serves the auth routes. The pages above already contain the server branch.
 
 1. Set `serverSessionUri: '/auth/login'` in `auth.config.ts`. The browser SDK never refreshes in this mode: `authGuard` (and `auth.sdk.refresh({ returnTo })`) send an expired session through the Server SDK refresh route at `` `${authUrlPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
-2. Create the Server SDK lazily, as the example app does, so that importing the module has no side effects. `createServerSDK` throws `ConfigurationError: Missing SDK option: secret` when neither `secret` nor `storage` is set. Set `STRIVACITY_SECRET` everywhere the server bundle runs: `ng serve`, `ng build` (route extraction loads `app.config.server.ts`) and production.
+2. Create the Server SDK lazily, as the example app does, so that importing the module has no side effects. `createServerSDK` throws `ConfigurationError: Missing SDK option: cookieSecret` when neither `cookieSecret` nor `storage` is set. Set `STRIVACITY_COOKIE_SECRET` everywhere the server bundle runs: `ng serve`, `ng build` (route extraction loads `app.config.server.ts`) and production.
 
 ```ts
 // src/server/strivacity.ts
@@ -309,7 +309,7 @@ let serverSdk: AngularServerSDK | undefined;
 export function getServerSdk(): AngularServerSDK {
 	serverSdk ??= createServerSDK({
 		...authConfig, // the client options, plus the server-only ones below
-		secret: process.env['STRIVACITY_SECRET'], // openssl rand -base64 32
+		cookieSecret: process.env['STRIVACITY_COOKIE_SECRET'], // openssl rand -base64 32
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/', authUrlPrefix: '/auth', loginUri: '/login', cookieMaxAge: 2592000
 	});
@@ -360,7 +360,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `npm install @strivacity/sdk-angular` installs v3                        | Install `@strivacity/sdk-angular@next` or an exact `4.x` version, and pin it                                                                     |
 | `window is not defined` / `location is not defined` during SSR           | Run `login()` / `handleCallback()` / `logout()` / `injectScript()` only when `isPlatformBrowser(PLATFORM_ID)`                                    |
-| `ng serve` / `ng build` crashes with `Missing SDK option: secret`        | Set `STRIVACITY_SECRET` in the environment of every command that loads the server bundle                                                         |
+| `ng serve` / `ng build` crashes with `Missing SDK option: cookieSecret`  | Set `STRIVACITY_COOKIE_SECRET` in the environment of every command that loads the server bundle                                                  |
 | `express` / `node:stream` errors in the browser build                    | `@strivacity/sdk-angular/server` was imported from browser code. Import it only from `server.ts`, `app.config.server.ts` and server modules      |
 | 404 or Angular "Cannot match any routes" for `/auth/login`               | Mount `app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers)` before the Angular handler. Use a full-page redirect, not `router.navigate` |
 | `app.use(authConfig.authUrlPrefix!, ...)` mounts nothing                 | The client options have no `authUrlPrefix`. Read the resolved value from `serverSdk.options.authUrlPrefix`                                       |
@@ -393,7 +393,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 
 ### `@strivacity/sdk-angular/server`
 
-- `createServerSDK(config)`: client options plus `secret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUrlPrefix}/login` ``).
+- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUrlPrefix}/login` ``).
 - `AngularServerSDK`:
   - `handlers` (Express `Router`) and `options` (resolved).
   - Session methods: `getSession(req?, { autoRefresh }?)` (refreshes a near-expiry session once per request unless `autoRefresh` is `false`, `null` when that fails; the cookie is only queued, so flush it as in Patterns), `updateSession(session, req?)`, `refreshSession(req?)`, `revokeSession(req?)`, `completeLogin(params, req?)`, `logout(postLogoutRedirectUri, req?)`, `getEntrySession(url)`.

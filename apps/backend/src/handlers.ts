@@ -27,7 +27,7 @@ const base = createBaseServerSDK<ExpressRequest>(
 		clientId: import.meta.env.VITE_CLIENT_ID,
 		redirectUri: import.meta.env.VITE_REDIRECT_URI,
 		scopes: import.meta.env.VITE_SCOPES?.split(' '),
-		secret: import.meta.env.VITE_SECRET,
+		cookieSecret: import.meta.env.VITE_COOKIE_SECRET,
 		storageTokenName: 'sty.session.backend',
 	},
 );

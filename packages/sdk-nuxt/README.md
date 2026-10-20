@@ -98,7 +98,7 @@ export default defineNuxtConfig({
 
 ### 2. Configure it
 
-Client and server options live together under a single `strivacity` key - the module automatically strips `secret` and the storage/logging/HTTP-client factory paths before exposing the rest to the client:
+Client and server options live together under a single `strivacity` key - the module automatically strips `cookieSecret` and the storage/logging/HTTP-client factory paths before exposing the rest to the client:
 
 ```ts
 // nuxt.config.ts
@@ -112,7 +112,7 @@ export default defineNuxtConfig({
 		scopes: ['openid', 'profile', 'email'], // requested user permissions/data
 
 		serverSessionUri: '/auth/login', // Set to `null` for client-managed sessions - omitting this line still defaults to server-managed
-		secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters), required for server-managed sessions
+		cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters), required for server-managed sessions
 		postLoginRedirectUri: '/profile',
 	},
 });
@@ -1485,7 +1485,7 @@ This is the same backend-for-frontend ([BFF](../../README.md#bff)) server implem
 
 ### Setup
 
-There's no server file to create or mount - the module registers everything (the plugin, the auth routes, the session-hydration middleware) automatically from the single `strivacity: {...}` key in `nuxt.config.ts`. See [Quick start](#quick-start) for the full configuration example, including `secret` (required unless you provide a custom `storage`).
+There's no server file to create or mount - the module registers everything (the plugin, the auth routes, the session-hydration middleware) automatically from the single `strivacity: {...}` key in `nuxt.config.ts`. See [Quick start](#quick-start) for the full configuration example, including `cookieSecret` (required unless you provide a custom `storage`).
 
 ### Accessing the session server-side
 
@@ -1660,7 +1660,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
 | `storageFactoryPath` | `string` | No | Encrypted cookie storage | Path to a module default-exporting a `NuxtServerStorage` factory; see [Storages](#server-storages) |
 | `stateStorageFactoryPath` | `string` | No | In-memory `Map` | Path to a module default-exporting an `SDKStorage` factory for the OAuth2 state parameter |
 | `loggingFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKLogging` factory |
@@ -1744,7 +1744,7 @@ The client SDK accepts the same configuration as the core SDK - see the [core SD
 
 ### Migrating to v4.0
 
-v4 replaces the SDK's class-based flow architecture with function-based architecture, and unifies server-managed (BFF) session handling onto a shared Server SDK. The `strivacity: {...}` key is still the only configuration, but `serverSessionUri` now defaults to server-managed sessions: add a `secret`, or set `serverSessionUri: null` to keep v3's client-managed behaviour. Custom storage and logging are referenced by file path (`storageFactoryPath`, `loggingFactoryPath`, ...). Apps need to update their code if they rendered `<StyLoginRenderer>` (replaced by `useNativeLogin()`), used `mode: 'custom'`, drove `native` mode through the old `NativeFlowHandler`, or call SDK methods during server-side rendering.
+v4 replaces the SDK's class-based flow architecture with function-based architecture, and unifies server-managed (BFF) session handling onto a shared Server SDK. The `strivacity: {...}` key is still the only configuration, but `serverSessionUri` now defaults to server-managed sessions: add a `cookieSecret`, or set `serverSessionUri: null` to keep v3's client-managed behaviour. Custom storage and logging are referenced by file path (`storageFactoryPath`, `loggingFactoryPath`, ...). Apps need to update their code if they rendered `<StyLoginRenderer>` (replaced by `useNativeLogin()`), used `mode: 'custom'`, drove `native` mode through the old `NativeFlowHandler`, or call SDK methods during server-side rendering.
 
 #### `useStrivacity()` is read-only during SSR
 
@@ -1790,7 +1790,7 @@ This is a low-level `@strivacity/sdk-core` primitive - it's used the same way no
 
 #### Server-managed sessions now share a common Server SDK
 
-Server-managed sessions in `@strivacity/sdk-nuxt` are still configured entirely through the `strivacity: {...}` key in `nuxt.config.ts` - add `serverSessionUri` (and `secret`) and the module registers the auth routes and session-hydration middleware for you, with no server file or manual router mounting needed:
+Server-managed sessions in `@strivacity/sdk-nuxt` are still configured entirely through the `strivacity: {...}` key in `nuxt.config.ts` - add `serverSessionUri` (and `cookieSecret`) and the module registers the auth routes and session-hydration middleware for you, with no server file or manual router mounting needed:
 
 ```ts
 // nuxt.config.ts
@@ -1799,7 +1799,7 @@ export default defineNuxtConfig({
 	strivacity: {
 		// ...
 		serverSessionUri: '/auth/login', // set to `null` for client-managed sessions - omitting this line still defaults to server-managed
-		secret: process.env.SECRET,
+		cookieSecret: process.env.COOKIE_SECRET,
 	},
 });
 ```

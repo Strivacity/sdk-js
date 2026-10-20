@@ -5,7 +5,7 @@ Add Strivacity OIDC (PKCE) login to a client-rendered Preact app (Vite + `@preac
 ## Critical rules
 
 - **Ask before creating or editing `.env` files**, and never read an existing `.env` / `.env.local` into context without explicit permission. They may hold real tenant credentials. Tell the user which variables to add instead.
-- **This is a public PKCE client.** Never put a client secret (or any BFF `secret`) in browser code or in a `VITE_` variable. Everything with that prefix is shipped to the browser.
+- **This is a public PKCE client.** Never put a client secret (or any BFF `cookieSecret`) in browser code or in a `VITE_` variable. Everything with that prefix is shipped to the browser.
 - **v4 is a prerelease on the npm `next` dist-tag** (versions like `4.0.0-beta.x`). `npm install @strivacity/sdk-preact` without a tag installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Import from `@strivacity/sdk-preact` only.** It re-exports everything from `@strivacity/sdk-core` (flows, storages, errors, utils, types). Do not add `@strivacity/sdk-core` or `@strivacity/sdk-react` as dependencies, and do not alias `react` to `preact/compat` just for this SDK. It is built for Preact directly.
 - **Render exactly one `<StyAuthProvider>`** at the app root. The SDK instance is a module-level singleton created once on mount, so changing `options` after the first render has no effect.

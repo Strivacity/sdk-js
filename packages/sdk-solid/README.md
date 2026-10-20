@@ -120,12 +120,12 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // http-only cookie encryption key (random 32+ characters)
+	cookieSecret: process.env.COOKIE_SECRET, // http-only cookie encryption key (random 32+ characters)
 	postLoginRedirectUri: '/profile',
 });
 ```
 
-> `src/server/strivacity.ts` only runs on the server, so read the secret from the server process environment (`process.env.SECRET`, e.g. set by your host or `node --env-file=.env server.js`). Don't give it a `VITE_` prefix: Vite exposes `VITE_`-prefixed variables through `import.meta.env`, which can be inlined into client bundles. The [example app](../../apps/solidstart/src/server/strivacity.ts) reads `import.meta.env.VITE_SECRET` for demo convenience only.
+> `src/server/strivacity.ts` only runs on the server, so read the secret from the server process environment (`process.env.COOKIE_SECRET`, e.g. set by your host or `node --env-file=.env server.js`). Don't give it a `VITE_` prefix: Vite exposes `VITE_`-prefixed variables through `import.meta.env`, which can be inlined into client bundles. The [example app](../../apps/solidstart/src/server/strivacity.ts) reads `import.meta.env.VITE_COOKIE_SECRET` for demo convenience only.
 
 ### 3. Wire up the middleware
 
@@ -1843,7 +1843,7 @@ import { sdkOptions } from '../options';
 
 export const sdk = createServerSDK({
 	...sdkOptions,
-	secret: process.env.SECRET, // required unless you provide a custom `storage`
+	cookieSecret: process.env.COOKIE_SECRET, // required unless you provide a custom `storage`
 	postLoginRedirectUri: '/profile',
 });
 ```
@@ -1895,7 +1895,7 @@ By default the Server SDK stores tokens encrypted in http-only cookies and login
 
 #### Built-in session storages
 
-- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `secret` in an http-only cookie.
+- **Encrypted cookie storage** - the default, used when no `storage` is provided: keeps the whole session encrypted with `cookieSecret` in an http-only cookie.
 - **`createSessionIdCookieStorage(storage, options?)`** - puts only a small, random session-id cookie on the client and keeps the actual session payload in the `storage` you provide. It supports back-channel logout when `storage` implements `deleteByLogoutToken`.
 
 ```ts
@@ -2048,7 +2048,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 
 | Option | Type | Required | Default | Description |
 | ------ | ---- | -------- | ------- | ----------- |
-| `secret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
+| `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
 | `storage` | `SolidServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `middleware` |
