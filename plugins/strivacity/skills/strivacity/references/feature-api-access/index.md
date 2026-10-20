@@ -52,7 +52,7 @@ Consequences:
 
 ### Server-managed sessions (BFF)
 
-With `serverSessionUri: '/auth/login'` the browser SDK sends the same parameters to your BFF instead of the IdP. The Server SDK route `GET {authUrlPrefix}/login` (`handleLogin`) reads `audience` (space-separated) back into `audiences`. Fallback: a space-separated `audiences` query param.
+With `serverSessionUri: '/auth/login'` the browser SDK sends the same parameters to your BFF instead of the IdP. The Server SDK route `GET {authUriPrefix}/login` (`handleLogin`) reads `audience` (space-separated) back into `audiences`. Fallback: a space-separated `audiences` query param.
 
 So `login({ audiences: [...] })` in the browser and a plain link `/auth/login?audience=https%3A%2F%2Fapi.example.com&returnTo=/orders` both work. `register()` goes through `/auth/register` with the same parsing. The Server SDK then builds the IdP authorize URL with the same format as above, and its token and refresh requests are the same as above.
 

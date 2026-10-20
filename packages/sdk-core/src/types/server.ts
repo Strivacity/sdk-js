@@ -93,7 +93,7 @@ export type ServerSDKOptions<
 	StateStorage extends SDKStorage = SDKStorage,
 > = SDKOptions<Storage, StateStorage> & {
 	/**
-	 * URI of the application's own login page. In `embedded` and `native` mode the entry route (`{authUrlPrefix}/entry`) redirects here with `session_id`, `short_app_id` and `language`,
+	 * URI of the application's own login page. In `embedded` and `native` mode the entry route (`{authUriPrefix}/entry`) redirects here with `session_id`, `short_app_id` and `language`,
 	 * and the framework route guards redirect unauthenticated users here.
 	 *
 	 * @default '/login'
@@ -242,7 +242,7 @@ export type BaseServerSDK<TEvent = unknown> = {
 	handleBackChannelLogout(event: TEvent): Promise<Response>;
 
 	/**
-	 * Dispatches an incoming request to the matching auth route handler based on `authUrlPrefix`, or returns `null` if
+	 * Dispatches an incoming request to the matching auth route handler based on `authUriPrefix`, or returns `null` if
 	 * the request doesn't match any auth route (caller should continue its own routing/`resolve`/`next()`).
 	 *
 	 * @param {TEvent} event - The framework-native request event.

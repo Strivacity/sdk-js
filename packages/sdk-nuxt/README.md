@@ -134,7 +134,7 @@ The module automatically:
 | `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference).
 
 ---
 
@@ -1401,7 +1401,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1665,8 +1665,8 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `stateStorageFactoryPath` | `string` | No | In-memory `Map` | Path to a module default-exporting an `SDKStorage` factory for the OAuth2 state parameter |
 | `loggingFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKLogging` factory |
 | `httpClientFactoryPath` | `string` | No | - | Path to a module default-exporting an `SDKHttpClient` factory |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix under which the module registers the auth routes; with server-managed sessions `sdk.refresh()` and route guards send an expired session to `${authUrlPrefix}/refresh` |
-| `serverSessionUri` | `string \| null` | No | `` `${authUrlPrefix}/login` `` | Enables server-managed sessions when set (the default); set to `null` to use client-managed sessions instead |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix under which the module registers the auth routes; with server-managed sessions `sdk.refresh()` and route guards send an expired session to `${authUriPrefix}/refresh` |
+| `serverSessionUri` | `string \| null` | No | `` `${authUriPrefix}/login` `` | Enables server-managed sessions when set (the default); set to `null` to use client-managed sessions instead |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |
@@ -1834,6 +1834,10 @@ Update any code that calls `login()`/`register()` and drives the returned handle
 #### `storageTokenName` renamed to `storageKey`
 
 The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

@@ -34,7 +34,7 @@ const base = createBaseServerSDK<ExpressRequest>(
 
 export const handlers = Router();
 
-// NOTE: `base.handler` serves every auth route (`/login`, `/callback`, `/refresh`, `/logout`, ...) under `authUrlPrefix`, and
+// NOTE: `base.handler` serves every auth route (`/login`, `/callback`, `/refresh`, `/logout`, ...) under `authUriPrefix`, and
 // returns null for anything else.
 handlers.use(async (req, res, next) => {
 	try {

@@ -284,11 +284,11 @@ Other exports: `useNativeLogin`, `useNativeLoginContext`, `injectScript`, `creat
 | `autoRefresh`                                 | `true`                   | Refresh with the refresh token when auth is checked and the token is near expiry                                                                           |
 | `refreshSkew`                                 | `60`                     | Seconds before expiry that count as "expiring"                                                                                                             |
 | `serverSessionUri`                            | `null`                   | BFF endpoint (string) to keep tokens server-side. See the server-managed sessions reference                                                                |
-| `authUrlPrefix`                               | `'/auth'`                | Server SDK route prefix. With `serverSessionUri`, `refresh()` navigates to `${authUrlPrefix}/refresh`. Change it only to match a non-default server prefix |
+| `authUriPrefix`                               | `'/auth'`                | Server SDK route prefix. With `serverSessionUri`, `refresh()` navigates to `${authUriPrefix}/refresh`. Change it only to match a non-default server prefix |
 | `discoveryDocumentCacheTTL`                   | `3600`                   | Seconds                                                                                                                                                    |
 | `jwksCacheTTL`                                | `600`                    | Seconds                                                                                                                                                    |
 | `logging`                                     | none                     | `createDefaultLogging()` or a custom `SDKLogging`                                                                                                          |
-| `httpClient`, `urlHandler`, `callbackHandler` | per mode                 | Advanced overrides                                                                                                                                         |
+| `httpClient`, `uriHandler`, `callbackHandler` | per mode                 | Advanced overrides                                                                                                                                         |
 
 ### `ExtraRequestArgs` (for `login()` / `register()`)
 
@@ -355,7 +355,7 @@ onUnmounted(() => {
 
 ### Token refresh
 
-- With `autoRefresh: true` (default), the SDK refreshes when auth state is checked (`sdk.isAuthenticated`, `checkAuthentication()`, plugin updates) and the access token expires within `refreshSkew` seconds (default 60). It needs a refresh token from the IdP. There is no background timer, so check auth before API calls as shown above. With `serverSessionUri` set the browser never refreshes (`autoRefresh` is ignored): `sdk.refresh({ returnTo })` does a full-page navigation to the BFF refresh route (`` `${authUrlPrefix}/refresh` ``, default `/auth/refresh`), which rotates the cookie and redirects back (`useStrivacity().refresh({ returnTo })` works the same; `returnTo` defaults to the current URL). If your SPA loads the BFF session into the SDK (`updateSession()`), send an expired one through it in the route guard:
+- With `autoRefresh: true` (default), the SDK refreshes when auth state is checked (`sdk.isAuthenticated`, `checkAuthentication()`, plugin updates) and the access token expires within `refreshSkew` seconds (default 60). It needs a refresh token from the IdP. There is no background timer, so check auth before API calls as shown above. With `serverSessionUri` set the browser never refreshes (`autoRefresh` is ignored): `sdk.refresh({ returnTo })` does a full-page navigation to the BFF refresh route (`` `${authUriPrefix}/refresh` ``, default `/auth/refresh`), which rotates the cookie and redirects back (`useStrivacity().refresh({ returnTo })` works the same; `returnTo` defaults to the current URL). If your SPA loads the BFF session into the SDK (`updateSession()`), send an expired one through it in the route guard:
 
 ```ts
 // server-managed variant of requireAuth

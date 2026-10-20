@@ -7,7 +7,7 @@ describe('createRedirectFlow', () => {
 	let flow: ReturnType<typeof createRedirectFlow>;
 
 	beforeEach(() => {
-		options = createOptions({ urlHandler: vi.fn() });
+		options = createOptions({ uriHandler: vi.fn() });
 		flow = createRedirectFlow(options);
 	});
 
@@ -37,10 +37,10 @@ describe('createRedirectFlow', () => {
 			test('w/o params', async () => {
 				await flow.login();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), {});
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), {});
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -75,10 +75,10 @@ describe('createRedirectFlow', () => {
 
 				await flow.login(extraParams);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -103,14 +103,14 @@ describe('createRedirectFlow', () => {
 
 		describe('w/ serverSessionUri', () => {
 			test('w/o params', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
 				flow = createRedirectFlow(options);
 
 				await flow.login();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), {});
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), {});
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -133,7 +133,7 @@ describe('createRedirectFlow', () => {
 			});
 
 			test('w/ params', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
 				flow = createRedirectFlow(options);
 
 				const extraParams = {
@@ -148,9 +148,9 @@ describe('createRedirectFlow', () => {
 
 				await flow.login(extraParams);
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -179,10 +179,10 @@ describe('createRedirectFlow', () => {
 			test('w/o params', async () => {
 				await flow.register();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create' });
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -217,10 +217,10 @@ describe('createRedirectFlow', () => {
 
 				await flow.register({ ...extraParams, prompt: undefined });
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
 				const stateData = getMockStorage(options.stateStorage).getLastState();
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/auth');
 				expect(url.searchParams.get('client_id')).toBe('client-id');
@@ -245,14 +245,14 @@ describe('createRedirectFlow', () => {
 
 		describe('w/ serverSessionUri', () => {
 			test('w/o params', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
 				flow = createRedirectFlow(options);
 
 				await flow.register();
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create' });
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), { prompt: 'create' });
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -275,7 +275,7 @@ describe('createRedirectFlow', () => {
 			});
 
 			test('w/ params', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: 'https://app.example.com/login' });
 				flow = createRedirectFlow(options);
 
 				const extraParams = {
@@ -290,9 +290,9 @@ describe('createRedirectFlow', () => {
 
 				await flow.register({ ...extraParams, prompt: undefined });
 
-				expect(flow.options.urlHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
+				expect(flow.options.uriHandler).toHaveBeenCalledWith(expect.any(URL), extraParams);
 
-				const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+				const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 
 				expect(`${url.origin}${url.pathname}`).toBe('https://app.example.com/login');
 				expect(url.searchParams.has('client_id')).toBeFalsy();
@@ -320,7 +320,7 @@ describe('createRedirectFlow', () => {
 		test('should redirect to the provider entry endpoint preserving query parameters', async () => {
 			await flow.entry('https://brandtegrity.io/entry?challenge=abc123&foo=bar');
 
-			const [url, params] = vi.mocked(options.urlHandler).mock.calls[0];
+			const [url, params] = vi.mocked(options.uriHandler).mock.calls[0];
 
 			expect((url as URL).toString()).toBe('https://brandtegrity.io/provider/entry?challenge=abc123&foo=bar');
 			expect(params).toBeUndefined();
@@ -331,14 +331,14 @@ describe('createRedirectFlow', () => {
 
 			await flow.entry();
 
-			const [url] = vi.mocked(options.urlHandler).mock.calls[0];
+			const [url] = vi.mocked(options.uriHandler).mock.calls[0];
 
 			expect((url as URL).toString()).toBe('https://brandtegrity.io/provider/entry?challenge=abc123&foo=bar');
 		});
 	});
 
 	test('flow state accessors', async () => {
-		options = createOptions({ lazyLoad: true, urlHandler: vi.fn() });
+		options = createOptions({ lazyLoad: true, uriHandler: vi.fn() });
 		flow = createRedirectFlow(options);
 
 		expect(flow.options).toEqual(expect.objectContaining(options));

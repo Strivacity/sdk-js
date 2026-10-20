@@ -8,7 +8,7 @@ Add Strivacity OIDC login to a Nuxt 4 app with the `@strivacity/sdk-nuxt` module
 - **The `cookieSecret` is server-only.** Pass it as `strivacity.cookieSecret` in `nuxt.config.ts`. The module keeps it in the private `runtimeConfig.strivacity` and strips it, together with the `*FactoryPath` options, from `runtimeConfig.public.strivacity`. Never put it under `runtimeConfig.public`, in a `NUXT_PUBLIC_*` variable, or in app code. There is no client cookieSecret: the client is a public PKCE client.
 - **v4 is a prerelease on the npm `next` dist-tag** (`4.0.0-beta.x`). A plain `npm install @strivacity/sdk-nuxt` installs v3, which has a different API. Install with `@next` or an explicit 4.x version and pin it exactly.
 - **Composables are auto-imported** (`useStrivacity`, `useSession`, `useNativeLogin`, `useNativeLoginContext`, plus the SDK utils and storages). Import types from `@strivacity/sdk-nuxt`. Explicit imports, for example in factory files, come from `@strivacity/sdk-nuxt/utils` or `@strivacity/sdk-nuxt/storages`. Do not add `@strivacity/sdk-core` or `@strivacity/sdk-vue`.
-- **Server-managed is the default.** Unless you set it, the module sets `serverSessionUri` to `` `${authUrlPrefix}/login` ``. The routes and middleware are registered at build time, only when `serverSessionUri` is truthy, so restart or rebuild after changing it.
+- **Server-managed is the default.** Unless you set it, the module sets `serverSessionUri` to `` `${authUriPrefix}/login` ``. The routes and middleware are registered at build time, only when `serverSessionUri` is truthy, so restart or rebuild after changing it.
 - **`useStrivacity()` is read-only during SSR.** The SDK instance exists only in the browser: a client-only plugin creates it at startup (also available as `useNuxtApp().$strivacity`). During SSR, `useStrivacity()` returns a per-request context derived from `useSession()`, so no state is shared between requests. Its refs and `sdk.options` / `sdk.session` are readable, `checkAuthentication()` / `init()` resolve immediately, subscriptions are no-ops, and `login()`, `register()`, `logout()`, `handleCallback()`, `refresh()`, `revoke()`, `entry()`, `tokenExchange()` (and the matching `sdk.*` methods) throw. Call those from `onMounted` or event handlers.
 - **Pick the mode first.** The quick start uses `mode: 'redirect'`. Mode-specific UI is covered by a separate mode reference loaded next to this one. Only `mode` and the login UI change between modes.
 
@@ -67,7 +67,7 @@ export default defineNuxtConfig({
 		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET, // required unless storageFactoryPath is set
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// serverSessionUri: '/auth/login', // default; false = client-managed (see below)
-		// authUrlPrefix: '/auth', loginPageUri: '/login', postLogoutRedirectUri: '/', cookieMaxAge: 2592000
+		// authUriPrefix: '/auth', loginPageUri: '/login', postLogoutRedirectUri: '/', cookieMaxAge: 2592000
 	},
 	// embedded mode only: let Vue treat <sty-*> tags as custom elements
 	vue: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('sty-') } },
@@ -154,7 +154,7 @@ const route = useRoute();
 
 ### 6. Protected routes
 
-The module's global middleware loads (and, near expiry, refreshes) the session but never redirects. Protect pages with your own middleware: a named one applied per page, or `auth.global.ts` for every page (exclude `/login` and the other public routes). The module's middleware runs before all app middleware, global ones included, so during SSR `useSession()` is already the fresh session, or `undefined` when there is no session or the refresh failed. On client-side navigations the middleware runs in the browser, where the hydrated `useSession()` ages while the tab stays open and is never refreshed. There, send an expired session through the refresh route (`sdk.refresh({ returnTo })` does a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=...` ``, which rotates the cookie and comes back) and cancel the navigation:
+The module's global middleware loads (and, near expiry, refreshes) the session but never redirects. Protect pages with your own middleware: a named one applied per page, or `auth.global.ts` for every page (exclude `/login` and the other public routes). The module's middleware runs before all app middleware, global ones included, so during SSR `useSession()` is already the fresh session, or `undefined` when there is no session or the refresh failed. On client-side navigations the middleware runs in the browser, where the hydrated `useSession()` ages while the tab stays open and is never refreshed. There, send an expired session through the refresh route (`sdk.refresh({ returnTo })` does a full-page navigation to `` `${authUriPrefix}/refresh?returnTo=...` ``, which rotates the cookie and comes back) and cancel the navigation:
 
 ```ts
 // app/middleware/auth.ts  (or auth.global.ts to protect every page - then skip /login and other public routes)
@@ -296,8 +296,8 @@ For login, register and logout, call `login()`, `register()` and `logout({ postL
 
 - All client SDK options: `mode`, `issuer`, `clientId`, `redirectUri` (required), `scopes` (`['openid']`), `responseType` (`'code'`), `responseMode` (`'query'`), `storageKey` (`'sty.session'`, also the cookie name), `autoRefresh` (`true`), `refreshSkew` (`60`), `lazyLoad` (`false`), `discoveryDocumentCacheTTL` (`3600`), `jwksCacheTTL` (`600`).
 - Server options:
-  - `serverSessionUri`: default `` `${authUrlPrefix}/login` ``. Set `false` / `null` for client-managed sessions.
-  - `authUrlPrefix`: `'/auth'`. Shared with the browser SDK, whose `refresh()` navigates to `` `${authUrlPrefix}/refresh` ``.
+  - `serverSessionUri`: default `` `${authUriPrefix}/login` ``. Set `false` / `null` for client-managed sessions.
+  - `authUriPrefix`: `'/auth'`. Shared with the browser SDK, whose `refresh()` navigates to `` `${authUriPrefix}/refresh` ``.
   - `loginPageUri`: `'/login'`.
   - `postLoginRedirectUri` / `postLogoutRedirectUri`: default origin of `redirectUri`.
   - `cookieMaxAge`: `2592000`.

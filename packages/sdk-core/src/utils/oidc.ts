@@ -5,7 +5,7 @@ import { FallbackError, SessionExpiredError, OidcError, ProtocolError, ServerErr
 import { createHttpClient } from './httpClient';
 import { createSession } from './session';
 import { createState, parseState, serializeState } from './state';
-import { redirectUrlHandler, redirectCallbackHandler } from '../handlers/redirect';
+import { redirectUriHandler, redirectCallbackHandler } from '../handlers/redirect';
 import { createLocalStorage } from '../storages/local';
 import { createSessionStorage } from '../storages/session';
 import { timestamp } from './common';
@@ -55,7 +55,7 @@ export const defaultOptions: Partial<SDKOptions> = {
 	refreshSkew: 60,
 	clockSkew: 60,
 	serverSessionUri: null,
-	authUrlPrefix: '/auth',
+	authUriPrefix: '/auth',
 	scopes: ['openid'],
 	responseType: 'code',
 	responseMode: 'query',
@@ -208,14 +208,14 @@ export function getSDKOptions<Options extends SDKOptions = SDKOptions>(initOptio
 	options.storage ??= createLocalStorage();
 	options.stateStorage ??= createSessionStorage();
 	options.httpClient ??= createHttpClient(options.logging);
-	options.urlHandler ??= redirectUrlHandler;
+	options.uriHandler ??= redirectUriHandler;
 	options.callbackHandler ??= redirectCallbackHandler;
 	options.lazyLoad ??= defaultOptions.lazyLoad;
 	options.autoRefresh ??= defaultOptions.autoRefresh;
 	options.refreshSkew ??= defaultOptions.refreshSkew;
 	options.clockSkew ??= defaultOptions.clockSkew;
 	options.serverSessionUri ??= defaultOptions.serverSessionUri;
-	options.authUrlPrefix ??= defaultOptions.authUrlPrefix;
+	options.authUriPrefix ??= defaultOptions.authUriPrefix;
 
 	options.scopes ??= defaultOptions.scopes;
 	options.responseType ??= defaultOptions.responseType;
@@ -432,7 +432,7 @@ export async function verifyIdToken({
  * @returns {Promise<URL>} A promise that resolves to the constructed authorization URL
  * @throws {Error} If fetching OIDC metadata fails or writing the PKCE state to storage fails.
  */
-export async function buildAuthorizationUrl<URLHandlerParams extends ExtraRequestArgs = ExtraRequestArgs>({
+export async function buildAuthorizationUrl<URIHandlerParams extends ExtraRequestArgs = ExtraRequestArgs>({
 	url,
 	includeOAuthParams = true,
 	persistState = true,
@@ -442,7 +442,7 @@ export async function buildAuthorizationUrl<URLHandlerParams extends ExtraReques
 	url?: string | null | URL;
 	includeOAuthParams?: boolean;
 	persistState?: boolean;
-	params: URLHandlerParams;
+	params: URIHandlerParams;
 	options: SDKOptions;
 }): Promise<URL> {
 	const stateData = await createState();

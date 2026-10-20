@@ -34,7 +34,7 @@ Switch between modes by setting `VITE_MODE` (`redirect`, `popup`, `embedded`, or
 
 ## Server-managed sessions
 
-`@strivacity/sdk-nuxt` is a Nuxt module with its own server integration - it auto-registers all auth routes and a session-hydration middleware, so this app never needs to pair with a separate backend. `serverSessionUri` defaults to `${authUrlPrefix}/login` in this SDK (server-managed sessions are the default here, unlike every other framework where it's opt-in) - see `nuxt.config.ts`. See the Core SDK's [Server-side session management](../../packages/sdk-core/README.md#server-side-session-management) for details.
+`@strivacity/sdk-nuxt` is a Nuxt module with its own server integration - it auto-registers all auth routes and a session-hydration middleware, so this app never needs to pair with a separate backend. `serverSessionUri` defaults to `${authUriPrefix}/login` in this SDK (server-managed sessions are the default here, unlike every other framework where it's opt-in) - see `nuxt.config.ts`. See the Core SDK's [Server-side session management](../../packages/sdk-core/README.md#server-side-session-management) for details.
 
 The module keeps the ID and refresh tokens out of the page payload (`useSession()`). To still display them, the profile page fetches the full session from a demo-only route, [`server/api/session.get.ts`](./server/api/session.get.ts). Don't copy that route into a real app: return only what the UI needs, and never the refresh token.
 

@@ -528,28 +528,28 @@ export function createBaseServerSDK<
 		const request = await adapter.toRequest(event);
 		const requestUrl = new URL(request.url);
 
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/login`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/login`) {
 			return handleLogin(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/register`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/register`) {
 			return handleRegister(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/callback`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/callback`) {
 			return handleCallback(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/refresh`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/refresh`) {
 			return handleRefresh(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/revoke`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/revoke`) {
 			return handleRevoke(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/entry`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/entry`) {
 			return handleEntry(event);
 		}
-		if (request.method === 'GET' && requestUrl.pathname === `${options.authUrlPrefix}/logout`) {
+		if (request.method === 'GET' && requestUrl.pathname === `${options.authUriPrefix}/logout`) {
 			return handleLogout(event);
 		}
-		if (request.method === 'POST' && requestUrl.pathname === `${options.authUrlPrefix}/backchannel-logout`) {
+		if (request.method === 'POST' && requestUrl.pathname === `${options.authUriPrefix}/backchannel-logout`) {
 			return handleBackChannelLogout(event);
 		}
 

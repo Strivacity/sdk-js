@@ -195,7 +195,7 @@ export default function Callback() {
 
 ### 6. Protected route
 
-`withAuthGuard` waits for loading, calls `checkAuthentication()` (refreshing if needed), and sets `window.location.href` to `loginPageUri` when the user is not authenticated. That is a full page load, not a router navigation. Server-managed (BFF) exception: with `serverSessionUri` set and a session present that is no longer authenticated (expired), it calls `sdk.refresh()` instead, which navigates to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` so the BFF rotates the cookie and comes back.
+`withAuthGuard` waits for loading, calls `checkAuthentication()` (refreshing if needed), and sets `window.location.href` to `loginPageUri` when the user is not authenticated. That is a full page load, not a router navigation. Server-managed (BFF) exception: with `serverSessionUri` set and a session present that is no longer authenticated (expired), it calls `sdk.refresh()` instead, which navigates to `` `${authUriPrefix}/refresh?returnTo=<current URL>` `` so the BFF rotates the cookie and comes back.
 
 ```tsx
 // src/pages/Profile.tsx
@@ -229,7 +229,7 @@ export default withAuthGuard(Profile, { loginPageUri: '/login', onLoading: () =>
 
 ### Server-managed sessions (BFF) in one paragraph
 
-Set `serverSessionUri` to your BFF login endpoint (for example `'/auth/login'`). `login()` then navigates to that endpoint, the BFF performs the code exchange, and tokens stay server-side in encrypted http-only cookies. The SDK stops reading and writing browser storage. The `/callback` route must forward the query string to the BFF (`window.location.href = '/auth/callback' + window.location.search`) instead of calling `handleCallback()`, and logout becomes a navigation to `/auth/logout`. Fetch the session from your BFF before rendering and pass it as `<StyAuthProvider session={session}>`, without `refresh_token` and `id_token` (have the endpoint return `toClientSession(session)`; refresh and logout run on the BFF, and `idTokenClaims` comes from the session's `claims`). The browser never refreshes in this mode: `refresh()` and `withAuthGuard` send an expired session through the BFF refresh route `` `${authUrlPrefix}/refresh` `` (full-page navigation, back to the current URL). `authUrlPrefix` defaults to `'/auth'`; set it only if the BFF uses a different prefix. The default (`null` / `false`) keeps tokens in the browser. The server-session reference covers the BFF side.
+Set `serverSessionUri` to your BFF login endpoint (for example `'/auth/login'`). `login()` then navigates to that endpoint, the BFF performs the code exchange, and tokens stay server-side in encrypted http-only cookies. The SDK stops reading and writing browser storage. The `/callback` route must forward the query string to the BFF (`window.location.href = '/auth/callback' + window.location.search`) instead of calling `handleCallback()`, and logout becomes a navigation to `/auth/logout`. Fetch the session from your BFF before rendering and pass it as `<StyAuthProvider session={session}>`, without `refresh_token` and `id_token` (have the endpoint return `toClientSession(session)`; refresh and logout run on the BFF, and `idTokenClaims` comes from the session's `claims`). The browser never refreshes in this mode: `refresh()` and `withAuthGuard` send an expired session through the BFF refresh route `` `${authUriPrefix}/refresh` `` (full-page navigation, back to the current URL). `authUriPrefix` defaults to `'/auth'`; set it only if the BFF uses a different prefix. The default (`null` / `false`) keeps tokens in the browser. The server-session reference covers the BFF side.
 
 ## Common mistakes
 
@@ -264,7 +264,7 @@ Set `serverSessionUri` to your BFF login endpoint (for example `'/auth/login'`).
 
 State: `sdk`, `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`.
 
-Methods (proxied to `sdk`): `login(params?)`, `register(params?)`, `logout({ postLogoutRedirectUri }?)`, `handleCallback(url?)`, `refresh({ returnTo }?)` (server-managed: navigates to `` `${authUrlPrefix}/refresh` ``; `returnTo` defaults to the current URL), `revoke()`, `checkAuthentication({ autoRefresh }?)`, `init()`, `tokenExchange(params?)`, `entry(url?, params?)`, `subscribeToEvent(name, cb)`, `subscribeToAllEvents(cb)`.
+Methods (proxied to `sdk`): `login(params?)`, `register(params?)`, `logout({ postLogoutRedirectUri }?)`, `handleCallback(url?)`, `refresh({ returnTo }?)` (server-managed: navigates to `` `${authUriPrefix}/refresh` ``; `returnTo` defaults to the current URL), `revoke()`, `checkAuthentication({ autoRefresh }?)`, `init()`, `tokenExchange(params?)`, `entry(url?, params?)`, `subscribeToEvent(name, cb)`, `subscribeToAllEvents(cb)`.
 
 Pass the flow type for typed params: `useStrivacity<RedirectFlow>()`, `PopupFlow`, `EmbeddedFlow`, `NativeFlow`.
 
@@ -293,11 +293,11 @@ Pass the flow type for typed params: `useStrivacity<RedirectFlow>()`, `PopupFlow
 | `refreshSkew`                                 | `60`                                       | Seconds before expiry that count as expired                                                                                                  |
 | `lazyLoad`                                    | `false`                                    | `true` defers `init()` until first use                                                                                                       |
 | `serverSessionUri`                            | `null`                                     | String = BFF login URL; `true` = server-managed without BFF routing                                                                          |
-| `authUrlPrefix`                               | `'/auth'`                                  | Server-managed: `refresh()` / `withAuthGuard` navigate to `${authUrlPrefix}/refresh`. Change it only to match a non-default BFF prefix       |
+| `authUriPrefix`                               | `'/auth'`                                  | Server-managed: `refresh()` / `withAuthGuard` navigate to `${authUriPrefix}/refresh`. Change it only to match a non-default BFF prefix       |
 | `discoveryDocumentCacheTTL`                   | `3600`                                     | Seconds                                                                                                                                      |
 | `jwksCacheTTL`                                | `600`                                      | Seconds                                                                                                                                      |
 | `logging`                                     | none                                       | `createDefaultLogging()` for console logs                                                                                                    |
-| `httpClient`, `urlHandler`, `callbackHandler` | built-in                                   | Override for custom navigation (for example Capacitor)                                                                                       |
+| `httpClient`, `uriHandler`, `callbackHandler` | built-in                                   | Override for custom navigation (for example Capacitor)                                                                                       |
 
 ### `login()` / `register()` params (`ExtraRequestArgs`)
 
@@ -366,7 +366,7 @@ export function SessionWatcher() {
 
 ### Token refresh
 
-There is no background timer. With `autoRefresh: true` (default), `checkAuthentication()` refreshes once the access token is within `refreshSkew` seconds (default `60`) of expiry and a refresh token exists. With `serverSessionUri` set it never refreshes in the browser: `refresh()` (and `withAuthGuard` for an expired session) navigates to the BFF's refresh route (`` `${authUrlPrefix}/refresh` ``, default `/auth/refresh`), which rotates the cookie and redirects back. It runs when `withAuthGuard` mounts, when the provider recomputes `isAuthenticated` after SDK events, and whenever you call it. Call `refresh()` to force a refresh. If an expired access token is still in the session afterwards (no refresh token, or a transient refresh failure), `checkAuthentication()` returns `false`. On failure `tokenRefreshFailed` fires, and the session is cleared unless the failure was a transient `NetworkError` / `ServerError`. `revoke()` revokes the tokens and clears the local session without visiting the IdP logout page.
+There is no background timer. With `autoRefresh: true` (default), `checkAuthentication()` refreshes once the access token is within `refreshSkew` seconds (default `60`) of expiry and a refresh token exists. With `serverSessionUri` set it never refreshes in the browser: `refresh()` (and `withAuthGuard` for an expired session) navigates to the BFF's refresh route (`` `${authUriPrefix}/refresh` ``, default `/auth/refresh`), which rotates the cookie and redirects back. It runs when `withAuthGuard` mounts, when the provider recomputes `isAuthenticated` after SDK events, and whenever you call it. Call `refresh()` to force a refresh. If an expired access token is still in the session afterwards (no refresh token, or a transient refresh failure), `checkAuthentication()` returns `false`. On failure `tokenRefreshFailed` fires, and the session is cleared unless the failure was a transient `NetworkError` / `ServerError`. `revoke()` revokes the tokens and clears the local session without visiting the IdP logout page.
 
 ### Logout
 

@@ -3,7 +3,7 @@ import type { createBaseFlow } from '@strivacity/sdk-core/flows/base';
 import { vi, type MockInstance } from 'vitest';
 import type { HttpClientResponse, SDKHttpClient, SDKLogging, ServerAdapter, ServerSDKInitConfig, ServerStorage } from '../../../packages/sdk-core/src/types';
 import { createSession, createState, timestamp, createHttpClient, serializeState } from '../../../packages/sdk-core/src/utils';
-import { redirectUrlHandler, redirectCallbackHandler } from '../../../packages/sdk-core/src/handlers';
+import { redirectUriHandler, redirectCallbackHandler } from '../../../packages/sdk-core/src/handlers';
 import { createBaseServerSDK } from '../../../packages/sdk-core/src/server/base';
 
 export type MockEvent = { request: Request };
@@ -167,10 +167,10 @@ export function createOptions<T = unknown>(overrides?: Partial<SDKOptions>): SDK
 		storage: createMockStorage(),
 		stateStorage: createMockStorage(),
 		storageKey: 'sty.session',
-		authUrlPrefix: '/auth',
+		authUriPrefix: '/auth',
 		logging: createMockLogging(),
 		httpClient: createHttpClient(),
-		urlHandler: redirectUrlHandler,
+		uriHandler: redirectUriHandler,
 		callbackHandler: redirectCallbackHandler,
 		lazyLoad: false,
 		autoRefresh: true,

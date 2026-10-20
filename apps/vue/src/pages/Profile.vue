@@ -10,7 +10,7 @@ const ctx = useStrivacity();
 const session = computed(() => ctx.sdk.session);
 
 async function handleRefresh() {
-	// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUrlPrefix}/refresh`), which comes back to /profile
+	// Server-managed sessions: refresh() navigates to the server's refresh route (`${authUriPrefix}/refresh`), which comes back to /profile
 	try {
 		await ctx.refresh({ returnTo: '/profile' });
 

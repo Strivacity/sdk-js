@@ -216,7 +216,7 @@ export const authGuard: CanActivateFn = async (_route, state) => {
 	}
 
 	// Server-managed, client-side navigation: the hydrated session expired while the tab stayed open. Send it through
-	// the refresh route (`${authUrlPrefix}/refresh`), which rotates the cookie and comes back to the target URL.
+	// the refresh route (`${authUriPrefix}/refresh`), which rotates the cookie and comes back to the target URL.
 	// During SSR the session was already refreshed.
 	if (isBrowser && serverManaged && sdk.session) {
 		await sdk.refresh({ returnTo: state.url });
@@ -295,7 +295,7 @@ For an outgoing request, read `auth.sdk.accessToken` right after `await auth.che
 
 The Strivacity example app uses this setup by default. Tokens stay in an encrypted http-only cookie, and the Express server serves the auth routes. The pages above already contain the server branch.
 
-1. Set `serverSessionUri: '/auth/login'` in `auth.config.ts`. The browser SDK never refreshes in this mode: `authGuard` (and `auth.sdk.refresh({ returnTo })`) send an expired session through the Server SDK refresh route at `` `${authUrlPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
+1. Set `serverSessionUri: '/auth/login'` in `auth.config.ts`. The browser SDK never refreshes in this mode: `authGuard` (and `auth.sdk.refresh({ returnTo })`) send an expired session through the Server SDK refresh route at `` `${authUriPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
 2. Create the Server SDK lazily, as the example app does, so that importing the module has no side effects. `createServerSDK` throws `ConfigurationError: Missing SDK option: cookieSecret` when neither `cookieSecret` nor `storage` is set. Set `STRIVACITY_COOKIE_SECRET` everywhere the server bundle runs: `ng serve`, `ng build` (route extraction loads `app.config.server.ts`) and production.
 
 ```ts
@@ -311,14 +311,14 @@ export function getServerSdk(): AngularServerSDK {
 		...authConfig, // the client options, plus the server-only ones below
 		cookieSecret: process.env['STRIVACITY_COOKIE_SECRET'], // openssl rand -base64 32
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
-		// postLogoutRedirectUri: '/', authUrlPrefix: '/auth', loginPageUri: '/login', cookieMaxAge: 2592000
+		// postLogoutRedirectUri: '/', authUriPrefix: '/auth', loginPageUri: '/login', cookieMaxAge: 2592000
 	});
 
 	return serverSdk;
 }
 ```
 
-`createServerSDK` does not modify the options object you pass in. Read resolved values, such as `authUrlPrefix`, from `serverSdk.options`.
+`createServerSDK` does not modify the options object you pass in. Read resolved values, such as `authUriPrefix`, from `serverSdk.options`.
 
 3. Mount the router **before** Angular's handler and before any body parser. `POST /auth/backchannel-logout` reads the raw body.
 
@@ -329,7 +329,7 @@ import { getServerSdk } from './server/strivacity';
 const serverSdk = getServerSdk();
 
 // GET /auth/{login,register,callback,refresh,revoke,entry,logout} and POST /auth/backchannel-logout
-app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 // ...then the generated `app.use((req, res, next) => angularApp.handle(req)...)` and `export const reqHandler`
 ```
 
@@ -362,8 +362,8 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 | `window is not defined` / `location is not defined` during SSR           | Run `login()` / `handleCallback()` / `logout()` / `injectScript()` only when `isPlatformBrowser(PLATFORM_ID)`                                    |
 | `ng serve` / `ng build` crashes with `Missing SDK option: cookieSecret`  | Set `STRIVACITY_COOKIE_SECRET` in the environment of every command that loads the server bundle                                                  |
 | `express` / `node:stream` errors in the browser build                    | `@strivacity/sdk-angular/server` was imported from browser code. Import it only from `server.ts`, `app.config.server.ts` and server modules      |
-| 404 or Angular "Cannot match any routes" for `/auth/login`               | Mount `app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers)` before the Angular handler. Use a full-page redirect, not `router.navigate` |
-| `app.use(authConfig.authUrlPrefix!, ...)` mounts nothing                 | The client options have no `authUrlPrefix`. Read the resolved value from `serverSdk.options.authUrlPrefix`                                       |
+| 404 or Angular "Cannot match any routes" for `/auth/login`               | Mount `app.use(serverSdk.options.authUriPrefix, serverSdk.handlers)` before the Angular handler. Use a full-page redirect, not `router.navigate` |
+| `app.use(authConfig.authUriPrefix!, ...)` mounts nothing                 | The client options have no `authUriPrefix`. Read the resolved value from `serverSdk.options.authUriPrefix`                                       |
 | Logged-in user bounced to `/login` on full reload (client-managed + SSR) | The server cannot read `localStorage`. Let the guard pass on the server (see `authGuard`)                                                        |
 | Logout seems to work, but the user is still signed in (server-managed)   | `logout()` does not clear the cookie. Navigate to `/auth/logout`                                                                                 |
 | Back-channel logout returns `400 Failed to parse request body`           | A body parser (`express.json()` / `urlencoded()`) ran before `serverSdk.handlers`. Mount the router first                                        |
@@ -380,7 +380,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 - `StrivacityAuthService`:
   - Properties: `sdk` (the flow instance: `RedirectFlow | PopupFlow | EmbeddedFlow | NativeFlow`) and `options` (the config you passed).
   - Signals: `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`.
-  - Methods: `init()`, `login(params?)`, `register(params?)`, `handleCallback(url?)`, `logout({ postLogoutRedirectUri }?)`, `refresh({ returnTo }?)` (server-managed: navigates to `` `${authUrlPrefix}/refresh` ``; `returnTo` defaults to the current URL), `revoke()`, `checkAuthentication({ autoRefresh }?)` (awaits `init()` first), `tokenExchange(params?)`, `entry(url?, params?)`, `subscribeToEvent(name, cb)`, `subscribeToAllEvents(cb)`.
+  - Methods: `init()`, `login(params?)`, `register(params?)`, `handleCallback(url?)`, `logout({ postLogoutRedirectUri }?)`, `refresh({ returnTo }?)` (server-managed: navigates to `` `${authUriPrefix}/refresh` ``; `returnTo` defaults to the current URL), `revoke()`, `checkAuthentication({ autoRefresh }?)` (awaits `init()` first), `tokenExchange(params?)`, `entry(url?, params?)`, `subscribeToEvent(name, cb)`, `subscribeToAllEvents(cb)`.
 - `StrivacityNativeLoginService` (provide per component):
   - `start({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })`.
   - Signals: `loading`, `state`, `forms`, `messages`.
@@ -393,7 +393,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 
 ### `@strivacity/sdk-angular/server`
 
-- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUrlPrefix}/login` ``).
+- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUriPrefix}/login` ``).
 - `AngularServerSDK`:
   - `handlers` (Express `Router`) and `options` (resolved).
   - Session methods: `getSession(req?, { autoRefresh }?)` (refreshes a near-expiry session once per request unless `autoRefresh` is `false`, `null` when that fails; the cookie is only queued, so flush it as in Patterns), `updateSession(session, req?)`, `refreshSession(req?)`, `revokeSession(req?)`, `completeLogin(params, req?)`, `logout(postLogoutRedirectUri, req?)`, `getEntrySession(url)`.
@@ -413,7 +413,7 @@ Route behaviour:
 
 ### Key SDK options and login params
 
-Option defaults: `scopes` `['openid']`, `responseType` `'code'`, `responseMode` `'query'`, `storageKey` `'sty.session'` (also the cookie name), `autoRefresh` `true`, `refreshSkew` `60`, `lazyLoad` `false`, `serverSessionUri` `null` (client), `authUrlPrefix` `'/auth'` (server-managed `refresh()` and the guard navigate to `` `${authUrlPrefix}/refresh` ``), `discoveryDocumentCacheTTL` `3600`, `jwksCacheTTL` `600`, and no `logging`.
+Option defaults: `scopes` `['openid']`, `responseType` `'code'`, `responseMode` `'query'`, `storageKey` `'sty.session'` (also the cookie name), `autoRefresh` `true`, `refreshSkew` `60`, `lazyLoad` `false`, `serverSessionUri` `null` (client), `authUriPrefix` `'/auth'` (server-managed `refresh()` and the guard navigate to `` `${authUriPrefix}/refresh` ``), `discoveryDocumentCacheTTL` `3600`, `jwksCacheTTL` `600`, and no `logging`.
 
 `login()` / `register()` params: `prompt`, `display`, `loginHint`, `acrValues[]`, `uiLocales[]` and `audiences[]`. Redirect mode adds `locationMethod` and `targetWindow`. Popup mode adds `popupWindowFeatures`, `popupWindowTarget` and `checkOrigin`.
 

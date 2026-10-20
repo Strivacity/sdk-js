@@ -1,9 +1,9 @@
 import { describe, test, expect, vi, afterEach } from 'vitest';
 import { createFakePopup, postMessageFromPopup } from '@strivacity/testing/mocks/window';
-import { popupUrlHandler, popupCallbackHandler } from '../../../src/handlers';
+import { popupUriHandler, popupCallbackHandler } from '../../../src/handlers';
 import { PopupBlockedError, PopupClosedError } from '../../../src/utils';
 
-describe('popupUrlHandler', () => {
+describe('popupUriHandler', () => {
 	afterEach(() => {
 		vi.useRealTimers();
 	});
@@ -11,14 +11,14 @@ describe('popupUrlHandler', () => {
 	test('should throw a PopupBlockedError when the popup is blocked', async () => {
 		vi.spyOn(window, 'open').mockReturnValue(null);
 
-		await expect(popupUrlHandler('https://example.com/')).rejects.toThrow(PopupBlockedError);
+		await expect(popupUriHandler('https://example.com/')).rejects.toThrow(PopupBlockedError);
 	});
 
 	test('should navigate the popup and resolve with the posted message data', async () => {
 		const popup = createFakePopup();
 		vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
-		const promise = popupUrlHandler('https://example.com/');
+		const promise = popupUriHandler('https://example.com/');
 
 		postMessageFromPopup(popup, { code: 'abc' });
 
@@ -33,7 +33,7 @@ describe('popupUrlHandler', () => {
 		vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 		const handler = vi.fn();
 
-		const promise = popupUrlHandler(handler);
+		const promise = popupUriHandler(handler);
 
 		// Let the awaited handler call settle before the internal message listener is registered.
 		await Promise.resolve();
@@ -49,7 +49,7 @@ describe('popupUrlHandler', () => {
 		const popup = createFakePopup();
 		vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
-		const promise = popupUrlHandler('https://example.com/');
+		const promise = popupUriHandler('https://example.com/');
 		let settled = false;
 		void promise.then(() => (settled = true));
 
@@ -66,7 +66,7 @@ describe('popupUrlHandler', () => {
 		const popup = createFakePopup();
 		vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
-		const promise = popupUrlHandler('https://example.com/');
+		const promise = popupUriHandler('https://example.com/');
 		const assertion = expect(promise).rejects.toThrow(PopupClosedError);
 
 		popup.closed = true;
@@ -81,7 +81,7 @@ describe('popupUrlHandler', () => {
 		vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 		const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
-		const promise = popupUrlHandler('https://example.com/');
+		const promise = popupUriHandler('https://example.com/');
 		promise.catch(() => {});
 
 		popup.closed = true;
@@ -97,7 +97,7 @@ describe('popupUrlHandler', () => {
 			const popup = createFakePopup();
 			vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
-			const promise = popupUrlHandler('https://example.com/');
+			const promise = popupUriHandler('https://example.com/');
 
 			postMessageFromPopup(popup, { code: 'abc' });
 			await Promise.resolve();
@@ -116,7 +116,7 @@ describe('popupUrlHandler', () => {
 			const popup = createFakePopup();
 			vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
-			const promise = popupUrlHandler('https://example.com/');
+			const promise = popupUriHandler('https://example.com/');
 			// NOTE: attached immediately so fake-timer microtask flushing below never reports this as an unhandled rejection.
 			promise.catch(() => {});
 
@@ -135,12 +135,12 @@ describe('popupUrlHandler', () => {
 		const firstPopup = createFakePopup();
 		vi.spyOn(window, 'open').mockReturnValueOnce(firstPopup as unknown as Window);
 
-		void popupUrlHandler('https://example.com/first');
+		void popupUriHandler('https://example.com/first');
 
 		const secondPopup = createFakePopup();
 		vi.spyOn(window, 'open').mockReturnValueOnce(secondPopup as unknown as Window);
 
-		const secondPromise = popupUrlHandler('https://example.com/second');
+		const secondPromise = popupUriHandler('https://example.com/second');
 
 		expect(firstPopup.close).toHaveBeenCalled();
 

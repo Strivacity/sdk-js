@@ -1,16 +1,16 @@
 import { describe, test, expect, vi } from 'vitest';
-import { redirectUrlHandler, redirectCallbackHandler } from '../../../src/handlers';
+import { redirectUriHandler, redirectCallbackHandler } from '../../../src/handlers';
 import { ProtocolError } from '../../../src/utils';
 
-describe('redirectUrlHandler', () => {
+describe('redirectUriHandler', () => {
 	test('should reject when no URL is provided', async () => {
-		await expect(redirectUrlHandler()).rejects.toThrow('No URL provided for redirection');
+		await expect(redirectUriHandler()).rejects.toThrow('No URL provided for redirection');
 	});
 
 	test('should call location.assign on the current window by default', async () => {
 		const assignSpy = vi.spyOn(window.location, 'assign').mockImplementation(() => undefined);
 
-		await redirectUrlHandler('https://example.com/');
+		await redirectUriHandler('https://example.com/');
 
 		expect(assignSpy).toHaveBeenCalledWith('https://example.com/');
 	});
@@ -18,7 +18,7 @@ describe('redirectUrlHandler', () => {
 	test('should call location.replace when locationMethod is "replace"', async () => {
 		const replaceSpy = vi.spyOn(window.location, 'replace').mockImplementation(() => undefined);
 
-		await redirectUrlHandler('https://example.com/', { locationMethod: 'replace' });
+		await redirectUriHandler('https://example.com/', { locationMethod: 'replace' });
 
 		expect(replaceSpy).toHaveBeenCalledWith('https://example.com/');
 	});
@@ -27,7 +27,7 @@ describe('redirectUrlHandler', () => {
 		const topAssign = vi.fn();
 		vi.spyOn(window, 'top', 'get').mockReturnValue({ location: { assign: topAssign } } as unknown as Window & typeof globalThis);
 
-		await redirectUrlHandler('https://example.com/', { targetWindow: 'top' });
+		await redirectUriHandler('https://example.com/', { targetWindow: 'top' });
 
 		expect(topAssign).toHaveBeenCalledWith('https://example.com/');
 	});
@@ -35,7 +35,7 @@ describe('redirectUrlHandler', () => {
 	test('should resolve without navigating when the target window is unavailable', async () => {
 		vi.spyOn(window, 'self', 'get').mockReturnValue(undefined as unknown as Window & typeof globalThis);
 
-		await expect(redirectUrlHandler('https://example.com/')).resolves.toBeUndefined();
+		await expect(redirectUriHandler('https://example.com/')).resolves.toBeUndefined();
 	});
 });
 

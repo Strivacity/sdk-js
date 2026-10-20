@@ -54,7 +54,7 @@ export function createServerSDK(initConfig: SvelteKitServerSDKInitConfig): Svelt
 		const session = await base.getSession(event);
 
 		if (!session) {
-			const loginUrl = ['embedded', 'native'].includes(base.options.mode) ? base.options.loginPageUri : `${base.options.authUrlPrefix}/login`;
+			const loginUrl = ['embedded', 'native'].includes(base.options.mode) ? base.options.loginPageUri : `${base.options.authUriPrefix}/login`;
 			const uri = new URL(loginUrl, event.url.origin);
 			const returnTo = guardOpts.returnTo ?? `${event.url.pathname}${event.url.search}`;
 

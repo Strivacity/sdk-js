@@ -23,10 +23,10 @@ describe('getServerSDKOptions', () => {
 		expect(options.postLoginRedirectUri).toBe('https://brandtegrity.io');
 		expect(options.postLogoutRedirectUri).toBe('https://brandtegrity.io');
 		expect(options.cookieMaxAge).toBe(DEFAULT_COOKIE_MAX_AGE);
-		expect(options.authUrlPrefix).toBe('/auth');
+		expect(options.authUriPrefix).toBe('/auth');
 		expect(options.loginPageUri).toBe('/login');
 		expect(options.serverSessionUri).toBe('/auth/login');
-		await expect(options.urlHandler(new URL('https://brandtegrity.io'))).resolves.toBeUndefined();
+		await expect(options.uriHandler(new URL('https://brandtegrity.io'))).resolves.toBeUndefined();
 	});
 
 	test('w/ options', () => {
@@ -38,7 +38,7 @@ describe('getServerSDKOptions', () => {
 				cookieMaxAge: 60,
 				postLoginRedirectUri: 'https://brandtegrity.io/home',
 				postLogoutRedirectUri: 'https://brandtegrity.io/bye',
-				authUrlPrefix: '/custom-auth',
+				authUriPrefix: '/custom-auth',
 			}),
 		);
 

@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
 
 ### 4. Shared options
 
-`serverSessionUri` must be set explicitly: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in this mode: `withAuthGuard` and `refresh()` send an expired session through the server's refresh route at `` `${authUrlPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
+`serverSessionUri` must be set explicitly: the client SDK defaults it to `null` (client-managed), while the server SDK defaults to `'/auth/login'`. The browser SDK never refreshes in this mode: `withAuthGuard` and `refresh()` send an expired session through the server's refresh route at `` `${authUriPrefix}/refresh` `` (client option, default `'/auth'`; set it only if the server SDK uses a different prefix).
 
 ```ts
 // src/options.ts
@@ -112,7 +112,7 @@ export function getServerSdk(): SolidServerSDK {
 		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET,
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
-		// authUrlPrefix: '/auth',        // default
+		// authUriPrefix: '/auth',        // default
 		// loginPageUri: '/login',            // default
 	});
 
@@ -320,7 +320,7 @@ export default function ErrorPage() {
 
 ### 9. Protected route and claims
 
-`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginPageUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
+`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginPageUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUriPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
 
 ```tsx
 // src/routes/profile.tsx
@@ -376,7 +376,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-solid/server`)
 
-Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUriPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -399,7 +399,7 @@ Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(sto
 
 ### Key SDK options (shared) and defaults
 
-`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageKey` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUrlPrefix}/login` ``), `authUrlPrefix` (`'/auth'`; with server-managed sessions the browser `refresh()` and `withAuthGuard` navigate to `` `${authUrlPrefix}/refresh` ``, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
+`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageKey` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUriPrefix}/login` ``), `authUriPrefix` (`'/auth'`; with server-managed sessions the browser `refresh()` and `withAuthGuard` navigate to `` `${authUriPrefix}/refresh` ``, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
 
 `login()` / `register()` params (`ExtraRequestArgs`): `prompt`, `display`, `loginHint`, `acrValues`, `uiLocales` and `audiences`. In server-managed mode the client forwards them to `serverSessionUri` as query params.
 

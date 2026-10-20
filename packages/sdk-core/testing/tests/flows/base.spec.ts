@@ -4,7 +4,7 @@ import { createOptions, getMockStorage, seedState } from '@strivacity/testing/mo
 import { worker } from '@strivacity/testing/mocks/msw';
 import openidConfiguration from '@strivacity/testing/fixtures/openid-configuration.json';
 import { createBaseFlow } from '../../../src/flows/base';
-import { redirectUrlHandler } from '../../../src/handlers/redirect';
+import { redirectUriHandler } from '../../../src/handlers/redirect';
 import { getDefaultFlowState, ConfigurationError, OidcError, ProtocolError, NetworkError, ServerError } from '../../../src/utils';
 import { timestamp } from '../../../src/utils/common';
 import type { FlowState } from '../../../src/types/oidc';
@@ -12,7 +12,7 @@ import { buildIdToken } from '@strivacity/testing/mocks/oidc';
 
 vi.mock('../../../src/handlers/redirect', async (importOriginal) => ({
 	...(await importOriginal<typeof import('../../../src/handlers/redirect')>()),
-	redirectUrlHandler: vi.fn().mockResolvedValue(undefined),
+	redirectUriHandler: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('createBaseFlow', () => {
@@ -23,7 +23,7 @@ describe('createBaseFlow', () => {
 	beforeEach(() => {
 		globalThis.location.href = 'https://brandtegrity.io';
 
-		options = createOptions({ urlHandler: vi.fn() });
+		options = createOptions({ uriHandler: vi.fn() });
 		flowState = getDefaultFlowState();
 		base = createBaseFlow(flowState, options);
 	});
@@ -517,7 +517,7 @@ describe('createBaseFlow', () => {
 					http.post('https://brandtegrity.io/oauth2/token', () => HttpResponse.json({ access_token: 'access-token', token_type: 'Bearer', expires_in: 3600 })),
 				);
 
-				const freshOptions = createOptions({ urlHandler: vi.fn() });
+				const freshOptions = createOptions({ uriHandler: vi.fn() });
 				const freshFlowState = freshGetDefaultFlowState();
 				const freshBase = freshCreateBaseFlow(freshFlowState, freshOptions);
 				const stateData = await getMockStorage(freshOptions.stateStorage).generateState();
@@ -839,12 +839,12 @@ describe('createBaseFlow', () => {
 
 		describe('with server-managed sessions', () => {
 			beforeEach(() => {
-				vi.mocked(redirectUrlHandler).mockClear();
+				vi.mocked(redirectUriHandler).mockClear();
 				window.history.replaceState(null, '', '/profile?tab=tokens');
 			});
 
-			test('navigates to the Server SDK refresh route (`${authUrlPrefix}/refresh`) with the current URL as returnTo, and does not call the token endpoint', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/auth/login' });
+			test('navigates to the Server SDK refresh route (`${authUriPrefix}/refresh`) with the current URL as returnTo, and does not call the token endpoint', async () => {
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: '/auth/login' });
 				const sendTokenRequest = vi.spyOn(options.httpClient, 'sendTokenRequest');
 				base = createBaseFlow(flowState, options);
 				flowState.initialized = true;
@@ -852,29 +852,29 @@ describe('createBaseFlow', () => {
 
 				await base.refresh();
 
-				expect(redirectUrlHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Fprofile%3Ftab%3Dtokens');
-				expect(options.urlHandler).not.toHaveBeenCalled();
+				expect(redirectUriHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Fprofile%3Ftab%3Dtokens');
+				expect(options.uriHandler).not.toHaveBeenCalled();
 				expect(sendTokenRequest).not.toHaveBeenCalled();
 			});
 
 			test('uses the given returnTo (e.g. the target of a navigation a route guard blocked)', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/auth/login' });
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: '/auth/login' });
 				base = createBaseFlow(flowState, options);
 				flowState.initialized = true;
 
 				await base.refresh({ returnTo: '/orders/42' });
 
-				expect(redirectUrlHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Forders%2F42');
+				expect(redirectUriHandler).toHaveBeenCalledWith('/auth/refresh?returnTo=%2Forders%2F42');
 			});
 
-			test('builds the refresh route from a custom authUrlPrefix', async () => {
-				options = createOptions({ urlHandler: vi.fn(), serverSessionUri: '/api/auth/login', authUrlPrefix: '/api/auth' });
+			test('builds the refresh route from a custom authUriPrefix', async () => {
+				options = createOptions({ uriHandler: vi.fn(), serverSessionUri: '/api/auth/login', authUriPrefix: '/api/auth' });
 				base = createBaseFlow(flowState, options);
 				flowState.initialized = true;
 
 				await base.refresh({ returnTo: '/orders' });
 
-				expect(redirectUrlHandler).toHaveBeenCalledWith('/api/auth/refresh?returnTo=%2Forders');
+				expect(redirectUriHandler).toHaveBeenCalledWith('/api/auth/refresh?returnTo=%2Forders');
 			});
 		});
 	});
@@ -1032,7 +1032,7 @@ describe('createBaseFlow', () => {
 				),
 			);
 
-			const freshOptions = createOptions({ urlHandler: vi.fn() });
+			const freshOptions = createOptions({ uriHandler: vi.fn() });
 			const freshFlowState = freshGetDefaultFlowState();
 			const freshBase = freshCreateBaseFlow(freshFlowState, freshOptions);
 			freshFlowState.initialized = true;
@@ -1074,7 +1074,7 @@ describe('createBaseFlow', () => {
 
 			await base.logout();
 
-			const logoutUrl = new URL(vi.mocked(options.urlHandler).mock.calls[0][0]);
+			const logoutUrl = new URL(vi.mocked(options.uriHandler).mock.calls[0][0]);
 			expect(logoutUrl.searchParams.get('id_token_hint')).toBe('fresh-id-token');
 			expect(flowState.session).toBeNull();
 		});
@@ -1090,7 +1090,7 @@ describe('createBaseFlow', () => {
 			expect(flowState.session).toBeNull();
 			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ idToken: 'id-token' }));
 
-			const [url, params] = vi.mocked(options.urlHandler).mock.calls[0] as [URL, Record<string, unknown>];
+			const [url, params] = vi.mocked(options.uriHandler).mock.calls[0] as [URL, Record<string, unknown>];
 			expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/sessions/logout');
 			expect(url.searchParams.get('id_token_hint')).toBe('id-token');
 			expect(url.searchParams.get('post_logout_redirect_uri')).toBe('https://brandtegrity.io/bye');
@@ -1104,14 +1104,14 @@ describe('createBaseFlow', () => {
 			await base.logout();
 
 			expect(flowState.session).toBeNull();
-			expect(options.urlHandler).not.toHaveBeenCalled();
+			expect(options.uriHandler).not.toHaveBeenCalled();
 		});
 
 		test('should log and swallow errors when redirecting to the end-session endpoint fails', async () => {
 			flowState.initialized = true;
 			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' }, null);
 			const error = new Error('redirect failed');
-			vi.mocked(options.urlHandler).mockRejectedValueOnce(error);
+			vi.mocked(options.uriHandler).mockRejectedValueOnce(error);
 
 			await expect(base.logout()).resolves.toBeUndefined();
 
@@ -1125,20 +1125,20 @@ describe('createBaseFlow', () => {
 
 			await Promise.all([base.logout(), base.logout()]);
 
-			expect(options.urlHandler).toHaveBeenCalledTimes(1);
+			expect(options.uriHandler).toHaveBeenCalledTimes(1);
 		});
 
-		test('should use the urlHandlerOverride instead of options.urlHandler when given', async () => {
+		test('should use the uriHandlerOverride instead of options.uriHandler when given', async () => {
 			flowState.initialized = true;
 			flowState.session = getMockStorage(options.storage).generateSession({ id_token: 'id-token' }, null);
-			const urlHandlerOverride = vi.fn().mockResolvedValue(undefined);
+			const uriHandlerOverride = vi.fn().mockResolvedValue(undefined);
 
-			await base.logout({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' }, urlHandlerOverride);
+			await base.logout({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' }, uriHandlerOverride);
 
-			expect(options.urlHandler).not.toHaveBeenCalled();
-			expect(urlHandlerOverride).toHaveBeenCalledTimes(1);
+			expect(options.uriHandler).not.toHaveBeenCalled();
+			expect(uriHandlerOverride).toHaveBeenCalledTimes(1);
 
-			const [url, params] = urlHandlerOverride.mock.calls[0] as [URL, Record<string, unknown>];
+			const [url, params] = uriHandlerOverride.mock.calls[0] as [URL, Record<string, unknown>];
 			expect(`${url.origin}${url.pathname}`).toBe('https://brandtegrity.io/oauth2/sessions/logout');
 			expect(url.searchParams.get('id_token_hint')).toBe('id-token');
 			expect(params).toEqual({ postLogoutRedirectUri: 'https://brandtegrity.io/bye' });
@@ -1150,7 +1150,7 @@ describe('createBaseFlow', () => {
 			await expect(base.logout()).resolves.toBeUndefined();
 
 			expect(flowState.session).toBeNull();
-			expect(options.urlHandler).not.toHaveBeenCalled();
+			expect(options.uriHandler).not.toHaveBeenCalled();
 		});
 
 		test('should complete local teardown and report the failure when end_session_endpoint is absent', async () => {
@@ -1165,7 +1165,7 @@ describe('createBaseFlow', () => {
 				),
 			);
 
-			const freshOptions = createOptions({ urlHandler: vi.fn() });
+			const freshOptions = createOptions({ uriHandler: vi.fn() });
 			const freshFlowState = freshGetDefaultFlowState();
 			const freshBase = freshCreateBaseFlow(freshFlowState, freshOptions);
 			freshFlowState.initialized = true;
@@ -1174,7 +1174,7 @@ describe('createBaseFlow', () => {
 			await expect(freshBase.logout()).resolves.toBeUndefined();
 
 			expect(freshFlowState.session).toBeNull();
-			expect(freshOptions.urlHandler).not.toHaveBeenCalled();
+			expect(freshOptions.uriHandler).not.toHaveBeenCalled();
 			expect(freshOptions.logging?.error).toHaveBeenCalledWith('Unable to redirect to the end-session endpoint', expect.any(Error));
 		});
 
@@ -1317,7 +1317,7 @@ describe('createBaseFlow', () => {
 			await logoutPromise;
 
 			expect(flowState.session).toBeNull();
-			expect(options.urlHandler).not.toHaveBeenCalled();
+			expect(options.uriHandler).not.toHaveBeenCalled();
 		});
 	});
 });

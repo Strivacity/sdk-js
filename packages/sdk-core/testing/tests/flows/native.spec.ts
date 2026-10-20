@@ -148,15 +148,15 @@ describe('createNativeFlow', () => {
 		});
 
 		test('the SDK never opens a browser/popup itself on a Fallback', async () => {
-			const urlHandler = vi.fn();
-			options = createOptions({ urlHandler });
+			const uriHandler = vi.fn();
+			options = createOptions({ uriHandler });
 			flow = createNativeFlow(options);
 			flow.sessionId = 'abc123';
 			worker.use(http.post('https://brandtegrity.io/flow/api/v1/init', () => HttpResponse.json({ hostedUrl: 'https://brandtegrity.io/hosted' })));
 
 			await expect(flow.submitForm()).rejects.toThrow(FallbackError);
 
-			expect(urlHandler).not.toHaveBeenCalled();
+			expect(uriHandler).not.toHaveBeenCalled();
 		});
 
 		test('a chained journey of rejections returns each screen independently, never bleeding a stale message into a later one', async () => {

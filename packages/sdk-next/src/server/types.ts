@@ -104,7 +104,7 @@ export type NextServerSDKInitConfig<Storage extends NextServerStorage = NextServ
 export type NextServerSDK<TEvent extends NextRequest | Request | PagesRouterRequest | undefined = NextRequest | Request | PagesRouterRequest | undefined> =
 	Omit<BaseServerSDK<TEvent>, 'handler'> & {
 		/**
-		 * Dispatches an incoming request to the matching auth route handler based on `authUrlPrefix`, or answers `404 Not Found`
+		 * Dispatches an incoming request to the matching auth route handler based on `authUriPrefix`, or answers `404 Not Found`
 		 * if no auth route matched. Export it as `GET` and `POST` from the `app/auth/[...strivacity]/route.ts` catch-all route.
 		 *
 		 * @param {TEvent} req - The incoming request.

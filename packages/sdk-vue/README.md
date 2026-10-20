@@ -1306,7 +1306,7 @@ const ctx = useStrivacity<RedirectFlow>();
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (embedded/native: returns an EmbeddedLoginFlow/NativeLoginFlow instead)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL, params?: RedirectOptions): Promise<void | EntryResponse>; // Handle external entry (resolves to EntryResponse in embedded/native mode)
@@ -1429,7 +1429,7 @@ The Vue SDK accepts the same configuration as the core SDK. For detailed informa
 
 ### Ionic / Capacitor support
 
-The SDK works with Ionic and Capacitor applications. For native mobile platforms (iOS/Android), you need to override the default `urlHandler`, `callbackHandler`, and `storage` implementations to integrate with Capacitor plugins.
+The SDK works with Ionic and Capacitor applications. For native mobile platforms (iOS/Android), you need to override the default `uriHandler`, `callbackHandler`, and `storage` implementations to integrate with Capacitor plugins.
 
 ```ts
 // main.ts
@@ -1438,7 +1438,7 @@ import { createStrivacitySDK, SDKStorage, SDKHttpClient } from '@strivacity/sdk-
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { InAppBrowser } from '@capacitor/inappbrowser';
-import { redirectUrlHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
+import { redirectUriHandler, redirectCallbackHandler } from '@strivacity/sdk-core/utils/handlers';
 import type { PluginListenerHandle } from '@capacitor/core';
 import type { HttpClientResponse } from '@strivacity/sdk-vue';
 import App from './App.vue';
@@ -1499,9 +1499,9 @@ app.use(
 		storage: Capacitor.getPlatform() === 'web' ? LocalStorage : CapacitorStorage,
 
 		// Handle URL redirects with InAppBrowser on native platforms
-		async urlHandler(url, responseMode) {
+		async uriHandler(url, responseMode) {
 			if (Capacitor.getPlatform() === 'web') {
-				return redirectUrlHandler(url, responseMode);
+				return redirectUriHandler(url, responseMode);
 			} else {
 				await InAppBrowser.openInWebView({
 					url,
@@ -1597,14 +1597,14 @@ app.use(
 		redirectUri: 'https://your-app.example.com/callback',
 		scopes: ['openid', 'profile', 'email'],
 		serverSessionUri: '/api/auth/login', // Requests are routed through your server; tokens are NOT written to client storage
-		authUrlPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUrlPrefix}/refresh`
+		authUriPrefix: '/api/auth', // Where your server serves the auth routes: refresh() and the guards use `${authUriPrefix}/refresh`
 	}),
 );
 ```
 
 In this mode `logout()` doesn't clear the server session cookie. Navigate the browser to your server's logout route instead (e.g. `/api/auth/logout`, optionally with a same-origin `?returnTo=`), which clears the server session and redirects to the IDP end-session endpoint. See [Logging out](../sdk-core/README.md#logging-out) in the core SDK README for the `returnTo` rules.
 
-The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. In a [route guard](#route-guards), you can do this for an expired session (`sdk.session` set but `isAuthenticated` false) with `await sdk.refresh({ returnTo: to.fullPath })` and cancel the navigation (`return false`) instead of redirecting to the login page. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
+The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUriPrefix}/refresh` (default `/auth`; set `authUriPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. In a [route guard](#route-guards), you can do this for an expired session (`sdk.session` set but `isAuthenticated` false) with `await sdk.refresh({ returnTo: to.fullPath })` and cancel the navigation (`return false`) instead of redirecting to the login page. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
 
 See [`apps/vue`](../../apps/vue) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 
@@ -1702,6 +1702,10 @@ Update any code that calls `login()`/`register()` and drives the returned handle
 #### `storageTokenName` renamed to `storageKey`
 
 The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

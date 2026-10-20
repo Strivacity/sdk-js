@@ -9,7 +9,7 @@ import { ProtocolError } from '../utils/errors';
  * @param {RedirectParams} [params] - Optional parameters for the redirection, including the target window and location method.
  * @returns {Promise<void>} A promise that resolves when the redirection occurs.
  */
-export async function redirectUrlHandler(url?: string | URL, params?: RedirectParams): Promise<void> {
+export async function redirectUriHandler(url?: string | URL, params?: RedirectParams): Promise<void> {
 	const targetWindow = params?.targetWindow === 'top' ? globalThis.window?.top : globalThis.window?.self;
 	const method = params?.locationMethod ?? 'assign';
 

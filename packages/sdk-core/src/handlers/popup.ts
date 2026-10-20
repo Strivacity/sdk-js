@@ -30,7 +30,7 @@ function closePopup(disposables: Set<() => void>): void {
  * @returns {Promise<Record<string, string>>} A promise that resolves with the data received from the popup window, or rejects if the popup is blocked or closed by the user.
  * @throws {Error} If the popup window is blocked or closed by the user.
  */
-export async function popupUrlHandler(
+export async function popupUriHandler(
 	urlOrPopupHandler: string | URL | ((popupWindow: Window) => void | Promise<void>),
 	params?: PopupParams,
 ): Promise<Record<string, string>> {

@@ -8,7 +8,7 @@ const angularApp = new AngularNodeAppEngine();
 const serverSdk = getServerSdk();
 
 if (serverSdk) {
-	app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+	app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 
 	// NOTE: Demo only: returns the full server-managed session, including the ID and refresh tokens, so the profile page can
 	// display them. The SDK keeps these two tokens out of the rendered page (TransferState); in your own app, return only what

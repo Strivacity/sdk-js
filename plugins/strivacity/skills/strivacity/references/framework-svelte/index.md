@@ -89,7 +89,7 @@ export function getServerSdk(): SvelteKitServerSDK {
 		cookieSecret: env.STRIVACITY_COOKIE_SECRET,
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
-		// authUrlPrefix: '/auth',        // default
+		// authUriPrefix: '/auth',        // default
 		// loginPageUri: '/login',            // default: requireSession target in embedded/native mode
 	});
 
@@ -340,7 +340,7 @@ Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-svelte/server`)
 
-Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUriPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUriPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -363,7 +363,7 @@ Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(sto
 
 ### Key SDK options (shared) and defaults
 
-`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageKey` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUrlPrefix}/login` ``), `authUrlPrefix` (`'/auth'`; the browser `refresh()` navigates to `` `${authUrlPrefix}/refresh` `` with server-managed sessions, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
+`mode`, `issuer`, `clientId`, `redirectUri` (required; `mode` documented default `'redirect'`), `scopes` (`['openid']`), `responseType` / `responseMode` (`'code'` / `'query'`), client `storage` / `stateStorage` (`createLocalStorage()` / `createSessionStorage()`), `storageKey` (`'sty.session'`, also the server cookie name), `autoRefresh` / `refreshSkew` (`true` / `60` s), `lazyLoad` (`false`), `serverSessionUri` (client `null`; server `` `${authUriPrefix}/login` ``), `authUriPrefix` (`'/auth'`; the browser `refresh()` navigates to `` `${authUriPrefix}/refresh` `` with server-managed sessions, so keep it equal to the server's prefix), `discoveryDocumentCacheTTL` / `jwksCacheTTL` (`3600` / `600` s), `logging` (none; `createDefaultLogging()` logs to the console).
 
 `login()` / `register()` params (`ExtraRequestArgs`): `prompt`, `display`, `loginHint`, `acrValues`, `uiLocales` and `audiences`. In server-managed mode the client forwards them to `serverSessionUri` as query params.
 
@@ -402,7 +402,7 @@ Events: `init`, `sessionLoaded`, `loginInitiated`, `flowInitiated`, `loggedIn`, 
 ### Token refresh and logout
 
 - Server-managed: `getSession(event)` / `requireSession(event)` refresh a near-expiry session automatically, once per request, and every `load` and hook in that request gets the rotated session. `sdk.handle` writes the cookie. `/auth/refresh?returnTo=/current/path` refreshes on demand. A refresh token is only issued if your client/scopes allow it (often `offline_access`). Logout: link to `/auth/logout` (IdP end-session, then `postLogoutRedirectUri`, or a same-origin `?returnTo=` registered as a post-logout redirect URI) or `/auth/revoke` (no IdP page), with `data-sveltekit-reload`. Client `ctx.logout()` does not clear the server cookie, so do not use it in this mode.
-- The browser SDK never refreshes in server-managed mode: `checkAuthentication()` ignores `autoRefresh` when `serverSessionUri` is set. Server `load` functions run on every navigation and refresh there. In browser code, `ctx.refresh()` (or `ctx.sdk.refresh({ returnTo })`) does a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` ``, which rotates the cookie and comes back.
+- The browser SDK never refreshes in server-managed mode: `checkAuthentication()` ignores `autoRefresh` when `serverSessionUri` is set. Server `load` functions run on every navigation and refresh there. In browser code, `ctx.refresh()` (or `ctx.sdk.refresh({ returnTo })`) does a full-page navigation to `` `${authUriPrefix}/refresh?returnTo=<current URL>` ``, which rotates the cookie and comes back.
 - Client-managed: `autoRefresh` (default `true`) refreshes during `checkAuthentication()` within `refreshSkew` of expiry; `ctx.refresh()` forces it. Logout: `await ctx.logout({ postLogoutRedirectUri: location.origin })`.
 
 ### Back-channel logout

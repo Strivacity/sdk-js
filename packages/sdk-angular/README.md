@@ -126,7 +126,7 @@ export const serverSdk = createServerSDK({
 
 ### 3. Mount the Express router
 
-`sdk.handlers` is an Express `Router` exposing every auth route - mount it under `authUrlPrefix` in your SSR server entry, ahead of Angular's own request handler:
+`sdk.handlers` is an Express `Router` exposing every auth route - mount it under `authUriPrefix` in your SSR server entry, ahead of Angular's own request handler:
 
 ```ts
 // src/server/server.ts
@@ -137,7 +137,7 @@ import { serverSdk } from './strivacity';
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 
 app.use((req, res, next) => {
 	angularApp
@@ -175,7 +175,7 @@ export const config = mergeApplicationConfig(appConfig, serverConfig);
 | `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
-> The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
+> The `/auth` prefix and route names come from `authUriPrefix` - see [Server configuration reference](#server-configuration-reference).
 
 ### 4. Provide the SDK
 
@@ -1793,7 +1793,7 @@ export class SomeComponent {
 	register(params?: RedirectParams | PopupParams): Promise<void>; // Start registration flow (same caveat as `login`)
 	handleCallback(url?: string | URL): Promise<{ returnTo?: string }>; // Handle OAuth callback; resolves to the `returnTo` given to login()
 	logout(params?: LogoutParams): Promise<void>; // End session
-	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUrlPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
+	refresh(params?: { returnTo?: string }): Promise<void>; // Refresh access token (server-managed: navigates to the server's refresh route, `${authUriPrefix}/refresh`, instead; `returnTo` sets where it returns, default: the current URL)
 	revoke(): Promise<void>; // Revoke tokens
 	tokenExchange(params?: Record<string, string>): Promise<void>; // Perform a token exchange
 	entry(url?: string | URL): Promise<EntryResponse>; // Handle external entry (embedded/native; resolves `{ session_id, short_app_id, language }`). Redirect/popup: `entry(url?, params?: RedirectOptions): Promise<void>`
@@ -1887,7 +1887,7 @@ import { serverSdk } from './strivacity';
 
 const app = express();
 
-app.use(serverSdk.options.authUrlPrefix, serverSdk.handlers);
+app.use(serverSdk.options.authUriPrefix, serverSdk.handlers);
 ```
 
 ### Accessing the session server-side
@@ -2060,7 +2060,7 @@ For a complete explanation of the handshake and validation performed, see the co
 	handleEntry(req): Promise<Response>;
 	handleLogout(req): Promise<Response>;
 	handleBackChannelLogout(req): Promise<Response>;
-	handler(req): Promise<Response | null>; // dispatches based on `authUrlPrefix`, or null if no route matched
+	handler(req): Promise<Response | null>; // dispatches based on `authUriPrefix`, or null if no route matched
 
 	// Angular-specific
 	readonly handlers: Router; // the Express router exposing the auth endpoints; see Setup
@@ -2076,7 +2076,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `cookieSecret` | `string` | Only if using default storage | - | Encryption key (32+ random characters) for the http-only cookie session storage |
 | `storage` | `AngularServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
-| `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `sdk.handlers` |
+| `authUriPrefix` | `string` | No | `'/auth'` | URL prefix matched by `sdk.handlers` |
 | `loginPageUri` | `string` | No | `'/login'` | Route your own [route guard](#route-guards) redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
@@ -2251,6 +2251,10 @@ Update any code that calls `login()`/`register()` and drives the returned handle
 #### `storageTokenName` renamed to `storageKey`
 
 The option that sets the session storage key is now called `storageKey`. The default is still `'sty.session'`, so existing sessions are kept unless you customized it.
+
+#### `urlHandler` renamed to `uriHandler`
+
+The `urlHandler` option is now called `uriHandler`, and the built-in handlers `redirectUrlHandler` / `popupUrlHandler` are now `redirectUriHandler` / `popupUriHandler`.
 
 ## Migrating to v3.0
 

@@ -58,12 +58,12 @@ export function getServerSDKOptions<
 	}
 
 	options.stateStorage ??= createServerStateStorage();
-	options.urlHandler ??= async () => Promise.resolve(undefined);
-	options.authUrlPrefix ??= '/auth';
+	options.uriHandler ??= async () => Promise.resolve(undefined);
+	options.authUriPrefix ??= '/auth';
 	options.loginPageUri ??= '/login';
 
 	if (typeof options.serverSessionUri === 'undefined') {
-		options.serverSessionUri ??= `${options.authUrlPrefix}/login`;
+		options.serverSessionUri ??= `${options.authUriPrefix}/login`;
 	}
 
 	return getSDKOptions(options);

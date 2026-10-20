@@ -26,7 +26,7 @@ const options = {
 	scopes: ['openid', 'profile'],
 	// Optional, redirect-relevant:
 	// responseMode: 'query',       // 'query' (default) | 'fragment'
-	// urlHandler: async (url, params) => { ... },   // default: redirectUrlHandler
+	// uriHandler: async (url, params) => { ... },   // default: redirectUriHandler
 	// callbackHandler: async (url, responseMode) => { ... }, // default: redirectCallbackHandler
 };
 ```
@@ -34,7 +34,7 @@ const options = {
 | Option            | Default                   | Notes                                                                                                                            |
 | :---------------- | :------------------------ | :------------------------------------------------------------------------------------------------------------------------------- |
 | `responseMode`    | `'query'`                 | `'fragment'` makes the IdP return `code`/`state` in the URL hash; the default callback handler reads `hash` instead of `search`. |
-| `urlHandler`      | `redirectUrlHandler`      | Called with the authorization URL and the `login()` params. Override only for custom navigation (for example an in-app browser). |
+| `uriHandler`      | `redirectUriHandler`      | Called with the authorization URL and the `login()` params. Override only for custom navigation (for example an in-app browser). |
 | `callbackHandler` | `redirectCallbackHandler` | Parses the callback URL into a params object. It rejects on duplicate query parameters (`ProtocolError`).                        |
 
 ## `login()` / `register()` params

@@ -19,7 +19,7 @@ import { isSessionExpired } from '@strivacity/sdk-core/utils';
  * @returns {string} The refresh route URL.
  */
 function refreshUrl(sdk: BaseServerSDK<NextRequest | Request | PagesRouterRequest | undefined>, returnTo: string): string {
-	return `${sdk.options.authUrlPrefix}/refresh?returnTo=${encodeURIComponent(returnTo)}`;
+	return `${sdk.options.authUriPrefix}/refresh?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 export const appRouteHandlerFactory =
