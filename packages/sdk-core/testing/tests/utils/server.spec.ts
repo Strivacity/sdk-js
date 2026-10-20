@@ -24,7 +24,7 @@ describe('getServerSDKOptions', () => {
 		expect(options.postLogoutRedirectUri).toBe('https://brandtegrity.io');
 		expect(options.cookieMaxAge).toBe(DEFAULT_COOKIE_MAX_AGE);
 		expect(options.authUrlPrefix).toBe('/auth');
-		expect(options.loginUri).toBe('/login');
+		expect(options.loginPageUri).toBe('/login');
 		expect(options.serverSessionUri).toBe('/auth/login');
 		await expect(options.urlHandler(new URL('https://brandtegrity.io'))).resolves.toBeUndefined();
 	});

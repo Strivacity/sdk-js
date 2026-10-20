@@ -67,7 +67,7 @@ export default defineNuxtConfig({
 		cookieSecret: process.env.STRIVACITY_COOKIE_SECRET, // required unless storageFactoryPath is set
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// serverSessionUri: '/auth/login', // default; false = client-managed (see below)
-		// authUrlPrefix: '/auth', loginUri: '/login', postLogoutRedirectUri: '/', cookieMaxAge: 2592000
+		// authUrlPrefix: '/auth', loginPageUri: '/login', postLogoutRedirectUri: '/', cookieMaxAge: 2592000
 	},
 	// embedded mode only: let Vue treat <sty-*> tags as custom elements
 	vue: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('sty-') } },
@@ -103,7 +103,7 @@ const name = computed(() => session.value?.claims?.given_name ?? session.value?.
 </template>
 ```
 
-The guard below sends anonymous users to `/login?returnTo=...`. `loginUri` (default `/login`) is also where `/auth/entry` sends embedded/native entry links. So provide that page and forward to the auth route:
+The guard below sends anonymous users to `/login?returnTo=...`. `loginPageUri` (default `/login`) is also where `/auth/entry` sends embedded/native entry links. So provide that page and forward to the auth route:
 
 ```vue
 <!-- app/pages/login.vue -->
@@ -219,7 +219,7 @@ export default defineEventHandler(async (event) => {
 - `popup`: call `useStrivacity<PopupFlow>().login()` from a click handler (the SDK instance only exists in the browser). In server-managed mode the popup's `/auth/callback` returns a page that closes the popup and notifies the opener. Then run `location.reload()` so SSR picks up the new cookie.
 - `embedded`: set the `isCustomElement` option shown above. Render `<sty-login>`, `<sty-notifications>` and `<sty-language-selector>` inside `<ClientOnly>`. In `onMounted`, call ``injectScript('sty-components', `${sdk.options.issuer}/assets/components/bundle.js`)``. `injectScript` is auto-imported.
 - `native`: call `useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` in a page component rendered in the browser. It starts in `onMounted`. Render `state.value.forms` / `state.value.layout` yourself. Children read the same state with `useNativeLoginContext()`. In server-managed mode `onLogin` is not called: the SDK navigates to the server callback itself. In `onFallback(error)`, navigate to `error.url`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` on their own `/entry` page.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` on their own `/entry` page.
 
 ## Client-managed sessions (opt-in)
 
@@ -298,7 +298,7 @@ For login, register and logout, call `login()`, `register()` and `logout({ postL
 - Server options:
   - `serverSessionUri`: default `` `${authUrlPrefix}/login` ``. Set `false` / `null` for client-managed sessions.
   - `authUrlPrefix`: `'/auth'`. Shared with the browser SDK, whose `refresh()` navigates to `` `${authUrlPrefix}/refresh` ``.
-  - `loginUri`: `'/login'`.
+  - `loginPageUri`: `'/login'`.
   - `postLoginRedirectUri` / `postLogoutRedirectUri`: default origin of `redirectUri`.
   - `cookieMaxAge`: `2592000`.
   - `cookieSecret`: required unless `storageFactoryPath` is set.
@@ -322,7 +322,7 @@ Responses:
 
 - `/auth/refresh`: `302` to `returnTo`, otherwise `204`.
 - `/auth/revoke` and `/auth/logout`: `302`. `/auth/logout` accepts a same-origin `returnTo` (otherwise `postLogoutRedirectUri`).
-- `/auth/entry`: `302` to `loginUri`.
+- `/auth/entry`: `302` to `loginPageUri`.
 - `/auth/backchannel-logout`: `200`, `400` or `501`.
 
 Client `login()` / `register()` params: `prompt`, `display`, `loginHint`, `acrValues[]`, `uiLocales[]` and `audiences[]`. In server-managed mode they are forwarded to `serverSessionUri` as query params.

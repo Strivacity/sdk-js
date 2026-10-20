@@ -625,7 +625,7 @@ describe('createBaseServerSDK', () => {
 			expect(response.status).toBe(302);
 			const location = new URL(response.headers.get('location') as string);
 
-			expect(`${location.origin}${location.pathname}`).toBe(`https://brandtegrity.io${options.loginUri}`);
+			expect(`${location.origin}${location.pathname}`).toBe(`https://brandtegrity.io${options.loginPageUri}`);
 			expect(location.searchParams.get('session_id')).toBe('abc123');
 			expect(location.searchParams.get('short_app_id')).toBe('app');
 			expect(location.searchParams.get('language')).toBe('hu-HU');
@@ -939,7 +939,7 @@ describe('createBaseServerSDK', () => {
 
 			const response = await sdk.handler(createMockEvent('https://brandtegrity.io/auth/entry'));
 
-			expect(response?.headers.get('location')).toContain(sdk.options.loginUri);
+			expect(response?.headers.get('location')).toContain(sdk.options.loginPageUri);
 		});
 
 		test('GET /auth/logout', async () => {

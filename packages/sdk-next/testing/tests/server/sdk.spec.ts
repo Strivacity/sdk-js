@@ -122,7 +122,7 @@ describe('createServerSDK', () => {
 	});
 
 	test('exposes the base server sdk options', () => {
-		const base = installBase({ options: { loginUri: '/login' } });
+		const base = installBase({ options: { loginPageUri: '/login' } });
 		const sdk = createServerSDK(validInitConfig);
 
 		expect(sdk.options).toBe(base.options);

@@ -289,7 +289,7 @@ For an outgoing request, read `auth.sdk.accessToken` right after `await auth.che
 - `popup`: same service. `await auth.login()` / `register()` resolve when the popup finishes, then navigate. Call them from a click handler. They reject with `PopupBlockedError` / `PopupClosedError`. Keep the `/callback` route.
 - `embedded`: add `schemas: [CUSTOM_ELEMENTS_SCHEMA]` to the standalone component. Importing `StrivacityAuthModule` does not pass its schema to a standalone component. In `ngOnInit`, in the browser only, call ``injectScript('sty-components', `${auth.sdk.options.issuer}/assets/components/bundle.js`)``. Render `<sty-login [params]="params" [sessionId]="sessionId" [shortAppId]="shortAppId" [lang]="lang" (login)="..." (close)="..." (error)="...">`, plus optionally `<sty-notifications>` and `<sty-language-selector>`.
 - `native`: add `providers: [StrivacityNativeLoginService]` to the login page component, and in the browser call `nativeLogin.start({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` from `ngOnInit`. Render `state().forms` / `state().layout` yourself. Widget child components `inject(StrivacityNativeLoginService)` to get the same instance, because Angular has no `useNativeLoginContext()`. In `onFallback(error)`, set `location.href = error.url.toString()`.
-- Entry links (password reset and similar) for embedded/native: client-managed apps add an `/entry` route that calls `auth.entry()` and forwards the returned `session_id`, `short_app_id` and `language` to `/login`. Server-managed apps let `/auth/entry` redirect to `loginUri` with those params.
+- Entry links (password reset and similar) for embedded/native: client-managed apps add an `/entry` route that calls `auth.entry()` and forwards the returned `session_id`, `short_app_id` and `language` to `/login`. Server-managed apps let `/auth/entry` redirect to `loginPageUri` with those params.
 
 ## SSR with server-managed sessions (Express)
 
@@ -311,7 +311,7 @@ export function getServerSdk(): AngularServerSDK {
 		...authConfig, // the client options, plus the server-only ones below
 		cookieSecret: process.env['STRIVACITY_COOKIE_SECRET'], // openssl rand -base64 32
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
-		// postLogoutRedirectUri: '/', authUrlPrefix: '/auth', loginUri: '/login', cookieMaxAge: 2592000
+		// postLogoutRedirectUri: '/', authUrlPrefix: '/auth', loginPageUri: '/login', cookieMaxAge: 2592000
 	});
 
 	return serverSdk;
@@ -393,7 +393,7 @@ Do not create Angular routes under `/auth`. Express answers those paths before A
 
 ### `@strivacity/sdk-angular/server`
 
-- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUrlPrefix}/login` ``).
+- `createServerSDK(config)`: client options plus `cookieSecret`, `storage` (default encrypted cookies), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` / `postLogoutRedirectUri` (default: origin of `redirectUri`), `cookieMaxAge` (`2592000`) and `serverSessionUri` (default `` `${authUrlPrefix}/login` ``).
 - `AngularServerSDK`:
   - `handlers` (Express `Router`) and `options` (resolved).
   - Session methods: `getSession(req?, { autoRefresh }?)` (refreshes a near-expiry session once per request unless `autoRefresh` is `false`, `null` when that fails; the cookie is only queued, so flush it as in Patterns), `updateSession(session, req?)`, `refreshSession(req?)`, `revokeSession(req?)`, `completeLogin(params, req?)`, `logout(postLogoutRedirectUri, req?)`, `getEntrySession(url)`.
@@ -407,7 +407,7 @@ Route behaviour:
 - `/auth/login` and `/auth/register` accept `returnTo` (same origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience`.
 - `/auth/refresh` answers `302` to `returnTo`, otherwise `204`.
 - `/auth/revoke` and `/auth/logout` answer `302`.
-- `/auth/entry` answers `302` to `loginUri?session_id=&short_app_id=&language=`.
+- `/auth/entry` answers `302` to `loginPageUri?session_id=&short_app_id=&language=`.
 - `/auth/backchannel-logout` answers `200`, `400` or `501`.
 - Failures redirect to `/error?type=&error=&error_description=`.
 

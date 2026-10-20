@@ -44,7 +44,7 @@ export const appRouteHandlerFactory =
 			const returnTo = typeof opts.returnTo === 'function' ? await opts.returnTo(params) : opts.returnTo;
 			const { redirect } = await import('next/navigation');
 
-			redirect(`${sdk.options.loginUri}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`);
+			redirect(`${sdk.options.loginPageUri}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`);
 		}
 
 		return handler({ ...params, session });
@@ -63,7 +63,7 @@ export const pageRouteHandlerFactory =
 					destination:
 						session.refresh_token && sdk.options.autoRefresh !== false
 							? refreshUrl(sdk, returnTo || ctx.resolvedUrl)
-							: `${sdk.options.loginUri}?returnTo=${encodeURIComponent(returnTo || ctx.resolvedUrl)}`,
+							: `${sdk.options.loginPageUri}?returnTo=${encodeURIComponent(returnTo || ctx.resolvedUrl)}`,
 					permanent: false,
 				},
 			};
@@ -72,7 +72,7 @@ export const pageRouteHandlerFactory =
 		if (!session) {
 			return {
 				redirect: {
-					destination: `${sdk.options.loginUri}?returnTo=${encodeURIComponent(returnTo || ctx.resolvedUrl)}`,
+					destination: `${sdk.options.loginPageUri}?returnTo=${encodeURIComponent(returnTo || ctx.resolvedUrl)}`,
 					permanent: false,
 				},
 			};

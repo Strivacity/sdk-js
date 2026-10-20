@@ -90,7 +90,7 @@ export function getServerSdk(): SvelteKitServerSDK {
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 		// authUrlPrefix: '/auth',        // default
-		// loginUri: '/login',            // default: requireSession target in embedded/native mode
+		// loginPageUri: '/login',            // default: requireSession target in embedded/native mode
 	});
 
 	return sdk;
@@ -184,7 +184,7 @@ In server-managed mode these are plain links to the auth routes. `data-sveltekit
 </header>
 ```
 
-A `/login` page is needed in client-managed mode and as the `loginUri` target in embedded/native mode. In redirect mode `ctx.login()` navigates to `serverSessionUri` (`/auth/login`) when server-managed and to the IdP when client-managed:
+A `/login` page is needed in client-managed mode and as the `loginPageUri` target in embedded/native mode. In redirect mode `ctx.login()` navigates to `serverSessionUri` (`/auth/login`) when server-managed and to the IdP when client-managed:
 
 ```svelte
 <!-- src/routes/login/+page.svelte -->
@@ -252,7 +252,7 @@ Auth-route failures redirect to `/error?type=...&error=...&error_description=...
 
 ### 9. Protected page
 
-`requireSession(event, { returnTo })` returns the session or throws a SvelteKit `redirect()` to `/auth/login?returnTo=...` (redirect/popup) or `loginUri?returnTo=...` (embedded/native). Server `load` functions run on every navigation, including client-side ones. `requireSession()` reads through `getSession(event)`, so a near-expiry session is refreshed once for the whole request: the root layout `load` gets the same rotated session, and `sdk.handle` writes the new cookie. A failed refresh counts as no session and redirects to login.
+`requireSession(event, { returnTo })` returns the session or throws a SvelteKit `redirect()` to `/auth/login?returnTo=...` (redirect/popup) or `loginPageUri?returnTo=...` (embedded/native). Server `load` functions run on every navigation, including client-side ones. `requireSession()` reads through `getSession(event)`, so a near-expiry session is refreshed once for the whole request: the root layout `load` gets the same rotated session, and `sdk.handle` writes the new cookie. A failed refresh counts as no session and redirects to login.
 
 ```ts
 // src/routes/profile/+page.server.ts
@@ -316,7 +316,7 @@ Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server
 - `popup`: `await ctx.login()` / `ctx.register()` from `useStrivacity<PopupFlow>()` resolve when the popup finishes. Call them from a click handler. In server-managed mode the popup's `/auth/callback` response closes the popup and notifies the opener. Then `invalidateAll()` or reload.
 - `embedded`: load the bundle with ``injectScript('sty-components', `${issuer}/assets/components/bundle.js`)`` in `onMount`, render `<sty-login {params} {sessionId} {shortAppId} lang={...} onlogin={...} onclose={...} onerror={...}>` (Svelte sets known custom-element props as DOM properties) plus optional `<sty-notifications>` / `<sty-language-selector>`.
 - `native`: `const ctx = useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` at the top of the login component's `<script>`. It sets the login context automatically, so child widgets call `useNativeLoginContext()`. Render `ctx.state.forms` / `ctx.state.layout` yourself and call `ctx.submitForm(formId)`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` page.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` page.
 
 ## Common mistakes
 
@@ -340,7 +340,7 @@ Set `serverSessionUri: false` in `src/lib/options.ts`, then remove `hooks.server
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-svelte/server`)
 
-Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -351,7 +351,7 @@ Extra options on top of the client options: `cookieSecret`, `storage` (default e
 | `handler(event)`                                                                                                                             | Raw dispatcher: `Response` for auth routes, `null` otherwise                                                               |
 | `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout` | Individual route handlers (usable from `+server.ts`)                                                                       |
 
-Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
+Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginPageUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
 
 Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(storage, options?)`, `createServerMemoryStorage`, `isSessionExpired`, `toClientSession`, `createDefaultLogging`, errors, and types `SvelteKitServerSDK`, `SvelteKitServerSDKInitConfig`, `SessionData`.
 

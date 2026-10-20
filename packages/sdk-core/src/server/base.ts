@@ -403,7 +403,7 @@ export function createBaseServerSDK<
 
 		try {
 			const data = await getEntrySession(request.url);
-			const uri = new URL(options.loginUri, origin);
+			const uri = new URL(options.loginPageUri, origin);
 			uri.searchParams.set('session_id', data.session_id);
 			uri.searchParams.set('short_app_id', data.short_app_id);
 			uri.searchParams.set('language', data.language);

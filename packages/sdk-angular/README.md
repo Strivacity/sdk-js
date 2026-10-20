@@ -172,7 +172,7 @@ export const config = mergeApplicationConfig(appConfig, serverConfig);
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
@@ -2077,7 +2077,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `storage` | `AngularServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `sdk.handlers` |
-| `loginUri` | `string` | No | `'/login'` | Route your own [route guard](#route-guards) redirects to when there's no session |
+| `loginPageUri` | `string` | No | `'/login'` | Route your own [route guard](#route-guards) redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |

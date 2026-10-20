@@ -87,7 +87,7 @@ export const sdk = createServerSDK({
 	postLoginRedirectUri: '/profile', // default: origin of redirectUri
 	// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 	// authUrlPrefix: '/auth',        // default
-	// loginUri: '/login',            // default: where sdk.withAuthGuard sends anonymous users
+	// loginPageUri: '/login',            // default: where sdk.withAuthGuard sends anonymous users
 });
 ```
 
@@ -188,7 +188,7 @@ export async function AuthNav() {
 }
 ```
 
-`sdk.withAuthGuard` redirects to `loginUri` (`/login`) with `?returnTo=`. Forward it, query string included, with a route handler. A route handler always answers with a real `307`, while a page that calls `redirect()` under the layout's `<Suspense>` only redirects on the client after streaming. In server-managed mode this replaces the client `login()` component shown for Next.js in the redirect mode reference.
+`sdk.withAuthGuard` redirects to `loginPageUri` (`/login`) with `?returnTo=`. Forward it, query string included, with a route handler. A route handler always answers with a real `307`, while a page that calls `redirect()` under the layout's `<Suspense>` only redirects on the client after streaming. In server-managed mode this replaces the client `login()` component shown for Next.js in the redirect mode reference.
 
 ```ts
 // app/login/route.ts
@@ -240,7 +240,7 @@ export default async function ErrorPage({ searchParams }: { searchParams: Promis
 
 ### 9. Protected server page
 
-`sdk.withAuthGuard(fn, { returnTo })` redirects anonymous users to `${loginUri}?returnTo=...` and injects `session`. It also checks expiry (with `refreshSkew`): an expired session with a refresh token is sent to `/auth/refresh?returnTo=...` (`returnTo`, otherwise `postLoginRedirectUri`), which writes the rotated cookie and comes back. Server components cannot set cookies, so the guard cannot refresh in place. An expired session without a refresh token counts as no session.
+`sdk.withAuthGuard(fn, { returnTo })` redirects anonymous users to `${loginPageUri}?returnTo=...` and injects `session`. It also checks expiry (with `refreshSkew`): an expired session with a refresh token is sent to `/auth/refresh?returnTo=...` (`returnTo`, otherwise `postLoginRedirectUri`), which writes the rotated cookie and comes back. Server components cannot set cookies, so the guard cannot refresh in place. An expired session without a refresh token counts as no session.
 
 ```tsx
 // app/profile/page.tsx
@@ -291,7 +291,7 @@ All of these live in `'use client'` components:
 - `popup`: `login()` / `register()` from `useStrivacity<PopupFlow>()` resolve when the popup finishes. In server-managed mode the popup's `/auth/callback` response closes the popup and notifies the opener. Then reload or navigate.
 - `embedded`: render `<sty-login>` after ``injectScript('sty-components', `${issuer}/assets/components/bundle.js`)`` and listen for its `login` / `close` / `error` DOM events.
 - `native`: use `useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` and render `state.forms` / `state.layout` yourself. Widgets read the shared state with `useNativeLoginContext()`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` instead.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `entry()` instead.
 
 ## Common mistakes
 
@@ -317,7 +317,7 @@ All of these live in `'use client'` components:
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-next/server`)
 
-Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                                                                                                                                                                                           |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -335,7 +335,7 @@ Auth route query params: `/auth/login` and `/auth/register` accept `returnTo` (s
 
 - `<StyAuthProvider options session? children>`.
 - `useStrivacity<Flow>()` returns `sdk`, `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`, `login`, `register`, `logout`, `handleCallback`, `refresh`, `revoke`, `checkAuthentication`, `init`, `tokenExchange`, `entry`, `subscribeToEvent`, `subscribeToAllEvents`.
-- `withAuthGuard(Component, { loginUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`.
+- `withAuthGuard(Component, { loginPageUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`.
 
 ### Key SDK options (shared)
 

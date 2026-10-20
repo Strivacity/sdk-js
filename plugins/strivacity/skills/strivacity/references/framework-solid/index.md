@@ -113,7 +113,7 @@ export function getServerSdk(): SolidServerSDK {
 		postLoginRedirectUri: '/profile', // default: origin of redirectUri
 		// postLogoutRedirectUri: '/',    // default: origin of redirectUri
 		// authUrlPrefix: '/auth',        // default
-		// loginUri: '/login',            // default
+		// loginPageUri: '/login',            // default
 	});
 
 	return sdk;
@@ -320,7 +320,7 @@ export default function ErrorPage() {
 
 ### 9. Protected route and claims
 
-`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
+`withAuthGuard` waits for `loading()`, calls `checkAuthentication()` and sets `window.location.href = loginPageUri` (`'/login'`) when the user is not authenticated. It reads the session handed to the provider, so it also works on client-side navigations. That hydrated session ages while the tab stays open: when a hydrated session is no longer authenticated (expired) in server-managed mode, the guard calls `ctx.sdk.refresh()` instead, a full-page navigation to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` that rotates the cookie and comes back.
 
 ```tsx
 // src/routes/profile.tsx
@@ -339,7 +339,7 @@ function Profile() {
 	);
 }
 
-export default withAuthGuard(Profile, { loginUri: '/login', onLoading: () => <p>Loading...</p> });
+export default withAuthGuard(Profile, { loginPageUri: '/login', onLoading: () => <p>Loading...</p> });
 ```
 
 Reactive accessors: `idTokenClaims()`, `accessToken()`, `refreshToken()`, `accessTokenExpired()`, `accessTokenExpirationDate()` (Unix seconds), `isAuthenticated()`, `language()`. Server-side, call `await getServerSdk().getSession()` inside a `'use server'` function or the middleware. It refreshes a near-expiry session (see step 5) and returns `null` when there is no usable session. A middleware guard is in Patterns.
@@ -353,7 +353,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 - `popup`: `ctx.login()` / `ctx.register()` from `useStrivacity<PopupFlow>()` resolve when the popup finishes. Call them from a click handler. In server-managed mode the popup's `/auth/callback` response closes the popup and notifies the opener. Then reload or navigate.
 - `embedded`: render `<sty-login ref={(el) => (loginEl = el)}>` (JSX types ship with `./client`), call ``injectScript('sty-components', `${issuer}/assets/components/bundle.js`)`` in `onSettled`, set `params` / `sessionId` / `shortAppId` / `lang` as DOM properties on the element and listen for its `login` / `close` / `error` DOM events.
 - `native`: `const ctx = useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` returns accessors (`ctx.loading()`, `ctx.state()`, `ctx.forms()`, `ctx.messages()`) plus `submitForm`, `setFormValue`, `setMessage`, `triggerFallback`, `triggerClose`. **Wrap your widget tree in `<STRIVACITY_LOGIN_CONTEXT value={ctx}>`** so widgets can call `useNativeLoginContext()`.
-- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` route.
+- Entry links (password reset and similar) for embedded/native: `/auth/entry` (server-managed) redirects to `loginPageUri` with `session_id`, `short_app_id` and `language`. Client-managed apps call `ctx.entry()` on an `/entry` route.
 
 ## Common mistakes
 
@@ -376,7 +376,7 @@ Set `serverSessionUri: false` in `src/options.ts`. Then remove `src/middleware.t
 
 ### Server SDK (`createServerSDK(config)` from `@strivacity/sdk-solid/server`)
 
-Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
+Extra options on top of the client options: `cookieSecret`, `storage` (default encrypted cookies, `cookieMaxAge` `2592000`), `stateStorage` (default in-memory), `authUrlPrefix` (`'/auth'`), `loginPageUri` (`'/login'`), `postLoginRedirectUri` and `postLogoutRedirectUri` (both default to the origin of `redirectUri`), and `serverSessionUri` (defaults to `` `${authUrlPrefix}/login` ``).
 
 | Member                                                                                                                                       | Use                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -387,7 +387,7 @@ Extra options on top of the client options: `cookieSecret`, `storage` (default e
 | `handleLogin`, `handleRegister`, `handleCallback`, `handleRefresh`, `handleRevoke`, `handleEntry`, `handleLogout`, `handleBackChannelLogout` | Individual route handlers                                                                                                 |
 | `completeLogin(params, event?)`, `logout(postLogoutRedirectUri, event?)`, `getEntrySession(entryUrl)`                                        | Building blocks for custom routes                                                                                         |
 
-Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
+Auth route behaviour: `/auth/login` and `/auth/register` accept `returnTo` (same-origin only), `prompt`, `display`, `login_hint`, `acr_values`, `ui_locales`, `audience` (space-separated). `/auth/refresh` redirects to `returnTo` (otherwise `204`). `/auth/revoke` revokes and redirects to `postLogoutRedirectUri`. `/auth/logout` redirects to the IdP end-session endpoint, then to a same-origin `returnTo` (otherwise `postLogoutRedirectUri`). `/auth/entry` redirects to `loginPageUri` with entry params. `POST /auth/backchannel-logout` answers `200`, `400` or `501`.
 
 Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(storage, options?)`, `createServerMemoryStorage`, `isSessionExpired`, `toClientSession`, `createDefaultLogging`, errors, and types `SolidServerSDK`, `SolidServerSDKInitConfig`, `RequestEvent`.
 
@@ -395,7 +395,7 @@ Also exported: `createEncryptedCookieStorage`, `createSessionIdCookieStorage(sto
 
 - `<StyAuthProvider options session?>{children}</StyAuthProvider>`.
 - `useStrivacity<Flow>()`: `sdk` (getter), accessors `loading`, `language`, `isAuthenticated`, `idTokenClaims`, `accessToken`, `refreshToken`, `accessTokenExpired`, `accessTokenExpirationDate`, and methods `login`, `register`, `logout`, `handleCallback`, `refresh`, `revoke`, `checkAuthentication`, `init`, `tokenExchange`, `entry`, `subscribeToEvent`, `subscribeToAllEvents`.
-- `withAuthGuard(Component, { loginUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`, `STRIVACITY_LOGIN_CONTEXT`, `injectScript`, client storages, `createDefaultLogging`.
+- `withAuthGuard(Component, { loginPageUri = '/login', onLoading })`, `useNativeLogin(options)`, `useNativeLoginContext()`, `STRIVACITY_LOGIN_CONTEXT`, `injectScript`, client storages, `createDefaultLogging`.
 
 ### Key SDK options (shared) and defaults
 

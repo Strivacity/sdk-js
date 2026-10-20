@@ -195,7 +195,7 @@ export default function Callback() {
 
 ### 6. Protected route
 
-`withAuthGuard` waits for loading, calls `checkAuthentication()` (refreshing if needed), and sets `window.location.href` to `loginUri` when the user is not authenticated. That is a full page load, not a router navigation. Server-managed (BFF) exception: with `serverSessionUri` set and a session present that is no longer authenticated (expired), it calls `sdk.refresh()` instead, which navigates to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` so the BFF rotates the cookie and comes back.
+`withAuthGuard` waits for loading, calls `checkAuthentication()` (refreshing if needed), and sets `window.location.href` to `loginPageUri` when the user is not authenticated. That is a full page load, not a router navigation. Server-managed (BFF) exception: with `serverSessionUri` set and a session present that is no longer authenticated (expired), it calls `sdk.refresh()` instead, which navigates to `` `${authUrlPrefix}/refresh?returnTo=<current URL>` `` so the BFF rotates the cookie and comes back.
 
 ```tsx
 // src/pages/Profile.tsx
@@ -213,7 +213,7 @@ function Profile() {
 	);
 }
 
-export default withAuthGuard(Profile, { loginUri: '/login', onLoading: () => <p>Loading...</p> });
+export default withAuthGuard(Profile, { loginPageUri: '/login', onLoading: () => <p>Loading...</p> });
 ```
 
 ### 7. Reading claims and the access token
@@ -233,22 +233,22 @@ Set `serverSessionUri` to your BFF login endpoint (for example `'/auth/login'`).
 
 ## Common mistakes
 
-| Mistake                                                             | Fix                                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm install @strivacity/sdk-react` installs v3                     | Install `@strivacity/sdk-react@next` or an exact `4.x` version, and pin it                                                                                                                                                                                        |
-| `import.meta.env.STRIVACITY_ISSUER` is `undefined`                  | Vite needs the `VITE_` prefix (CRA: `REACT_APP_` via `process.env`). Restart the dev server after editing env files                                                                                                                                               |
-| `redirect_uri` mismatch error from Strivacity                       | `redirectUri` must match the Admin Console entry exactly (scheme, host, port, path, trailing slash)                                                                                                                                                               |
-| Hosted page errors, or embedded/native session start fails          | Client type must match mode: redirect/popup need "OIDC using no-code components"; embedded/native need "OIDC using the Journey Flow API"                                                                                                                          |
-| User returns to `/callback` and nothing happens                     | The route at `redirectUri` must call `handleCallback()` once `loading` is false                                                                                                                                                                                   |
-| `Cannot read properties of undefined` on `sdk.options`              | `sdk` is `undefined` until the provider's effect runs. Gate every SDK call on `!loading`                                                                                                                                                                          |
-| `subscribeToEvent` in a child's mount effect throws                 | Child effects run before the provider's effect. Subscribe inside an effect gated on `!loading`                                                                                                                                                                    |
-| `Missing SDK context`                                               | `useStrivacity()` / `withAuthGuard` used outside `<StyAuthProvider>`                                                                                                                                                                                              |
-| `login` fires twice in dev (popup opens twice)                      | React StrictMode re-runs effects. Use a `useRef` guard or trigger login from a click                                                                                                                                                                              |
-| Using `refreshToken` / `refresh()` and getting `null` / errors      | A refresh token is only issued if the client and scopes allow it (often `offline_access`). Check `refreshToken !== null`                                                                                                                                          |
-| Logout lands on a Strivacity error page                             | Register the `postLogoutRedirectUri` value on the client                                                                                                                                                                                                          |
-| Importing from `@strivacity/sdk-core`                               | Import everything from `@strivacity/sdk-react`, which re-exports core                                                                                                                                                                                             |
-| Putting a client secret or BFF `cookieSecret` in a `VITE_` variable | Never. The SPA is a public PKCE client and the BFF secret belongs on the server only                                                                                                                                                                              |
-| `withAuthGuard` does not return to the original page                | It appends the current path as `returnTo` to `loginUri`. On the login page pass it on: `login({ returnTo: new URLSearchParams(location.search).get('returnTo') ?? undefined })`; the callback page navigates to `(await handleCallback()).returnTo ?? '/profile'` |
+| Mistake                                                             | Fix                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm install @strivacity/sdk-react` installs v3                     | Install `@strivacity/sdk-react@next` or an exact `4.x` version, and pin it                                                                                                                                                                                            |
+| `import.meta.env.STRIVACITY_ISSUER` is `undefined`                  | Vite needs the `VITE_` prefix (CRA: `REACT_APP_` via `process.env`). Restart the dev server after editing env files                                                                                                                                                   |
+| `redirect_uri` mismatch error from Strivacity                       | `redirectUri` must match the Admin Console entry exactly (scheme, host, port, path, trailing slash)                                                                                                                                                                   |
+| Hosted page errors, or embedded/native session start fails          | Client type must match mode: redirect/popup need "OIDC using no-code components"; embedded/native need "OIDC using the Journey Flow API"                                                                                                                              |
+| User returns to `/callback` and nothing happens                     | The route at `redirectUri` must call `handleCallback()` once `loading` is false                                                                                                                                                                                       |
+| `Cannot read properties of undefined` on `sdk.options`              | `sdk` is `undefined` until the provider's effect runs. Gate every SDK call on `!loading`                                                                                                                                                                              |
+| `subscribeToEvent` in a child's mount effect throws                 | Child effects run before the provider's effect. Subscribe inside an effect gated on `!loading`                                                                                                                                                                        |
+| `Missing SDK context`                                               | `useStrivacity()` / `withAuthGuard` used outside `<StyAuthProvider>`                                                                                                                                                                                                  |
+| `login` fires twice in dev (popup opens twice)                      | React StrictMode re-runs effects. Use a `useRef` guard or trigger login from a click                                                                                                                                                                                  |
+| Using `refreshToken` / `refresh()` and getting `null` / errors      | A refresh token is only issued if the client and scopes allow it (often `offline_access`). Check `refreshToken !== null`                                                                                                                                              |
+| Logout lands on a Strivacity error page                             | Register the `postLogoutRedirectUri` value on the client                                                                                                                                                                                                              |
+| Importing from `@strivacity/sdk-core`                               | Import everything from `@strivacity/sdk-react`, which re-exports core                                                                                                                                                                                                 |
+| Putting a client secret or BFF `cookieSecret` in a `VITE_` variable | Never. The SPA is a public PKCE client and the BFF secret belongs on the server only                                                                                                                                                                                  |
+| `withAuthGuard` does not return to the original page                | It appends the current path as `returnTo` to `loginPageUri`. On the login page pass it on: `login({ returnTo: new URLSearchParams(location.search).get('returnTo') ?? undefined })`; the callback page navigates to `(await handleCallback()).returnTo ?? '/profile'` |
 
 ## API quick reference
 
@@ -270,10 +270,10 @@ Pass the flow type for typed params: `useStrivacity<RedirectFlow>()`, `PopupFlow
 
 ### `withAuthGuard(Component, options?)`
 
-| Option      | Default        | Notes                                                                                                                          |
-| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `loginUri`  | `'/login'`     | Target of `window.location.href` when unauthenticated. Server-managed: an expired session goes through `sdk.refresh()` instead |
-| `onLoading` | renders `null` | Rendered while loading or checking                                                                                             |
+| Option         | Default        | Notes                                                                                                                          |
+| -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `loginPageUri` | `'/login'`     | Target of `window.location.href` when unauthenticated. Server-managed: an expired session goes through `sdk.refresh()` instead |
+| `onLoading`    | renders `null` | Rendered while loading or checking                                                                                             |
 
 ### Key SDK options (`SDKInitConfig`)
 

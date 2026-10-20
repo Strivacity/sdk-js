@@ -95,10 +95,10 @@ describe('withAuthGuard', () => {
 		globalThis.location.href = originalHref;
 	});
 
-	test('redirects to a custom loginUri when configured', async () => {
+	test('redirects to a custom loginPageUri when configured', async () => {
 		const originalHref = globalThis.location.href;
 		const sdk = createMockFlow<RedirectFlow>({ checkAuthentication: vi.fn().mockResolvedValue(false) });
-		const Guarded = withAuthGuard(Protected, { loginUri: '/custom-login' });
+		const Guarded = withAuthGuard(Protected, { loginPageUri: '/custom-login' });
 
 		mount(
 			<STRIVACITY_SDK.Provider value={withContext(sdk, false)}>

@@ -938,7 +938,7 @@ mount('get', '/api/auth/register', (req) => sdk.handleRegister(req));
 /**
  * Handles external flow entry (e.g., password reset link).
  * @modes embedded, native
- * @returns 302 redirect to `loginUri`
+ * @returns 302 redirect to `loginPageUri`
  */
 mount('get', '/api/auth/entry', (req) => sdk.handleEntry(req));
 
@@ -1222,7 +1222,7 @@ The server SDK accepts the same configuration as the client SDK, plus server-spe
 	// server-specific options
 	cookieSecret: '<your-encryption-key>', // encrypts http-only cookies
 	authUrlPrefix: '/auth', // Prefix for auth routes (default: '/auth')
-	loginUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
+	loginPageUri: '/login', // App's login page; the entry route (`handleEntry`) redirects there with `session_id`, `short_app_id` and `language` (default: '/login')
 	cookieMaxAge: 2592000, // Max age for session cookies in seconds (default: 30 days)
 	postLoginRedirectUri: '/profile', // Redirect after login when no `?returnTo=` is given (default: origin of `redirectUri`)
 	postLogoutRedirectUri: '/', // Redirect after logout (default: origin of `redirectUri`)

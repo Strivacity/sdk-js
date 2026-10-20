@@ -242,7 +242,7 @@ export type WithAuthGuardOptions = {
 	 *
 	 * @default '/login'
 	 */
-	loginUri?: string;
+	loginPageUri?: string;
 
 	/**
 	 * A component to render while the authentication state is being determined. Defaults to `null`.

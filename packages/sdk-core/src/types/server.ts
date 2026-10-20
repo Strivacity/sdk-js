@@ -93,11 +93,12 @@ export type ServerSDKOptions<
 	StateStorage extends SDKStorage = SDKStorage,
 > = SDKOptions<Storage, StateStorage> & {
 	/**
-	 * The URI to which the user will be redirected for login.
+	 * URI of the application's own login page. In `embedded` and `native` mode the entry route (`{authUrlPrefix}/entry`) redirects here with `session_id`, `short_app_id` and `language`,
+	 * and the framework route guards redirect unauthenticated users here.
 	 *
 	 * @default '/login'
 	 */
-	loginUri: string;
+	loginPageUri: string;
 
 	/**
 	 * URI to redirect to after a successful login if no `returnTo` parameter is provided in the login request.

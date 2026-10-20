@@ -150,7 +150,7 @@ export const DELETE = sdk.handler;
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
@@ -1837,7 +1837,7 @@ export default withAuthGuard(
 	function Profile() {
 		return <section>Protected content</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1845,7 +1845,7 @@ export default withAuthGuard(
 
 ```ts
 {
-	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	loginPageUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
 	onLoading?: () => ReactNode; // Optional render function shown while loading/checking authentication
 }
 ```
@@ -1933,7 +1933,7 @@ export async function GET(req: NextRequest) {
 
 ### withAuthGuard
 
-Guards a page and injects a `session` prop, redirecting to `options.loginUri` (default `/login`) when there's no active session.
+Guards a page and injects a `session` prop, redirecting to `options.loginPageUri` (default `/login`) when there's no active session.
 
 The guard also checks expiry. When the access token has expired (or is within `refreshSkew` seconds of expiry) and the session has a refresh token, it redirects to `${authUrlPrefix}/refresh?returnTo=...` - the refresh route writes the rotated session cookie and redirects back. The `returnTo` is the guard's `returnTo` option, falling back to `postLoginRedirectUri` (App Router) or the requested page, `ctx.resolvedUrl` (Pages Router). An expired session without a refresh token - or any expired session with `autoRefresh: false` - is treated as no session and redirects to the login page.
 
@@ -2164,7 +2164,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `storage` | `NextServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handler`/the catch-all route |
-| `loginUri` | `string` | No | `'/login'` | Page `withAuthGuard` redirects to when there's no session |
+| `loginPageUri` | `string` | No | `'/login'` | Page `withAuthGuard` redirects to when there's no session |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |

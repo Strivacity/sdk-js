@@ -1487,7 +1487,7 @@ export default withAuthGuard(
 	function Profile() {
 		return <section>Protected content</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1495,7 +1495,7 @@ export default withAuthGuard(
 
 ```ts
 {
-	loginUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
+	loginPageUri?: string; // URI to redirect to if the user is not authenticated (default: '/login')
 	onLoading?: () => ReactNode; // Optional render function shown while loading/checking authentication
 }
 ```
@@ -1516,7 +1516,7 @@ export default withAuthGuard(
 
 		return <section>Hello, {idTokenClaims?.given_name}</section>;
 	},
-	{ loginUri: '/login' },
+	{ loginPageUri: '/login' },
 );
 ```
 
@@ -1737,7 +1737,7 @@ createRoot(document.getElementById('app')!).render(
 
 In this mode `logout()` doesn't clear the server session cookie. Navigate the browser to your server's logout route instead (e.g. `/api/auth/logout`, optionally with a same-origin `?returnTo=`), which clears the server session and redirects to the IDP end-session endpoint. See [Logging out](../sdk-core/README.md#logging-out) in the core SDK README for the `returnTo` rules.
 
-The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. `withAuthGuard` does the same for an expired session instead of redirecting to `loginUri`. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
+The browser never refreshes tokens in this mode (`autoRefresh` is ignored). `sdk.refresh()` navigates the browser to your server's refresh route, `${authUrlPrefix}/refresh` (default `/auth`; set `authUrlPrefix` when your server uses another prefix) (a full-page navigation, also in `popup` mode) with `returnTo` set to the current URL - or pass your own with `sdk.refresh({ returnTo: '/profile' })`; the server rotates the session cookie and redirects back. `withAuthGuard` does the same for an expired session instead of redirecting to `loginPageUri`. See [Refreshing the session](../sdk-core/README.md#refreshing-the-session) in the core SDK README.
 
 See [`apps/react`](../../apps/react) paired with [`apps/backend`](../../apps/backend) for a working example. See also [Using the backend app with SPA apps](../../README.md#using-the-backend-app-with-spa-apps) in the root README.
 

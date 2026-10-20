@@ -227,8 +227,8 @@ describe('createServerSDK', () => {
 			expect(error.location).toBe('https://brandtegrity.io/auth/login?returnTo=%2Fprofile%3Ftab%3Dsecurity');
 		});
 
-		test('redirects to options.loginUri instead, in embedded/native modes', async () => {
-			installBase({ options: { mode: 'native', loginUri: '/native-login' }, getSession: vi.fn().mockResolvedValue(null) });
+		test('redirects to options.loginPageUri instead, in embedded/native modes', async () => {
+			installBase({ options: { mode: 'native', loginPageUri: '/native-login' }, getSession: vi.fn().mockResolvedValue(null) });
 			const sdk = createServerSDK(validInitConfig);
 			const event = createEvent({ url: new URL('https://brandtegrity.io/app') });
 

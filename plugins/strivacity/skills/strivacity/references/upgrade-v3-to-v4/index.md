@@ -205,7 +205,7 @@ export function LoginButton() {
 ```
 
 - `StyLoginRenderer` and `NativeFlowContext` are removed. Use `useNativeLogin({ params, onLogin, onFallback, onClose, onError, onGlobalMessage })` and render `state.forms` yourself. Child widgets read the same state with `useNativeLoginContext()`. `onLogin` now receives the `SessionData` (v3: claims). `onGlobalMessage` receives a `NativeFlowMessage` (v3: a string). `triggerFallback(message?)` replaces `triggerFallback(hostedUrl?)`. The v3 props `widgets`, `onBlockReady` and `onLanguageChange` have no replacement.
-- New: `withAuthGuard(Component, { loginUri, onLoading })`, `session` prop on `StyAuthProvider` (pre-fetched BFF session), and `language` in the context. The `session` prop is serialized into the rendered HTML, so remove `refresh_token` and `id_token` from it first.
+- New: `withAuthGuard(Component, { loginPageUri, onLoading })`, `session` prop on `StyAuthProvider` (pre-fetched BFF session), and `language` in the context. The `session` prop is serialized into the rendered HTML, so remove `refresh_token` and `id_token` from it first.
 - **Next.js:** the package root no longer has the client API. Import client code from `@strivacity/sdk-next/client` and server code from `@strivacity/sdk-next/server`. The v3 setup (client-managed, everything in `'use client'` components) keeps working when you only change the imports. The server-managed setup (`createServerSDK`, a catch-all `app/auth/[...strivacity]/route.ts`, `cookieSecret`, `serverSessionUri: '/auth/login'`) is opt-in.
 - **Preact** (`@strivacity/sdk-preact`) is new in v4 and has the same API as `@strivacity/sdk-react`.
 

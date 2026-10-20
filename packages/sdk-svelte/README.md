@@ -147,7 +147,7 @@ export const handle: Handle = sdk.handle;
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference). Everything else falls through to `resolve(event)`, so `handle` is safe to compose with your own hooks via SvelteKit's [`sequence()`](https://svelte.dev/docs/kit/@sveltejs-kit-hooks#sequence).
@@ -1637,7 +1637,7 @@ export const load: LayoutServerLoad = async (event) => {
 
 When the access token is within `refreshSkew` seconds of expiry and the session has a refresh token, `getSession(event)` refreshes it before returning. The refresh runs at most once per request, and every caller of the same request - the layout and page `load()` functions SvelteKit runs concurrently, form actions, `+server.ts` handlers, `requireSession` - gets the same rotated session. The rotated session cookie is written to the response by `sdk.handle`, so there is no need to send the browser through `/auth/refresh` first. If the refresh fails, `getSession(event)` returns `null`. Set `autoRefresh: false` in the Server SDK options to turn this off.
 
-Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session (refreshed through `getSession(event)` if it's about to expire), or throws SvelteKit's own `redirect()` to the login page (`loginUri`, default `/login`, in `embedded`/`native` modes; `${authUrlPrefix}/login` in `redirect`/`popup` modes) when there's no active session or its refresh failed:
+Guard a route by calling `requireSession(event, options?)` from its `load()` - it returns the current session (refreshed through `getSession(event)` if it's about to expire), or throws SvelteKit's own `redirect()` to the login page (`loginPageUri`, default `/login`, in `embedded`/`native` modes; `${authUrlPrefix}/login` in `redirect`/`popup` modes) when there's no active session or its refresh failed:
 
 ```ts
 // src/routes/profile/+page.server.ts
@@ -1819,7 +1819,7 @@ The Server SDK accepts the same configuration as the client SDK (see [Configurat
 | `storage` | `SvelteKitServerStorage` | No | Encrypted cookie storage | Custom session storage; see [Storages](#server-storages) |
 | `stateStorage` | `SDKStorage` | No | In-memory `Map` | Custom OAuth2 state storage |
 | `authUrlPrefix` | `string` | No | `'/auth'` | URL prefix matched by `handle` |
-| `loginUri` | `string` | No | `'/login'` | Route `requireSession` redirects to when there's no session (`embedded`/`native` modes only - `redirect`/`popup` modes always use `${authUrlPrefix}/login`) |
+| `loginPageUri` | `string` | No | `'/login'` | Route `requireSession` redirects to when there's no session (`embedded`/`native` modes only - `redirect`/`popup` modes always use `${authUrlPrefix}/login`) |
 | `postLoginRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after login when no `?returnTo=` is given |
 | `postLogoutRedirectUri` | `string` | No | origin of `redirectUri` | Default redirect after logout |
 | `cookieMaxAge` | `number` | No | `2592000` (30 days) | Max age of the session cookie in seconds |

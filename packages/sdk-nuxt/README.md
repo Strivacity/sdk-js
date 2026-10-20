@@ -131,7 +131,7 @@ The module automatically:
 | `GET`  | `/auth/refresh`              | Refreshes the access token                                   | `204 No Content` or `302` redirect           |
 | `GET`  | `/auth/revoke`               | Revokes tokens and clears the session                        | `302` redirect to `postLogoutRedirectUri`    |
 | `GET`  | `/auth/logout`               | Ends the session and redirects to the IDP logout page; accepts a same-origin `?returnTo=` (default: `postLogoutRedirectUri`) | `302` to IDP logout (straight to `returnTo` when the session has no ID token)                 |
-| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginUri` |
+| `GET`  | `/auth/entry`                | Handles external flow entry (e.g., password reset link) - embedded/native modes only | `302` redirect to `loginPageUri` |
 | `POST` | `/auth/backchannel-logout`   | Processes back-channel logout requests from the IDP           | `200 OK` (`400` invalid token, `501` storage without `deleteByLogoutToken`, `500` delete failed)   |
 
 > The `/auth` prefix and route names come from `authUrlPrefix` - see [Server configuration reference](#server-configuration-reference).
